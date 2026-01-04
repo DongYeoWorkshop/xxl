@@ -96,15 +96,19 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                         <div id="sim-graph-area" style="display:flex; height:220px; margin-bottom:60px; padding-right:15px; padding-left:0px; position:relative;">
                             <div id="sim-y-axis" style="width: 25px; position: relative; font-size: 0.7em; color: #bbb; text-align: right; border-right: 1px solid #eee; height: 100%;"></div>
                             <div style="flex: 1; display: flex; flex-direction: column; position: relative; height: 100%;">
-                                <div id="sim-grid-lines" style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></div>
-                                <div id="sim-dist-graph" style="flex: 1; display: flex; align-items: flex-end; gap: 1px; border-bottom: 1px solid #eee; position: relative; z-index: 1; height: 100%;"></div>
-                                <div id="sim-line-graph" style="display:none; flex: 1; position:relative; border-bottom: 1px solid #eee; z-index: 1; overflow: visible; height: 100%;"></div>
-                                <div id="sim-x-axis" style="height: 0px; position: relative; width: 100%;"></div>
+                                <!-- [추가] 예측 구간 표시용 배경 레이어 (그리드보다 뒤) -->
+                                <div id="sim-prediction-zone" style="position: absolute; top: 0; bottom: 0; background: rgba(111, 66, 193, 0.1); border-left: 1px dashed rgba(111, 66, 193, 0.3); border-right: 1px dashed rgba(111, 66, 193, 0.3); pointer-events: none; z-index: 0; display: none;">
+                                    <div style="position: absolute; top: 5px; left: 5px; font-size: 0.7em; color: #6f42c1; font-weight: bold; opacity: 0.7;">α = 0.1</div>
+                                </div>
+                                <div id="sim-grid-lines" style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></div>
+                                <div id="sim-dist-graph" style="flex: 1; display: flex; align-items: flex-end; gap: 1px; border-bottom: 1px solid #eee; position: relative; z-index: 2; height: 100%;"></div>
+                                <div id="sim-line-graph" style="display:none; flex: 1; position:relative; border-bottom: 1px solid #eee; z-index: 2; overflow: visible; height: 100%;"></div>
+                                <div id="sim-x-axis" style="height: 0px; position: relative; width: 100%; z-index: 1;"></div>
                             </div>
                         </div>
                         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; box-sizing: border-box;">
                             <div style="background:#f8f9fa; padding: 10px 5px; border-radius:10px; text-align:center;">
-                                <div style="font-size:0.65em; color:#888; margin-bottom:2px;">최소</div>
+                                <div style="font-size:0.65em; color:#888; margin-bottom:2px;">최소 (P05)</div>
                                 <div id="sim-min-dmg" style="font-weight:bold; color:#333; font-size:0.9em;">0</div>
                             </div>
                             <div style="background:#f8f9fa; padding: 10px 5px; border-radius:10px; text-align:center;">
@@ -112,7 +116,7 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                                 <div id="sim-avg-dmg" style="font-weight:bold; color:#333; font-size:0.9em;">0</div>
                             </div>
                             <div style="background:#f8f9fa; padding: 10px 5px; border-radius:10px; text-align:center;">
-                                <div style="font-size:0.65em; color:#888; margin-bottom:2px;">최대</div>
+                                <div style="font-size:0.65em; color:#888; margin-bottom:2px;">최대 (P95)</div>
                                 <div id="sim-max-dmg" style="font-weight:bold; color:#333; font-size:0.9em;">0</div>
                             </div>
                         </div>

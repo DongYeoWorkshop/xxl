@@ -132,7 +132,19 @@ export function renderHeroTab(dom, updateStatsCallback) {
     }
     graphContainer.appendChild(contentPadding);
 
-    // 2. 하단 딜표 래퍼 (표가 나오는 흰 칸)
+    // 2. 그래프 영역 (별도의 흰색 박스)
+    const graphWrapper = document.createElement('div');
+    graphWrapper.id = 'hero-graph-wrapper';
+    graphWrapper.className = 'hero-main-wrapper';
+    graphWrapper.style.display = 'none'; // 초기에는 숨김
+    if (contentDisplay) contentDisplay.appendChild(graphWrapper);
+
+    const graphDiv = document.createElement('div');
+    graphDiv.id = 'hero-comparison-graph';
+    graphDiv.style.cssText = 'width: 100%; height: 250px; padding: 10px 0;';
+    graphWrapper.appendChild(graphDiv);
+
+    // 3. 하단 딜표 래퍼 (표가 나오는 흰 칸)
     const tablesWrapper = document.createElement('div');
     tablesWrapper.id = 'hero-tables-wrapper';
     tablesWrapper.className = 'hero-main-wrapper';
@@ -143,7 +155,128 @@ export function renderHeroTab(dom, updateStatsCallback) {
     tableContainer.className = 'comparison-tables-container';
     tablesWrapper.appendChild(tableContainer);
 
+    // [추가] 그래프 데이터 생성 및 렌더링
+    // 선택된 두 개의 스냅샷만 그래프에 표시 (없으면 표시 안 함)
+    const s1Id = state.heroComparisonState?.slot1Id;
+    const s2Id = state.heroComparisonState?.slot2Id;
+    const activeSnapshots = state.comparisonSnapshots.filter(s => s.id === s1Id || s.id === s2Id);
+    
+    if (activeSnapshots.length > 0) {
+        graphWrapper.style.display = 'block';
+        createComparisonGraph(activeSnapshots, graphDiv);
+    }
+
     renderUnifiedContent(tableContainer);
+}
+
+/**
+ * 딜량 비교 꺾은선 그래프 생성 (SVG)
+ */
+function createComparisonGraph(snapshots, container) {
+    if (!snapshots || snapshots.length === 0) return;
+
+    // 데이터 전처리: 턴별 누적 데미지 계산
+    const graphData = snapshots.map(snap => {
+        const points = [];
+        let cumDmg = 0;
+        let currentTurn = 1;
+        let turnDmg = 0;
+
+        // 레코드 순회하며 턴별 합산 (턴 구분자 기준)
+        snap.records.forEach(rec => {
+            if (rec.isTurnSeparator) {
+                // 이전 턴 저장 (1턴부터 시작하므로 구분자가 나오면 그 이전 턴이 끝난 것)
+                // 하지만 구조상 구분자가 먼저 나오고 그 뒤에 데미지가 나옴 (1턴 구분자 -> 데미지 -> 2턴 구분자...)
+                // 따라서 구분자를 만났을 때, '이전 턴'의 데이터를 저장해야 하는데
+                // 첫 구분자(1턴)일 때는 저장할 게 없음.
+                
+                // 로직 수정: 구분자가 '새로운 턴의 시작'을 알림.
+                // 직전 턴까지의 데미지를 누적에 더하고 포인트 추가.
+                if (rec.turnNumber > 1) { 
+                     // 1턴 데이터는 2턴 구분자가 나올 때 저장됨.
+                     // 마지막 턴 데이터는 루프 끝나고 저장해야 함.
+                     cumDmg += turnDmg;
+                     points.push({ t: currentTurn, d: cumDmg });
+                     turnDmg = 0;
+                }
+                currentTurn = rec.turnNumber;
+            } else {
+                const dmgVal = parseInt((rec.damage || "0").replace(/,/g, '')) || 0;
+                turnDmg += dmgVal * (rec.count || 1);
+            }
+        });
+        // 마지막 턴 처리
+        cumDmg += turnDmg;
+        points.push({ t: currentTurn, d: cumDmg });
+
+        return { id: snap.id, charId: snap.charId, points };
+    });
+
+    // 축 범위 계산
+    const allPoints = graphData.flatMap(d => d.points);
+    const maxTurn = Math.max(...allPoints.map(p => p.t), 1);
+    const maxDmg = Math.max(...allPoints.map(p => p.d), 100); // 최소값 보정
+
+    // SVG 생성
+    const width = container.clientWidth || 600; // 컨테이너 너비 참조 (없으면 기본값)
+    const height = 250;
+    const padding = { top: 20, right: 40, bottom: 30, left: 50 };
+    const chartW = width - padding.left - padding.right;
+    const chartH = height - padding.top - padding.bottom;
+
+    const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33F6', '#F6FF33', '#33FFF6', '#FF8C00', '#8A2BE2'];
+    // 캐릭터 ID별 고정 색상을 쓰고 싶다면 매핑 필요, 여기서는 순서대로 할당
+    
+    let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow:visible;">`;
+
+    // Y축 그리드 & 라벨
+    for (let i = 0; i <= 5; i++) {
+        const yVal = (maxDmg / 5) * i;
+        const yPos = padding.top + chartH - (chartH * (i / 5));
+        const label = yVal >= 1000 ? (yVal / 1000).toFixed(0) + 'K' : Math.floor(yVal);
+        
+        svgHtml += `<line x1="${padding.left}" y1="${yPos}" x2="${width - padding.right}" y2="${yPos}" stroke="#eee" stroke-dasharray="4" />`;
+        svgHtml += `<text x="${padding.left - 5}" y="${yPos + 4}" text-anchor="end" font-size="10" fill="#888">${label}</text>`;
+    }
+
+    // X축 라벨
+    for (let t = 1; t <= maxTurn; t++) {
+        // 턴이 너무 많으면 간격 조절
+        if (maxTurn > 15 && t % 2 !== 0 && t !== maxTurn) continue;
+        if (maxTurn > 30 && t % 5 !== 0 && t !== maxTurn) continue;
+
+        const xPos = padding.left + (chartW * ((t - 1) / (maxTurn - 1 || 1)));
+        svgHtml += `<text x="${xPos}" y="${height - 5}" text-anchor="middle" font-size="10" fill="#888">${t}</text>`;
+    }
+
+    // 데이터 라인 그리기
+    graphData.forEach((g, idx) => {
+        const color = colors[idx % colors.length];
+        let pathD = "";
+        
+        g.points.forEach((p, i) => {
+            const x = padding.left + (chartW * ((p.t - 1) / (maxTurn - 1 || 1)));
+            const y = padding.top + chartH - (chartH * (p.d / maxDmg));
+            
+            if (i === 0) pathD += `M ${x} ${y}`;
+            else pathD += ` L ${x} ${y}`;
+            
+            // 데이터 포인트 (원)
+            svgHtml += `<circle cx="${x}" cy="${y}" r="3" fill="${color}" stroke="#fff" stroke-width="1" />`;
+        });
+
+        svgHtml += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" />`;
+        
+        // 범례 (Legend) - 상단 우측
+        const legendX = width - padding.right - 100;
+        const legendY = padding.top + (idx * 15);
+        const charName = charData[g.charId]?.title || g.charId;
+        svgHtml += `<rect x="${legendX}" y="${legendY - 6}" width="8" height="8" fill="${color}" rx="2" />`;
+        svgHtml += `<text x="${legendX + 12}" y="${legendY + 2}" font-size="10" fill="#555" font-weight="bold">${charName}</text>`;
+    });
+
+    svgHtml += `</svg>`;
+    container.innerHTML = svgHtml;
 }
 
 /**
@@ -277,7 +410,7 @@ function createRecordColumn(records, isLeft) {
 }
 
 export function clearHeroTabRemnants() {
-    const idsToRemove = ['hero-graph-container', 'hero-tab-main-wrapper', 'hero-tables-wrapper', 'hero-comparison-tables'];
+    const idsToRemove = ['hero-graph-container', 'hero-tab-main-wrapper', 'hero-tables-wrapper', 'hero-comparison-tables', 'hero-graph-wrapper'];
     idsToRemove.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.remove();

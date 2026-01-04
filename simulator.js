@@ -5,6 +5,7 @@ import { simCharData } from './sim_data.js';
 import { runSimulationCore } from './simulator-engine.js';
 import { getCharacterSelectorHtml, getSimulatorLayoutHtml, showDetailedLogModal } from './simulator-ui.js';
 import { getCharacterCommonControls } from './simulator-common.js';
+import { showSimpleTooltip } from './ui.js';
 
 /**
  * 행동 패턴 에디터 업데이트
@@ -85,7 +86,7 @@ function renderAxisLabels(axisData, yMax, type = 'dist') {
         if (grid) grid.innerHTML = axisData.y.map(val => val === 0 ? '' : `<div style="position:absolute;bottom:${(val/yMax)*100}%;width:100%;border-top:1px dashed #e0e0e0;"></div>`).join('');
     }
     if (xAxis) {
-        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:var(--sim-grid-height, 220px);border-left:1px dashed #f0f0f0;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
+        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:var(--sim-grid-height, 220px);border-left:1px dashed #ccc;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
     }
 }
 
@@ -152,6 +153,11 @@ function displaySimResult(charId, fullResult, type = 'avg') {
                 value.style.fontWeight = 'bold';
             }
         }
+        
+        // [추가] 카드 텍스트가 항상 P05, P95를 유지하도록 강제 갱신
+        if (key === 'min' && fullResult.p05) value.innerText = fullResult.p05;
+        if (key === 'max' && fullResult.p95) value.innerText = fullResult.p95;
+
         box.style.border = 'none';
         box.style.cursor = 'pointer';
         box.style.transition = 'all 0.2s';
@@ -193,6 +199,30 @@ function displaySimResult(charId, fullResult, type = 'avg') {
         Array.from(distGraph.children).forEach((bar, idx) => {
             bar.style.background = (idx === targetIdx) ? '#6f42c1' : '#e0e0e0';
         });
+
+        // [추가] 예측 구간 배경 렌더링
+        const predictionZone = document.getElementById('sim-prediction-zone');
+        
+        if (predictionZone && fullResult.p05 && fullResult.p95) {
+            const minVal = parseFloat(fullResult.min.replace(/,/g, ''));
+            const maxVal = parseFloat(fullResult.max.replace(/,/g, ''));
+            const p05Val = parseFloat(fullResult.p05.replace(/,/g, ''));
+            const p95Val = parseFloat(fullResult.p95.replace(/,/g, ''));
+            const range = maxVal - minVal;
+
+            if (range > 0) {
+                const leftPercent = ((p05Val - minVal) / range) * 100;
+                const widthPercent = ((p95Val - p05Val) / range) * 100;
+                
+                predictionZone.style.left = `${leftPercent}%`;
+                predictionZone.style.width = `${widthPercent}%`;
+                
+                // [수정] 분포도 그래프가 보일 때만 예측 구간을 노출함
+                predictionZone.style.display = (distGraph && distGraph.style.display !== 'none') ? 'block' : 'none';
+            } else {
+                predictionZone.style.display = 'none';
+            }
+        }
     }
 
     // 5. 딜 그래프 업데이트 (현재 보고 있는 타입이 딜 그래프일 경우에만)
@@ -214,14 +244,20 @@ function renderDamageLineChart(charId, specificResult = null) {
     }
     
     const turnData = res.turnData || res.perTurnDmg, maxCum = Math.max(...turnData.map(d => d.cumulative)), maxTrn = Math.max(...turnData.map(d => d.dmg)), turnCount = turnData.length;
+    
+    // [추가] 최대 데미지 턴 인덱스 찾기
+    let maxDmgIdx = -1;
+    let maxDmgVal = -1;
+    turnData.forEach((d, i) => {
+        if (d.dmg > maxDmgVal) {
+            maxDmgVal = d.dmg;
+            maxDmgIdx = i;
+        }
+    });
+
     let html = `<svg width="100%" height="100%" viewBox="0 0 400 220" preserveAspectRatio="none" style="overflow:visible;"><defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6f42c1" stop-opacity="0.3"/><stop offset="100%" stop-color="#6f42c1" stop-opacity="0"/></linearGradient></defs>`;
     
-    turnData.forEach((d, i) => { 
-        const x = turnCount > 1 ? (i / (turnCount - 1)) * 400 : 0; 
-        const h = maxTrn > 0 ? (d.dmg / maxTrn) * 110 : 0; 
-        html += `<rect class="svg-bar-grow" x="${x-2}" y="${220-h}" width="4" height="${h}" fill="#e0e0e0" rx="1" />`; 
-    });
-    
+    // [수정] 1. 배경 영역과 선을 먼저 그림 (뒤에 깔리도록)
     let areaPath = `M 0,220 `; 
     turnData.forEach((d, i) => { 
         const x = turnCount > 1 ? (i / (turnCount - 1)) * 400 : 0; 
@@ -229,7 +265,7 @@ function renderDamageLineChart(charId, specificResult = null) {
         areaPath += `L ${x},${y} `; 
     }); 
     areaPath += `L ${turnCount > 1 ? 400 : 0},220 Z`; 
-    html += `<path class="svg-bar-grow" d="${areaPath}" fill="url(#areaGrad)" />`;
+    html += `<path class="svg-bar-grow" d="${areaPath}" fill="url(#areaGrad)" style="pointer-events:none;" />`;
     
     let pts = ""; 
     turnData.forEach((d, i) => { 
@@ -237,9 +273,99 @@ function renderDamageLineChart(charId, specificResult = null) {
         const y = maxCum > 0 ? 220 - (d.cumulative / maxCum) * 220 : 220; 
         pts += (i === 0 ? "M " : "L ") + `${x},${y} `; 
     }); 
-    html += `<path class="svg-bar-grow" d="${pts}" fill="none" stroke="#6f42c1" stroke-width="3" stroke-opacity="0.5" />`;
+    html += `<path class="svg-bar-grow" d="${pts}" fill="none" stroke="#6f42c1" stroke-width="3" stroke-opacity="0.5" style="pointer-events:none;" />`;
+
+    // [수정] 2. 막대를 마지막에 그림 (시각용 얇은 막대 + 클릭용 투명 넓은 막대)
+    turnData.forEach((d, i) => { 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * 400 : 0; 
+        const h = maxTrn > 0 ? (d.dmg / maxTrn) * 110 : 0; 
+        const isMax = (i === maxDmgIdx);
+        const color = isMax ? '#6f42c1' : '#e0e0e0';
+        
+        // 1) 시각용 얇은 막대 (width: 6)
+        html += `<rect x="${x-3}" y="${220-h}" width="6" height="${h}" fill="${color}" rx="2" style="pointer-events:none;" />`;
+        
+        // 2) 클릭용 투명 넓은 막대 (width: 10) -> 이벤트 리스너 연결용 클래스(sim-dmg-bar) 적용
+        html += `<rect class="svg-bar-grow sim-dmg-bar" x="${x-5}" y="${220-h}" width="10" height="${h}" fill="transparent" data-dmg="${d.dmg}" data-turn="${i+1}" style="pointer-events:all;" />`; 
+        
+        if (isMax) {
+            const labelVal = d.dmg >= 1000 ? (d.dmg/1000).toFixed(0)+'K' : d.dmg;
+            html += `<text x="${x}" y="${220-h-5}" text-anchor="middle" font-size="10" font-weight="bold" fill="#6f42c1" style="pointer-events:none;">${labelVal}</text>`;
+        }
+    });
+    
+    // [추가] 동적 라벨 표시용 텍스트 요소 (초기엔 숨김)
+    // transition 속성 추가 (opacity와 transform 함께 적용)
+    html += `<text id="sim-bar-label" x="0" y="0" text-anchor="middle" font-size="11" font-weight="bold" fill="#333" style="opacity:0; pointer-events:none; text-shadow: 0px 0px 3px white; transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); transform: translateY(5px);"></text>`;
     
     container.innerHTML = html + `</svg>`;
+
+    // [수정] 막대 인터랙션 로직 개선
+    const labelText = container.querySelector('#sim-bar-label');
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    let hideTimeout = null;
+
+    container.querySelectorAll('.sim-dmg-bar').forEach(bar => {
+        // 이미 최대치 라벨이 있는 막대(보라색)는 건너뜀
+        if (bar.getAttribute('fill') === '#6f42c1') return;
+
+        const showLabel = (e) => {
+            e.stopPropagation();
+            // 기존에 예약된 숨김 타이머가 있으면 취소
+            if (hideTimeout) {
+                clearTimeout(hideTimeout);
+                hideTimeout = null;
+            }
+
+            const rawDmg = parseInt(bar.dataset.dmg);
+            const dmgText = rawDmg >= 1000 ? (rawDmg / 1000).toFixed(0) + 'K' : rawDmg.toLocaleString();
+            
+            const x = parseFloat(bar.getAttribute('x')) + parseFloat(bar.getAttribute('width')) / 2;
+            const y = parseFloat(bar.getAttribute('y')) - 5;
+
+            // 내용과 위치 업데이트
+            labelText.textContent = dmgText;
+            labelText.setAttribute('x', x);
+            labelText.setAttribute('y', y);
+            
+            // 애니메이션 초기화 (잠깐 숨겼다가 다시 나타나게 하여 애니메이션 리플레이 효과)
+            labelText.style.transition = 'none';
+            labelText.style.opacity = '0';
+            labelText.style.transform = 'translateY(5px)';
+            
+            // 강제 리플로우 (브라우저가 스타일 변경을 인지하게 함)
+            void labelText.offsetWidth;
+
+            // 애니메이션 적용 및 표시
+            labelText.style.transition = 'opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+            labelText.style.opacity = '1';
+            labelText.style.transform = 'translateY(0)';
+        };
+
+        // 클릭 이벤트 (모바일/PC 공통)
+        bar.onclick = showLabel;
+
+        // 마우스 오버 이벤트 (터치 기기가 아닌 경우만)
+        if (!isTouch) {
+            bar.onmouseenter = showLabel;
+            bar.onmouseleave = () => { 
+                // 1초 뒤에 페이드 아웃 및 아래로 살짝 내려가며 사라짐
+                hideTimeout = setTimeout(() => {
+                    labelText.style.opacity = '0';
+                    labelText.style.transform = 'translateY(5px)';
+                }, 1000); 
+            };
+        }
+    });
+
+    // 그래프 배경 클릭 시 라벨 숨기기
+    container.onclick = () => {
+        if (labelText) {
+            labelText.style.opacity = '0';
+            labelText.style.transform = 'translateY(5px)';
+        }
+    };
+
     const turnLabels = []; 
     for (let i = 0; i < turnCount; i++) { 
         const turnNum = i + 1; 
@@ -386,9 +512,9 @@ function renderSimulatorUI(charId) {
             const res = JSON.parse(savedRes); 
             document.getElementById('simulation-result-area').style.display='block'; 
             document.getElementById('sim-empty-msg').style.display='none'; 
-            document.getElementById('sim-min-dmg').innerText=res.min; 
-            document.getElementById('sim-avg-dmg').innerText=res.avg; 
-            document.getElementById('sim-max-dmg').innerText=res.max; 
+            document.getElementById('sim-min-dmg').innerText = res.p05 || res.min; 
+            document.getElementById('sim-avg-dmg').innerText = res.avg; 
+            document.getElementById('sim-max-dmg').innerText = res.p95 || res.max; 
             
             // [수정] 새로운 표시 함수 호출
             displaySimResult(charId, res, 'avg');
@@ -428,16 +554,23 @@ function renderSimulatorUI(charId) {
             if (distGraph) distGraph.style.display = 'flex';
             if (lineGraph) lineGraph.style.display = 'none';
             
-            // [추가] 분포도로 돌아갈 때 저장된 최신 결과로 축 라벨 갱신
+            // [추가] 분포도로 돌아갈 때 저장된 최신 결과로 축 라벨 및 예측 구간 갱신
             const lastRes = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
-            if (lastRes && lastRes.axisData) {
-                renderAxisLabels(lastRes.axisData, lastRes.yMax, 'dist');
+            if (lastRes) {
+                if (lastRes.axisData) renderAxisLabels(lastRes.axisData, lastRes.yMax, 'dist');
+                // 예측 구간 다시 보이기
+                const predictionZone = document.getElementById('sim-prediction-zone');
+                if (predictionZone && lastRes.p05 && lastRes.p95) predictionZone.style.display = 'block';
             }
         };
         btnDmg.onclick = () => {
             btnDmg.style.background = '#6f42c1'; btnDmg.style.color = 'white';
             btnDist.style.background = '#f0f0f0'; btnDist.style.color = '#666';
             if (distGraph) distGraph.style.display = 'none';
+            // [추가] 딜 그래프에서는 예측 구간 숨기기
+            const predictionZone = document.getElementById('sim-prediction-zone');
+            if (predictionZone) predictionZone.style.display = 'none';
+            
             if (lineGraph) { 
                 lineGraph.style.display = 'block'; 
                 renderDamageLineChart(charId); 
@@ -500,11 +633,11 @@ function runSimulation(charId) {
         if (lineGraph) lineGraph.style.display = 'none';
 
         document.getElementById('simulation-result-area').style.display = 'block';
-        document.getElementById('sim-min-dmg').innerText = result.min; 
+        document.getElementById('sim-min-dmg').innerText = result.p05; // P05 표시
         document.getElementById('sim-avg-dmg').innerText = result.avg; 
-        document.getElementById('sim-max-dmg').innerText = result.max; 
+        document.getElementById('sim-max-dmg').innerText = result.p95; // P95 표시
         
-        // [수정] 새로운 표시 함수 호출
+        // [수정] 새로운 표시 함수 호출 (결과 객체는 p05, p95 데이터를 포함하고 있음)
         displaySimResult(charId, result, 'avg');
         
         document.getElementById('sim-empty-msg').style.display = 'none';
@@ -513,6 +646,26 @@ function runSimulation(charId) {
         
         // 새 분석 결과에 맞는 축 라벨 렌더링
         renderAxisLabels(result.axisData, result.yMax, 'dist');
+
+        // [추가] 예측 구간 배경 렌더링 (분석 직후)
+        const predictionZone = document.getElementById('sim-prediction-zone');
+        if (predictionZone && result.p05 && result.p95) {
+            const minVal = parseFloat(result.min.replace(/,/g, ''));
+            const maxVal = parseFloat(result.max.replace(/,/g, ''));
+            const p05Val = parseFloat(result.p05.replace(/,/g, ''));
+            const p95Val = parseFloat(result.p95.replace(/,/g, ''));
+            const range = maxVal - minVal;
+
+            if (range > 0) {
+                const leftPercent = ((p05Val - minVal) / range) * 100;
+                const widthPercent = ((p95Val - p05Val) / range) * 100;
+                predictionZone.style.left = `${leftPercent}%`;
+                predictionZone.style.width = `${widthPercent}%`;
+                predictionZone.style.display = 'block';
+            } else {
+                predictionZone.style.display = 'none';
+            }
+        }
 
         // [추가] 로딩 상태 해제
         runBtn.disabled = false;

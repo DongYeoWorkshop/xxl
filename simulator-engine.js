@@ -319,13 +319,17 @@ export function runSimulationCore(context) {
     const totals = iterationResults.map(d => d.total), avg = Math.floor(totals.reduce((a, b) => a + b, 0) / iterations);
     const min = Math.min(...totals), max = Math.max(...totals);
     
-    // 최소, 최대, 평균(근사) 회차 추출
-    const minRes = iterationResults.find(r => r.total === min);
-    const maxRes = iterationResults.find(r => r.total === max);
+    // [수정] 요약 카드용으로만 P05, P95 추출 (그래프는 절대값 min/max 사용)
+    const sortedIterationResults = [...iterationResults].sort((a, b) => a.total - b.total);
+    const minRes = sortedIterationResults[Math.floor(iterations * 0.05)] || sortedIterationResults[0];
+    const maxRes = sortedIterationResults[Math.floor(iterations * 0.95)] || sortedIterationResults[iterationResults.length - 1];
     const avgRes = iterationResults.sort((a, b) => Math.abs(a.total - avg) - Math.abs(b.total - avg))[0];
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 600;
-    const range = max - min, binCount = isMobile ? 30 : Math.min(iterations, 100), bins = new Array(binCount).fill(0);
+    const range = max - min;
+    // [수정] 구간(Bin) 개수: 최대 100개로 설정
+    const binCount = isMobile ? 30 : Math.min(iterations, 100);
+    const bins = new Array(binCount).fill(0);
     const centerIdx = Math.floor(binCount / 2);
     iterationResults.forEach(r => { let b = (range === 0) ? centerIdx : Math.floor(((r.total - min) / range) * (binCount - 1)); bins[b]++; });
     
@@ -334,15 +338,33 @@ export function runSimulationCore(context) {
     else xLabels.push({ pos: 50, label: min >= 1000 ? (min / 1000).toFixed(0) + 'K' : Math.floor(min) });
 
     return { 
-        min: min.toLocaleString(), 
-        max: max.toLocaleString(), 
-        avg: avg.toLocaleString(),
+        min: min.toLocaleString(), // 그래프 축을 위해 절대 최소값 복구
+        max: max.toLocaleString(), // 그래프 축을 위해 절대 최대값 복구
+        avg: avgRes.total.toLocaleString(), // [수정] 산술 평균 대신 로그 회차의 실제 데미지 표시
+        p05: minRes.total.toLocaleString(), // 카드 표시용 현실적 최소
+        p95: maxRes.total.toLocaleString(), // 카드 표시용 현실적 최대
         results: {
             min: minRes,
             avg: avgRes,
             max: maxRes
         },
-        graphData: bins.map((c, i) => ({ h: (c / Math.max(...bins)) * 100, isAvg: (range === 0) ? (i === centerIdx) : (i === Math.floor(((avgRes.total - min) / range) * (binCount - 1))) })), 
+        // [수정] graphData에 inRange(예측구간 포함 여부) 속성 추가
+        graphData: bins.map((c, i) => {
+            // 현재 빈(Bar)이 커버하는 데미지 범위 계산
+            const binStart = min + (range * (i / binCount));
+            const binEnd = min + (range * ((i + 1) / binCount));
+            const binMid = (binStart + binEnd) / 2;
+            
+            // 예측 구간(P05 ~ P95) 안에 이 막대의 중심값이 들어가는지 판별
+            const inRange = (binMid >= minRes.total && binMid <= maxRes.total);
+            const isAvg = (range === 0) ? (i === centerIdx) : (i === Math.floor(((avgRes.total - min) / range) * (binCount - 1)));
+            
+            return { 
+                h: (c / Math.max(...bins)) * 100, 
+                isAvg: isAvg,
+                inRange: inRange 
+            };
+        }), 
         axisData: { x: xLabels, y: Array.from({length: 6}, (_, i) => Math.floor(Math.max(...bins) * (5 - i) / 5)) }, 
         yMax: Math.max(...bins) 
     };

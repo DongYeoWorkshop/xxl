@@ -303,14 +303,41 @@
 
 /* PC 버전 그리드 배치 */
 @media screen and (min-width: 1100px) {
+    /* 스냅샷 목록 (오른쪽 위) */
     #hero-graph-container {
         grid-column: 2;
-        grid-row: 2;
+        grid-row: 2 / span 2; /* 2행부터 3행까지 차지하도록 수정 */
+        margin-top: 0;
+        align-self: start;
+        position: sticky;
+        top: 80px;
     }
-    #hero-tables-wrapper {
+    
+    /* 비교 그래프 (왼쪽 위) */
+    #hero-graph-wrapper {
         grid-column: 1;
         grid-row: 2;
         margin-top: 0;
+    }
+
+    /* 딜표 (왼쪽 아래) */
+    #hero-tables-wrapper {
+        grid-column: 1;
+        grid-row: 3;
+        margin-top: 0;
+    }
+    
+    /* 그래프가 없을 때 (숨겨질 때) 딜표를 위로 당기기 */
+    #hero-graph-wrapper[style*="display: none"] + #hero-tables-wrapper {
+        grid-row: 2;
+    }
+
+    /* [추가] PC 사이드바에서는 스냅샷 목록을 가로 스크롤 대신 그리드로 표시 */
+    #hero-graph-container .graph-img-grid {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        justify-content: flex-start; /* 왼쪽 정렬로 변경 */
+        gap: 15px 10px;
     }
 }
 
