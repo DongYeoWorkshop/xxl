@@ -79,6 +79,10 @@
   border-top: 2px solid #444;
   text-align: left;
 }
+/* 랜딩 페이지에서는 하단 구분선 제거 */
+#content-display.landing-mode .skill-grid {
+  border-top: none !important;
+}
 .skill-card {
   background: #000;
   border: 1px solid #444;

@@ -152,3 +152,14 @@
   box-shadow: 0 0 10px rgba(111, 66, 193, 0.6);
   transform: scale(1.05);
 }
+
+/* 헤더 상태에 따른 컨텐츠 위치 조절 */
+#content-display {
+  margin-top: 60px !important; /* 기본값 (닫혔을 때) */
+}
+
+body.list-open #content-display {
+  margin-top: 270px !important; /* 펼쳐졌을 때 */
+}
+
+/* 헤더 상태에 따른 컨텐츠 위치 조절 끝 */

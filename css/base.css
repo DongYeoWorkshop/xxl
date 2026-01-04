@@ -52,3 +52,31 @@ body {
   text-size-adjust: none;
 }
 
+/* 전역 배경 설정 (공통) */
+body.landing-page-active::before,
+body.sub-page-active::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: 0.3; /* 투명도 70% (불투명도 30%) */
+  z-index: -1;   /* 컨텐츠 뒤로 배치 */
+  pointer-events: none;
+}
+
+/* 랜딩 페이지 배경 */
+body.landing-page-active::before {
+  background-image: url('../images/background/main.jpg');
+}
+
+/* 서브 페이지(그 외 모든 탭) 배경 */
+body.sub-page-active::before {
+  background-image: url('../images/background/simul.jpg');
+}
+

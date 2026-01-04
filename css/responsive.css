@@ -1,133 +1,186 @@
-/* css/responsive.css - Simplified Mobile Layout */
+/* css/responsive.css (Restored to Best State) */
 
-/* =========================================
-   Mobile Overrides (Max-width: 600px)
-   ========================================= */
+/* 모바일 전용 (600px 이하) */
 @media screen and (max-width: 600px) {
-  #sticky-wrapper {
-    height: auto !important;
-    min-height: 0 !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-  }
-  
-  .sticky-header {
-    height: 36px !important;
-    min-height: 0 !important;
-    padding: 0 5px !important;
-    border-bottom: 1px solid #30363d !important;
-    display: flex !important;
-    align-items: center !important;
+  #content-display { 
+    margin-top: 45px !important; 
+    width: 96% !important; /* 92% -> 96%로 확대 */
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
+    float: none !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding-top: 20px !important;
   }
 
+  /* 시뮬레이터 겉 감싸는 칸 여백 축소 */
+  #simulator-page .hero-graph-container {
+    padding: 15px 8px !important;
+  }
+
+  /* 헤더 모바일 최적화 */
   .sticky-content {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 2px !important; /* 간격 최소화 */
-    width: 100% !important;
-    padding: 0 !important;
+    padding: 0 5px !important;
+    gap: 2px !important;
   }
 
-  /* 텍스트 크기 일괄 축소 */
-  #sticky-header-title { 
-    font-size: 0.85em !important; 
-    margin-right: 2px !important; 
-    white-space: nowrap;
+  #sticky-header-title {
+    font-size: 1.1em !important;
+    margin-right: 5px !important;
   }
 
-  .sticky-content span { 
-    font-size: 0.7em !important; 
-    height: 20px !important; 
-    padding: 0 1px !important; /* 패딩 축소 */
-    flex-shrink: 0 !important;
-  }
-  
-  #sticky-attr { width: 22px !important; border: none !important; }
-  .sticky-attr-icon { width: 16px; height: 16px; }
-  
-  #sticky-name { 
-    flex: 0 1 auto !important; 
-    min-width: 0 !important;
-    max-width: 75px !important; /* 이름 칸 살짝 확장 */
-    font-size: 0.85em !important; /* 이름 크기 증가 */
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    border-right: 1px solid var(--border-color);
+  #sticky-name {
+    width: auto !important;
+    max-width: 85px !important;
+    margin-left: 5px !important;
+    margin-right: 8px !important; /* 이름과 돌파 사이 간격 */
+    font-size: 0.9em !important;
   }
 
-  #sticky-fit { width: 42px; }
+  #sticky-attr {
+    width: 24px !important;
+    margin-left: 2px !important;
+    margin-right: 5px !important; /* 속성 아이콘 뒤 간격 */
+  }
 
-  /* 목록 버튼 우측 고정 */
+  #sticky-lv, #sticky-br, #sticky-fit {
+    font-size: 0.75em !important;
+    width: auto !important;
+    padding: 0 2px !important;
+    margin-right: 6px !important; /* 각 수치 사이 간격 */
+  }
+
+  #sticky-fit {
+    margin-right: 15px !important; /* 목록 버튼과의 간격 유지 */
+  }
+
+  /* 캐릭터 정보가 있을 때 여백 조정 */
+  #sticky-lv:not([style*="display: none"]) ~ .header-btn {
+    margin-left: 5px !important;
+  }
+
   .header-btn {
-    position: static !important;
-    order: 10 !important;
     padding: 0 5px !important;
-    font-size: 1.4em !important;
+    font-size: 1.3em !important;
   }
 
-  /* 컨텐츠 마진 최적화: 헤더 높이(45px)에 맞춰 밀착 */
-  body:not(.list-open) #content-display { 
-    margin-top: 45px !important; 
-    padding-top: 10px !important;
+  .skill-grid { 
+    grid-template-columns: 1fr !important; 
+    width: 100% !important;
   }
-  body:not(.list-open) #content-display.hero-mode { 
-    margin-top: 45px !important; 
+  .buff-name-label {
+    display: none !important;
+  }
+  
+  /* 시뮬레이터 로그 모바일 최적화 (적절한 여백 복구) */
+  #sim-log {
+    font-size: 0.72em !important;
+    padding: 10px 8px !important; 
+    line-height: 1.4 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 8px !important; /* 다시 둥글게 */
+    box-sizing: border-box !important;
   }
 
-  /* 기타 모바일 UI 축소 */
-  #calc-and-stats-row { flex-direction: row !important; gap: 8px; }
-  #calc-area, #stats-wrapper { flex: 1; min-width: 0; }
-  .slider-label { font-size: 0.75em; }
-  .slider-box { height: 22px; padding: 0 5px; }
-  #display-stats li span:last-child { font-size: 1.1em; }
-  .skill-grid { grid-template-columns: 1fr !important; }
-  .comparison-slot { width: 100% !important; min-width: 0 !important; }
+  /* 로그와 리포트를 감싸는 카드 컨테이너 여백 약간 복구 */
+  #simulation-result-area > div {
+    padding: 15px 10px !important; /* 좌우 10px 여백 */
+    border-radius: 12px !important; /* 카드 형태 복구 */
+    border: 1px solid #eee !important;
+  }
 
-  /* 리포트 플로팅 버튼 숨김 */
-  #report-open-btn { display: none !important; }
+  /* 시뮬레이터 상위 컨테이너 여백 미세 복구 */
+  .sim-pane-display {
+    padding: 0 5px !important;
+  }
+
+  /* 시뮬레이터 그래프 높이 조절 */
+  #sim-graph-area {
+    height: 150px !important;
+    margin-bottom: 40px !important;
+    --sim-grid-height: 150px;
+  }
+
+  /* 선택 상자 터치 이슈 해결 */
+  #sim-iterations {
+    position: relative !important;
+    z-index: 10 !important;
+    pointer-events: auto !important;
+    -webkit-appearance: menulist !important;
+  }
+
+  /* 상세 로그 모달 모바일 최적화 */
+  .sim-detail-stat-info {
+    display: none !important; /* 계수, 공격력 등 상세 정보 숨김 */
+  }
+
+  div[style*="position: fixed"][style*="z-index: 10000"] {
+    font-size: 0.85em !important; /* 모달 전체 글씨 크기 축소 */
+  }
+
+  div[style*="position: fixed"][style*="z-index: 10000"] h4,
+  div[style*="position: fixed"][style*="z-index: 10000"] span {
+    font-size: 0.9em !important;
+  }
+
+  /* 제보 버튼 모바일에서 숨김 */
+  #report-open-btn {
+    display: none !important;
+  }
+
+  .comparison-slot { width: 100%; }
 }
 
-/* =========================================
-   Desktop Overrides
-   ========================================= */
+/* 태블릿 및 PC (601px 이상) */
 @media screen and (min-width: 601px) {
-  .slider-label { padding-left: 30px; }
-  #sub-stats-list { grid-template-columns: repeat(3, 1fr) !important; }
-}
-
-/* 태블릿 (중간 단계) 배경 최적화 */
-@media screen and (min-width: 601px) and (max-width: 1099px) {
-  #internal-char-bg::before {
-    background-position: 0 0, var(--bg-align-tab, right) var(--bg-x-tab, 0px) bottom calc(var(--bg-y-tab, 0px) - var(--bg-y-offset, 0px));
-    background-size: cover, var(--bg-size-tab, cover);
-  }
-}
-
-@media screen and (min-width: 1100px) {
-  .sticky-content {
-    max-width: 1200px !important; /* 본문 확장 너비와 일치 */
-  }
   #content-display {
-    max-width: 1200px;
+    margin-top: 270px;
+  }
+}
+
+/* PC 전용 (1100px 이상) */
+@media screen and (min-width: 1100px) {
+  /* 랜딩 페이지가 아닐 때는 항상 그리드 2열 적용 */
+  body:not(.landing-page-active) #content-display {
+    max-width: 1200px !important;
     display: grid !important;
-    grid-template-columns: 1fr 420px;
-    gap: 0 30px;
-    align-items: start;
+    grid-template-columns: 1fr 420px !important;
+    gap: 0 30px !important;
+    align-items: start !important;
   }
+
+  /* 랜딩 페이지 전용 스타일 (단일 열) */
+  body.landing-page-active #content-display {
+    display: block !important;
+    max-width: 650px !important;
+    margin-top: 60px !important;
+  }
+
+  /* 이름 영역은 상단 전체 1열 차지 */
+  .char-header-row {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  /* 메인 컨텐츠 (스킬, 버프 등) */
+  .main-content-column {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  /* 사이드 컨텐츠 (슬라이더, 스탯 등) */
+  .side-content-column {
+    grid-column: 2;
+    grid-row: 2;
+    position: sticky;
+    top: 60px; /* 스크롤 시 스탯창 고정 효과 */
+  }
+
   #internal-char-bg::before {
-    max-width: 1200px; /* PC 박스 너비와 일치 */
-    /* PC 전용 배경 설정 적용 (하단 우선 + 오른쪽 정렬) */
-    background-position: 0 0, bottom calc(var(--bg-y-pc, 0px) - var(--bg-y-offset, 0px)) var(--bg-align-pc, right) var(--bg-x-pc, 0px);
-    background-size: cover, var(--bg-size-pc, cover);
+    max-width: 1200px;
   }
-  /* PC 배경 가로 위치 최적화 */
-  #content-display { --bg-x-pos: 80%; }
-  .main-content-column { grid-column: 1; grid-row: 2; }
-  .side-content-column { grid-column: 2; grid-row: 2; }
-  #content-display.hero-mode:has(#simulator-page[style*="display: block"]) {
-    grid-template-columns: 1fr !important; display: block !important;
-  }
-  .char-header-row { grid-column: 1 / -1; text-align: center; margin-bottom: 25px; }
 }
