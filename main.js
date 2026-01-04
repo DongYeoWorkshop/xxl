@@ -6,7 +6,7 @@ import { addAppliedBuff, removeAppliedBuff } from './buffs.js';
 import { state, constants } from './state.js';
 import { charData } from './data.js'; // 추가
 import { initLogic, updateStats, saveCurrentStats, updateCharacterListIndicators } from './logic.js';
-import { initHandlers, onExtraSliderChange, handleImageClick, setupDragScroll, setupBuffSearchListeners } from './handlers.js';
+import { initHandlers, onExtraSliderChange, handleImageClick, setupDragScroll, setupBuffSearchListeners, hideAllSections, forceMainHeader } from './handlers.js';
 import { initSecretModule, initCloudSharing } from './secret.js';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -41,11 +41,54 @@ document.addEventListener('DOMContentLoaded', function() {
     // [추가] 초기 로딩 시 랜딩 모드 활성화 (PC에서 1열 보기)
     if (!state.currentId) {
         document.getElementById('content-display').classList.add('landing-mode');
+        document.body.classList.add('landing-page-active');
+        
+        // 레이아웃 강제 초기화 (새로고침 시에도 버튼 클릭과 동일한 상태 보장)
+        hideAllSections();
+        const landingPage = document.getElementById('landing-page');
+        if (landingPage) landingPage.style.setProperty('display', 'block', 'important');
+        const mainCol = document.querySelector('.main-content-column');
+        if (mainCol) mainCol.style.setProperty('display', 'block', 'important');
+        forceMainHeader();
+
+        // 랜딩 페이지일 때 즐겨찾기 버튼 숨김
+        const favBtn = document.querySelector('#content-display .char-fav-btn');
+        if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
+    } else {
+        document.body.classList.add('sub-page-active');
     }
 
     initHandlers(dom, { updateStats, saveCurrentStats });
     initSecretModule(); // 비밀 모듈 초기화
     initCloudSharing(); // [추가] 클라우드 공유 모듈 초기화
+
+    // [추가] 랜딩 페이지 바로가기 버튼 이벤트
+    const landingRandomCharBtn = document.getElementById('landing-random-char-btn');
+    const landingHeroBtn = document.getElementById('landing-hero-btn');
+    const landingSimBtn = document.getElementById('landing-sim-btn');
+
+    if (landingRandomCharBtn) {
+        landingRandomCharBtn.onclick = () => {
+            const validChars = Object.keys(charData).filter(id => id !== 'hero' && id !== 'simulator' && id !== 'test_dummy');
+            if (validChars.length > 0) {
+                const randomId = validChars[Math.floor(Math.random() * validChars.length)];
+                const charImg = document.querySelector(`.main-image[data-id="${randomId}"]`);
+                if (charImg) handleImageClick(charImg);
+            }
+        };
+    }
+    if (landingHeroBtn) {
+        landingHeroBtn.onclick = () => {
+            const heroImg = document.querySelector('.main-image[data-id="hero"]');
+            if (heroImg) handleImageClick(heroImg);
+        };
+    }
+    if (landingSimBtn) {
+        landingSimBtn.onclick = () => {
+            const simImg = document.querySelector('.main-image[data-id="simulator"]');
+            if (simImg) handleImageClick(simImg);
+        };
+    }
 
     // 3. 이벤트 리스너 연결
 

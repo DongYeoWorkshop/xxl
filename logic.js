@@ -91,6 +91,22 @@ export function updateStats(level = parseInt(dom.sliderInput.value), skipBuffRen
     const data = charData[state.currentId];
     if (!data) return;
 
+    // [추가] 캐릭터 이름 및 정보 업데이트
+    const displayTitle = document.getElementById('display-title');
+    const infoDisplay = document.getElementById('info-display');
+    if (displayTitle && data.title) {
+        displayTitle.innerText = data.title;
+    }
+    if (infoDisplay && data.info) {
+        infoDisplay.style.setProperty('display', 'flex', 'important');
+        const attrName = constants.attributeList[data.info.속성];
+        const posImg = constants.positionImageMap[data.info.포지션];
+        infoDisplay.innerHTML = `
+            <img src="${constants.attributeImageMap[attrName]}" style="width: 36px; height: 36px;" title="${attrName} 속성">
+            <img src="${posImg}" style="width: 36px; height: 36px;" title="${data.info.포지션}">
+        `;
+    }
+
     if (!data.base) {
         renderHeroTab(dom, updateStats);
         return; 
@@ -224,25 +240,25 @@ function updateSubStatList(subStats) {
     const subWrapper = document.getElementById('sub-stats-wrapper');
     if (!subWrapper) return;
     subWrapper.innerHTML = ''; 
+    
     const subStatToggleHeader = document.createElement('div');
     subStatToggleHeader.className = 'sub-stat-toggle-header';
-    subStatToggleHeader.style.cssText = `width: 100px; margin: 15px auto 0; padding: 2px 5px; color: #888; cursor: pointer; font-weight: bold; font-size: 0.75em; display: flex; justify-content: center; align-items: center; gap: 4px;`;
     subStatToggleHeader.innerHTML = `<span>부가 스탯</span><span id="sub-stat-toggle-icon" style="font-size: 0.65em;">▼</span>`;
     subWrapper.appendChild(subStatToggleHeader);
+    
     const subStatsContainer = document.createElement('div');
-    subStatsContainer.style.cssText = `width: 100%; margin-bottom: 40px;`; 
+    subStatsContainer.className = 'sub-stats-container';
+    
     const subStatsList = document.createElement('ul');
     subStatsList.id = 'sub-stats-list';
-    subStatsList.className = 'stat-list';
-    subStatsList.style.marginTop = '5px';
-    const isDesktop = window.innerWidth >= 1100;
-    const isVisible = isDesktop || state.savedStats[state.currentId]?.subStatsListVisible === true;
-    subStatToggleHeader.style.display = isDesktop ? 'none' : 'flex';
-    subStatsContainer.style.display = isVisible ? 'block' : 'none';
+    
+    // 초기 표시 여부 설정
+    const isVisible = state.savedStats[state.currentId]?.subStatsListVisible === true;
+    if (isVisible) subStatsContainer.style.display = 'block';
     subStatToggleHeader.querySelector('span:last-child').textContent = isVisible ? '▲' : '▼';
+    
     subStatToggleHeader.addEventListener('click', () => {
-        if (window.innerWidth >= 1100) return;
-        const nowVisible = subStatsContainer.style.display === 'none';
+        const nowVisible = subStatsContainer.style.display !== 'block';
         subStatsContainer.style.display = nowVisible ? 'block' : 'none';
         subStatToggleHeader.querySelector('span:last-child').textContent = nowVisible ? '▲' : '▼';
         state.savedStats[state.currentId].subStatsListVisible = nowVisible;
@@ -252,8 +268,6 @@ function updateSubStatList(subStats) {
     const subStatDisplayNames = { "뎀증": "데미지 증가", "평타뎀증": "보통공격 효과", "필살기뎀증": "필살기 효과", "트리거뎀증": "발동 효과", "뎀증디버프": "데미지 디버프", "속성디버프": "속성 디버프", "공증": "공격력", "고정공증": "고정공격력", "기초공증": "기초공격력", "HP증가": "최대 HP", "기초HP증가": "기초 HP", "회복증가": "회복", "배리어증가": "배리어", "지속회복증가": "지속회복" };
     ["뎀증", "평타뎀증", "필살기뎀증", "트리거뎀증", "뎀증디버프", "속성디버프", "공증", "고정공증", "기초공증", "HP증가", "기초HP증가", "회복증가", "배리어증가", "지속회복증가"].forEach(cat => {
         const li = document.createElement('li');
-        if (isDesktop) li.style.cssText = `display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; gap: 4px; text-align: center;`;
-        else li.style.cssText = `display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 8px 10px;`;
         
         let val = subStats[cat] || 0;
         if (cat === "고정공증") {
@@ -264,8 +278,8 @@ function updateSubStatList(subStats) {
         }
 
         const displayName = subStatDisplayNames[cat] || cat;
-        if (isDesktop) li.innerHTML = `<span class="stat-label" style="font-size: 0.75em; font-weight: normal; color: #aaa;">${displayName}</span> <span style="font-size: 1.1em; font-weight: bold; color: #fff;">${val}${cat !== "고정공증" ? '%' : ''}</span>`;
-        else li.innerHTML = `<span class="stat-label" style="font-size: 0.82em; font-weight: normal; color: #aaa;">${displayName}</span> <span style="font-size: 1.1em; font-weight: bold; color: #fff;">${val}${cat !== "고정공증" ? '%' : ''}</span>`;
+        li.innerHTML = `<span class="stat-label" style="font-size: 0.75em; font-weight: normal; color: #aaa;">${displayName}</span> <span style="font-size: 1.1em; font-weight: bold; color: #fff;">${val}${cat !== "고정공증" ? '%' : ''}</span>`;
+        
         const tooltipText = subStatDescriptions[cat];
         if (tooltipText) {
             li.addEventListener('mouseenter', () => { if (!('ontouchstart' in window) && (navigator.maxTouchPoints <= 0)) { const tooltipControl = showSimpleTooltip(li, tooltipText); li.addEventListener('mouseleave', tooltipControl.onMouseLeave); } });

@@ -85,7 +85,7 @@ function renderAxisLabels(axisData, yMax, type = 'dist') {
         if (grid) grid.innerHTML = axisData.y.map(val => val === 0 ? '' : `<div style="position:absolute;bottom:${(val/yMax)*100}%;width:100%;border-top:1px dashed #e0e0e0;"></div>`).join('');
     }
     if (xAxis) {
-        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:220px;border-left:1px dashed #f0f0f0;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
+        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:var(--sim-grid-height, 220px);border-left:1px dashed #f0f0f0;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
     }
 }
 
@@ -410,12 +410,30 @@ function renderActionButtons(charId, result, stats) {
     addBtn.onclick = () => {
         const recs = []; let lastT = 0;
         result.closestLogs.forEach(log => {
-            const m = log.match(/^(\d+)턴:/); if (m && parseInt(m[1]) > lastT) { recs.push({ isTurnSeparator: true, turnNumber: (lastT = parseInt(m[1])) }); }
-            const typeM = log.match(/\[(.*?)\]/), 
-                  nameM = log.match(/\]\s+(.*?):\s*\+/), 
-                  dmgM = log.match(/\+([\d,]+)/);
-            if (dmgM) recs.push({ name: (nameM ? nameM[1].trim() : "스킬").replace(/\[전의:\d+\]/g, ""), damage: dmgM[1], type: (typeM ? typeM[1] : "기타"), count: 1, isTurnSeparator: false });
-            else if (log.includes('[방어]')) recs.push({ name: "방어", damage: "0", type: "방어", count: 1, isTurnSeparator: false });
+            // 새 구분선에서 턴 번호 추출 (data-turn="N")
+            const m = log.match(/data-turn="(\d+)"/); 
+            if (m && parseInt(m[1]) > lastT) { 
+                recs.push({ isTurnSeparator: true, turnNumber: (lastT = parseInt(m[1])) }); 
+                return; // 구분선 자체는 데미지 레코드가 아니므로 건너뜀
+            }
+
+            // [수정] HTML 태그 제거 후 텍스트 기반으로 정확하게 파싱
+            const text = log.replace(/<[^>]*>?/gm, '');
+            const typeM = text.match(/\[(.*?)\]/), 
+                  nameM = text.match(/\]\s+(.*?):\s*\+/), 
+                  dmgM = text.match(/\+([\d,]+)/);
+
+            if (dmgM) {
+                recs.push({ 
+                    name: (nameM ? nameM[1].trim() : "스킬").replace(/\[전의:\d+\]/g, ""), 
+                    damage: dmgM[1], 
+                    type: (typeM ? typeM[1] : "기타"), 
+                    count: 1, 
+                    isTurnSeparator: false 
+                });
+            } else if (text.includes('[방어]')) {
+                recs.push({ name: "방어", damage: "0", type: "방어", count: 1, isTurnSeparator: false });
+            }
         });
         state.comparisonSnapshots.push({ id: Date.now(), charId, timestamp: new Date().toISOString(), totalDamage: result.closestTotal, records: recs, stats: { lv: stats.lv || 1, s1: parseInt(stats.s1 || 0), s2: parseInt(stats.s2 || 0) } });
         import('./storage.js').then(mod => mod.saveSnapshots(state.comparisonSnapshots));

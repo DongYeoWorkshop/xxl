@@ -74,7 +74,7 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                         <div id="sim-action-list" style="display:flex;flex-direction:column;gap:5px;"></div>
                     </div>
                     <label style="display:block;font-size:0.85em;font-weight:bold;color:#555;margin-bottom:8px;">시뮬레이션 횟수</label>
-                    <select id="sim-iterations" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;background:#f9f9f9;font-weight:bold;">
+                    <select id="sim-iterations" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;background:#f9f9f9;font-weight:bold;position:relative;z-index:10;">
                         <option value="30" ${savedIters==="30"?'selected':''}>30회</option>
                         <option value="100" ${savedIters==="100"?'selected':''}>100회</option>
                         <option value="500" ${savedIters==="500"?'selected':''}>500회</option>

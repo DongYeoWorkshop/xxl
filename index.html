@@ -72,9 +72,10 @@
 </div>
 
 <div id="content-display">
+  <button class="char-fav-btn">☆</button>
   <div id="internal-char-bg"></div>
   <!-- 상단 캐릭터 핵심 정보 (1열 고정) -->
-  <div class="char-header-row">
+  <div class="char-header-row" style="margin-top: 10px !important;">
     <h2 id="display-title"></h2>
     <div id="info-display" style="display: none; margin-top: 5px; margin-bottom: 15px; font-size: 0.95em; color: #666; justify-content: center; align-items: center; gap: 20px;">
       <!-- 속성 and 포지션 will go here -->
@@ -167,65 +168,96 @@
   <!-- 왼쪽 컬럼 (스킬 정보/버프) : 모바일에서는 하단 배치 -->
   <div class="main-content-column">
     <!-- 초기 랜딩 페이지 -->
-    <div id="landing-page" class="hero-dashboard" style="text-align: center; display: block;">
-        <h2 class="landing-title" style="margin-top: 20px; color: #ffa500; padding-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <div id="landing-page" class="hero-dashboard" style="text-align: center; display: block; position: relative; padding-bottom: 20px;">
+        <!-- 절대로 사라지지 않는 물리적 여백 기둥 -->
+        <div style="height: 90px; width: 100%; display: block !important;"></div>
+        
+        <h2 class="landing-title" style="color: #ffa500; padding-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px;">
             <img src="icon/main.png" style="width: 32px; height: 32px; vertical-align: middle;">
             동여성 공방
         </h2>
-        <div style="background: #fff5e6; border: 1px solid #eee0d0; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(255, 165, 0, 0.05); text-align: left;">
-            <p style="white-space: pre-wrap; line-height: 1.7; color: #333; margin: 0;">[주요 기능]
-<span class="landing-desc-list">1. 상단 캐릭터 목록에서 분석할 대상을 선택하세요.
-2. 레벨과 돌파, 적합도를 지정해 스탯을 조절할 수 있습니다.
-3. 스킬 레벨, 자가버프의 토글 등을 조절할 수 있습니다.
-3. 스킬 아이콘을 클릭해 각 스킬의 데미지를 확인하세요.
-4. '+' 버튼으로 스킬의 데미지를 기록해 합산할 수 있습니다.
-5. 적용 버프 섹션에서 다른 캐릭터와의 시너지를 확인해보세요.
-6. "근태"탭에서 저장한 딜표로 딜량을 비교할 수 있습니다.</span></p>
-        </div>
 
-        <!-- 데이터 클라우드 공유 섹션 -->
-        <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; border-left: 4px solid #007bff; margin-bottom: 20px; text-align: left;">
-            <h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95em;">계산기 설정 공유</h4>
-            <p style="font-size: 0.85em; color: #666; margin: 0 0 12px 0; line-height: 1.4;">
-                현재 스탯과 딜표를 코드로 변환하여 공유할 수 있습니다.
-            </p>
+        <!-- 바로가기 버튼 섹션 (전체 통합 리스트) -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; align-items: center;">
             
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <button id="cloud-save-btn" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9em;">
-                    코드 발급
+            <!-- Random Character Row -->
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
+                <button id="landing-random-char-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(40, 167, 69, 0.15); color: #74c67a; border: 1px solid #28a745; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0;">
+                    <img src="icon/attacker.webp" style="width: 22px; height: 22px; filter: drop-shadow(0 0 5px rgba(40, 167, 69, 0.5));">
+                    <span style="font-size: 0.75em;">캐릭터</span>
                 </button>
+                <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
+                    랜덤한 캐릭터의 상세 정보를<br>확인하고 스탯을 조절합니다.
+                </div>
             </div>
 
-            <div style="display: flex; gap: 6px;">
-                <input type="text" id="cloud-load-id" placeholder="코드 8자리" style="flex: 1; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; outline: none; color: #333; background: #fff;">
-                <button id="cloud-load-btn" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9em;">
-                    불러오기
+            <!-- Hero Row -->
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
+                <button id="landing-hero-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(111, 66, 193, 0.2); color: #c3a6ff; border: 1px solid #6f42c1; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0;">
+                    <img src="icon/compe.png" style="width: 22px; height: 22px; filter: drop-shadow(0 0 5px rgba(111, 66, 193, 0.5));">
+                    <span style="font-size: 0.75em;">딜량 비교</span>
                 </button>
+                <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
+                    저장한 캐릭터들의 딜표를<br>한눈에 비교하고 분석합니다.
+                </div>
             </div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
-            <div style="background: #f8f9fa; border-radius: 6px; padding: 10px; border-left: 4px solid #007bff;">
-                <div style="font-size: 0.75em; color: #888; margin-bottom: 3px;">최근 업데이트</div>
-                <div style="font-weight: bold; font-size: 0.9em; color: #333;">2025-12-31</div>
+
+            <!-- Sim Row -->
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
+                <button id="landing-sim-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(111, 66, 193, 0.2); color: #c3a6ff; border: 1px solid #6f42c1; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0;">
+                    <img src="icon/simul.png" style="width: 22px; height: 22px; filter: drop-shadow(0 0 5px rgba(111, 66, 193, 0.5));">
+                    <span style="font-size: 0.75em;">시뮬레이터</span>
+                </button>
+                <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
+                    행동 패턴을 직접 설정하여<br>기대 딜량을 분석합니다.
+                </div>
             </div>
-            <div id="landing-report-btn" style="background: #f8f9fa; border-radius: 6px; padding: 10px; border-left: 4px solid #ffa500; cursor: pointer; transition: background 0.2s;">
-                <div style="font-size: 0.75em; color: #888; margin-bottom: 3px;">버그 제보 및 건의</div>
-                <div style="font-weight: bold; font-size: 0.9em; color: #333;">문의하기 📝</div>
+
+            <!-- Cloud Save Row -->
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
+                <button id="landing-cloud-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(0, 123, 255, 0.15); border: 1px solid #007bff; border-radius: 10px; color: #007bff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0; font-family: inherit;">
+                    <span style="font-size: 1.5em;">💾</span>
+                    <span style="font-size: 0.75em; font-weight: bold;">설정 저장</span>
+                </button>
+                <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
+                    현재 스탯과 기록을 코드로<br>저장하거나 불러올 수 있습니다.
+                </div>
             </div>
+
+            <!-- Update & Report Row -->
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
+                <div id="landing-report-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(255, 165, 0, 0.15); border: 1px solid #ffa500; border-radius: 10px; color: #ffa500; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0;">
+                    <span style="font-size: 1.5em;">📝</span>
+                    <span style="font-size: 0.75em; font-weight: bold;">문의하기</span>
+                </div>
+                <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
+                    버그 제보나 건의 사항을<br>개발자에게 직접 전달합니다.
+                </div>
+            </div>
+
+            <!-- Reset Row -->
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
+                <button id="landing-reset-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; border-radius: 10px; color: #dc3545; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0; font-family: inherit;">
+                    <span style="font-size: 1.5em;">⚙️</span>
+                    <span style="font-size: 0.75em; font-weight: bold;">초기화</span>
+                </button>
+                <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
+                    모든 캐릭터 스탯과 기록을<br>완전히 삭제하고 초기화합니다.
+                </div>
+            </div>
+
         </div>
 
-        <div style="margin-top: 30px; padding: 10px; background: #2a2a2a; border: 1px solid #444; border-radius: 8px;">
-            <button id="landing-reset-btn" style="width: 100%; padding: 8px; background: none; border: none; color: #dc3545; font-size: 0.85em; font-weight: bold; cursor: pointer;">
-                ⚙️ 전체 데이터 및 캐시 초기화
-            </button>
+        <div style="position: absolute; bottom: -35px; right: 10px;">
+            <span style="font-size: 0.6em; color: #888; margin-right: 3px;">최근 업데이트</span>
+            <span style="font-weight: bold; font-size: 0.7em; color: #aaa;">2025-12-31</span>
         </div>
     </div>
 
     <!-- 시뮬레이터 페이지 영역 -->
-    <div id="simulator-page" style="display: none; text-align: left; margin-top: -30px; width: 100%;">
-        <div style="margin-bottom: 5px; transform: translateY(-15px);">
-            <div style="background: #262c36; color: #c3a6ff; font-size: 0.75em; font-weight: bold; padding: 6px 16px; border-radius: 8px 8px 0 0; border: 1px solid #333; border-bottom: none; display: inline-block; box-shadow: 0 -3px 6px rgba(0,0,0,0.3);">캐릭터 시뮬레이터</div>
+    <div id="simulator-page" style="display: none; text-align: left; margin-top: 0; width: 100%;">
+        <div class="hero-tab-tag">
+            <div class="hero-tag-content">캐릭터 시뮬레이터</div>
         </div>
         <div class="hero-graph-container" style="background: #fffbf5; border: 1px solid #eee0d0; border-radius: 8px; padding: 20px; color: #333; box-shadow: 0 4px 15px rgba(111, 66, 193, 0.1); margin-top: 0;">
             <div id="simulator-content"></div>
@@ -280,6 +312,38 @@
 </div>
 
 <!-- ▼▼▼ 외부 데이터 파일 로드 ▼▼▼ -->
+
+<!-- 설정 저장 모달 -->
+<div id="cloud-save-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; color: #333;">💾 설정 저장 및 불러오기</h3>
+        <p style="font-size: 0.85em; color: #666; margin-bottom: 15px; line-height: 1.4;">현재 설정된 스탯과 딜표를 서버에 저장하여 코드를 발급받거나, 발급받은 코드로 데이터를 복원할 수 있습니다.</p>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button id="cloud-save-btn" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em;">
+                현재 설정으로 코드 발급
+            </button>
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+            <input type="text" id="cloud-load-id" placeholder="코드 8자리 숫자" style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em; outline: none; color: #333; background: #fff;">
+            <button id="cloud-load-btn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em;">
+                불러오기
+            </button>
+        </div>
+
+        <!-- 발급된 코드 표시 영역 -->
+        <div id="cloud-issued-code-area" style="display: none; background: #f0f7ff; border: 1px dashed #007bff; border-radius: 6px; padding: 10px; text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 0.75em; color: #666; margin-bottom: 4px;">발급된 공유 코드</div>
+            <div id="cloud-issued-code-val" style="font-family: monospace; font-size: 1.4em; font-weight: bold; color: #007bff; letter-spacing: 2px;">00000000</div>
+            <div style="font-size: 0.7em; color: #888; margin-top: 4px;">위 코드를 복사하여 공유하세요.</div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+            <button id="cloud-modal-close-btn" style="padding: 8px 16px; background: #eee; border: none; border-radius: 4px; cursor: pointer;">닫기</button>
+        </div>
+    </div>
+</div>
 
 <!-- 이용자 제보 플로팅 버튼 -->
 <button id="report-open-btn" title="버그 제보 및 문의" style="position: fixed; bottom: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; background: #ffa500; color: white; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 999; display: flex; align-items: center; justify-content: center;">📝</button>

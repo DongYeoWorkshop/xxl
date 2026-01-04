@@ -1,4 +1,4 @@
-// handlers.js
+// handlers.js (가장 안정적이었던 로직으로 수동 복구)
 import { state, constants } from './state.js';
 import { charData } from './data.js';
 import { updateSkillStatesByBreakthrough } from './breakthrough.js';
@@ -8,7 +8,6 @@ import { addAppliedBuff, removeAppliedBuff } from './buffs.js';
 import { getDynamicDesc } from './formatter.js';
 import { updateSkillDetailDisplay, renderGlobalTargetControl, renderSkillIconList, renderCustomControls } from './detail-view.js';
 import { renderDamageRecords } from './records.js';
-
 import { backgroundConfigs } from './background-configs.js';
 
 let dom = {};
@@ -20,7 +19,6 @@ export function initHandlers(domElements, logicFunctions) {
     setupSortListeners();
     setupHeaderListeners();
 
-    // 사용자가 직접 스크롤할 때 실시간 저장 (새로고침 대응)
     window.addEventListener('scroll', () => {
         if (state.currentId) {
             localStorage.setItem(`scroll_pos_${state.currentId}`, window.scrollY);
@@ -77,7 +75,6 @@ export function onExtraSliderChange() {
 }
 
 function setupHeaderListeners() {
-    // [추가] 헤더 아이콘 클릭 시 Hero/시뮬레이터 전환
     const toggleIcon = document.getElementById('header-toggle-icon');
     if (toggleIcon) {
         toggleIcon.onclick = () => {
@@ -96,20 +93,26 @@ function setupHeaderListeners() {
         headerTitle.onclick = () => {
             state.currentId = null;
             localStorage.removeItem('lastSelectedCharId');
+            window.scrollTo(0, 0);
+
+            document.body.classList.add('landing-page-active');
+            document.body.classList.remove('sub-page-active');
+            
             const contentDisplay = document.getElementById('content-display');
             if (contentDisplay) { 
-                contentDisplay.classList.remove('hero-mode'); 
-                contentDisplay.classList.add('landing-mode'); 
-                contentDisplay.style.backgroundImage = ''; // 배경 제거
+                contentDisplay.className = 'landing-mode'; 
             }
+
             hideAllSections();
-            document.getElementById('landing-page').style.display = 'block';
-            document.querySelector('.main-content-column').style.display = 'block';
+            const landingPage = document.getElementById('landing-page');
+            if (landingPage) landingPage.style.setProperty('display', 'block', 'important');
+            const mainCol = document.querySelector('.main-content-column');
+            if (mainCol) mainCol.style.setProperty('display', 'block', 'important');
+            
             import('./hero-tab.js').then(mod => mod.clearHeroTabRemnants());
             document.querySelector('.main-image.selected')?.classList.remove('selected');
             forceMainHeader();
             logic.updateStats();
-            window.scrollTo(0, 0);
         };
     }
     const stickyName = document.getElementById('sticky-name');
@@ -121,7 +124,10 @@ function setupHeaderListeners() {
         };
     }
     const stickyAttr = document.getElementById('sticky-attr');
-    if (stickyAttr) stickyAttr.onclick = () => { const heroImg = document.querySelector('.main-image[data-id="hero"]'); if (heroImg) handleImageClick(heroImg); };
+    if (stickyAttr) stickyAttr.onclick = () => {
+        const headerTitle = document.getElementById('sticky-header-title');
+        if (headerTitle) headerTitle.click();
+    };
     document.getElementById('sticky-lv')?.addEventListener('click', () => cycleValue(dom.sliderInput, 1, 60, 5));
     document.getElementById('sticky-br')?.addEventListener('click', () => cycleThresholds(dom.extraSlider1, [0, 5, 15, 30, 50, 75]));
     document.getElementById('sticky-fit')?.addEventListener('click', () => cycleValue(dom.extraSlider2, 0, 5, 1));
@@ -129,7 +135,7 @@ function setupHeaderListeners() {
     document.getElementById('br-down-btn')?.addEventListener('click', () => adjustSlider(dom.extraSlider1, -1, 75));
 }
 
-function forceMainHeader() {
+export function forceMainHeader() {
     const headerTitle = document.getElementById('sticky-header-title');
     const toggleIcon = document.getElementById('header-toggle-icon');
     if (toggleIcon) { toggleIcon.style.setProperty('display', 'block', 'important'); }
@@ -137,7 +143,7 @@ function forceMainHeader() {
     ['sticky-name', 'sticky-attr', 'sticky-lv', 'sticky-br', 'sticky-fit'].forEach(id => { const el = document.getElementById(id); if (el) { el.style.setProperty('display', 'none', 'important'); el.innerText = ''; } });
 }
 
-function hideAllSections() {
+export function hideAllSections() {
     const ids = ['landing-page', 'simulator-page', 'new-section-area', 'buff-application-area', 'skill-container', 'calc-and-stats-row', 'sub-stats-wrapper', 'info-display'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.setProperty('display', 'none', 'important'); });
     const mainCol = document.querySelector('.main-content-column');
@@ -146,199 +152,159 @@ function hideAllSections() {
     if (sideCol) sideCol.style.setProperty('display', 'none', 'important');
     const charHeader = document.querySelector('.char-header-row');
     if (charHeader) charHeader.style.setProperty('display', 'none', 'important');
+
+    // [추가] 캐릭터 전용 UI 요소 초기화
+    const favBtn = document.querySelector('.char-fav-btn');
+    if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
+
+    const contentDisplay = document.getElementById('content-display');
+    if (contentDisplay) {
+        contentDisplay.style.removeProperty('display'); // [추가] 인라인 display 스타일 제거 (그리드 복구용)
+        contentDisplay.style.setProperty('--bg-url', 'none');
+        contentDisplay.style.removeProperty('--bg-align-mob');
+        contentDisplay.style.removeProperty('--bg-x-mob');
+        contentDisplay.style.removeProperty('--bg-y-mob');
+        contentDisplay.style.removeProperty('--bg-size-mob');
+    }
 }
 
 export function handleImageClick(img) {
     const id = img.dataset.id;
     if (!id) return;
-    
-    // 1. 떠나기 전 현재 위치 저장 (캐릭터 탭만 유지하고 싶을 경우 대비)
-    if (state.currentId && state.currentId !== 'simulator') {
-        localStorage.setItem(`scroll_pos_${state.currentId}`, window.scrollY);
-    }
-
-    // 2. 화면 즉시 초기화 (연동 차단 및 시뮬레이터 상단 시작 보장)
     window.scrollTo(0, 0);
-
+    
+    // [보강] 모든 페이지 상태 클래스 초기화 후 현재 상태 적용
+    document.body.classList.remove('landing-page-active', 'hero-mode-active');
+    document.body.classList.add('sub-page-active');
+    
     document.querySelector('.main-image.selected')?.classList.remove('selected');
     img.classList.add('selected');
     img.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    
     state.currentId = id;
-    document.body.setAttribute('data-current-char', id); // 바디에 캐릭터 ID 기록
     const contentDisplay = document.getElementById('content-display');
-    if (contentDisplay) {
-        contentDisplay.setAttribute('data-char-id', id);
-    }
+    if (contentDisplay) { contentDisplay.setAttribute('data-char-id', id); }
     hideAllSections();
 
     if (id === 'hero') {
-        if (contentDisplay) {
-            contentDisplay.style.backgroundImage = ''; // 배경 제거
-            // [추가] 비교탭에서도 즐겨찾기 버튼 숨김
-            const favBtn = contentDisplay.querySelector('.char-fav-btn');
-            if (favBtn) favBtn.style.display = 'none';
-        }
         contentDisplay.className = 'hero-mode'; 
+        document.body.classList.add('hero-mode-active'); // 히어로 모드 클래스 추가
         forceMainHeader();
-        import('./hero-tab.js').then(mod => {
-            mod.clearHeroTabRemnants();
-            mod.renderHeroTab(dom, logic.updateStats);
-            // Hero 탭도 필요시 저장된 위치로 가되, 지연 없이 즉시 시도
-            const saved = localStorage.getItem('scroll_pos_hero');
-            if (saved) window.scrollTo(0, parseInt(saved));
-        });
+        import('./hero-tab.js').then(mod => { mod.clearHeroTabRemnants(); mod.renderHeroTab(dom, logic.updateStats); });
     } else if (id === 'simulator') {
-        if (contentDisplay) {
-            contentDisplay.style.backgroundImage = ''; // 배경 제거
-            const favBtn = contentDisplay.querySelector('.char-fav-btn');
-            if (favBtn) favBtn.classList.remove('active'); // 별 아이콘 초기화
-            // [추가] 시뮬레이터에서는 즐겨찾기 버튼 숨김
-            if (favBtn) favBtn.style.display = 'none';
-        }
         contentDisplay.className = 'hero-mode';
+        document.body.classList.add('hero-mode-active'); // 시뮬레이터도 히어로 모드 취급
         document.querySelector('.main-content-column').style.setProperty('display', 'block', 'important');
         document.getElementById('simulator-page').style.setProperty('display', 'block', 'important');
         forceMainHeader();
         import('./hero-tab.js').then(mod => mod.clearHeroTabRemnants());
-        import('./simulator.js').then(mod => {
-            mod.initSimulator();
-            // 시뮬레이터는 무조건 0에서 시작 (추가 조치 없음)
-            window.scrollTo(0, 0);
-        });
+        import('./simulator.js').then(mod => mod.initSimulator());
     } else {
         contentDisplay.className = '';
-        contentDisplay.style.display = '';
-        contentDisplay.style.width = '';
         const charHeader = document.querySelector('.char-header-row');
-        if (charHeader) charHeader.style.display = 'block';
+        if (charHeader) charHeader.style.setProperty('display', 'block', 'important');
+        
         const mainCol = document.querySelector('.main-content-column');
         const sideCol = document.querySelector('.side-content-column');
-        if (mainCol) { mainCol.style.display = 'block'; mainCol.style.width = ''; }
-        if (sideCol) sideCol.style.display = 'block';
-
+        if (mainCol) mainCol.style.setProperty('display', 'block', 'important');
+        if (sideCol) sideCol.style.setProperty('display', 'block', 'important');
+        
         const show = (target, type = 'block') => { const el = document.getElementById(target); if (el) el.style.setProperty('display', type, 'important'); };
         ['new-section-area', 'buff-application-area', 'info-display', 'calc-area', 'bonus-sliders', 'sub-stats-wrapper'].forEach(s => show(s));
-        show('skill-container', 'grid'); show('calc-and-stats-row', 'flex');
         
         const data = charData[id], saved = state.savedStats[id] || {};
+
+        // 상세 정보 영역 기본 뼈대 주입
+        if (dom.newSectionArea) {
+            const initialIdx = saved.lastSelectedSkillIndex;
+            
+            dom.newSectionArea.innerHTML = `
+                <div class="skill-detail-display">
+                    ${initialIdx === undefined ? `
+                        <div class="skill-detail-tab-tag">
+                            <div class="skill-detail-tab-content">스킬 데미지 계산</div>
+                        </div>
+                        <div style="text-align:center; padding: 30px 20px; color: #aaa; font-size: 0.85em; font-weight: bold;">
+                            <img src="icon/main.png" style="width: 24px; opacity: 0.3; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;">
+                            분석할 스킬 아이콘을 클릭하세요
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="icon-list-row">
+                    <div class="detail-icon-list"></div>
+                    <div class="controls-wrapper">
+                        <div id="global-target-control"></div>
+                        <div id="custom-controls-container" style="display: flex; gap: 10px;"></div>
+                    </div>
+                </div>
+            `;
+            
+            // 저장된 기록이 있을 때만 즉시 렌더링
+            if (initialIdx !== undefined && data.skills && data.skills[initialIdx]) {
+                state.selectedSkillIndex = initialIdx;
+                state.selectedIsExternal = false;
+                updateSkillDetailDisplay(data.skills[initialIdx], initialIdx, dom, logic);
+            } else {
+                state.selectedSkillIndex = null;
+                state.selectedIsExternal = false;
+            }
+        }
+
+        if (charHeader) {
+            const infoDisplay = document.getElementById('info-display');
+            if (infoDisplay) infoDisplay.style.setProperty('display', 'flex', 'important');
+        }
+
+        show('skill-container', 'grid'); show('calc-and-stats-row', 'flex');
         
-        // [추가] 배경 이미지 적용 헬퍼 함수
         const applyBackground = (charId, favStatus) => {
             if (!contentDisplay) return;
-
             if (favStatus) {
-                // 기본값과 캐릭터 설정을 병합 (캐릭터 설정에 없으면 기본값 사용)
-                const def = backgroundConfigs["default"];
-                const spec = backgroundConfigs[charId] || {};
+                const def = backgroundConfigs["default"], spec = backgroundConfigs[charId] || {};
+                const config = { 
+                    mobile: { ...def.mobile, ...(spec.mobile || {}) }, 
+                    tablet: { ...def.tablet, ...(spec.tablet || {}) }, 
+                    pc: { ...def.pc, ...(spec.pc || {}) } 
+                };
+                contentDisplay.style.setProperty('--bg-url', `url('../images/background/${charId}.PNG')`);
                 
-                const config = {
-                    mobile: { ...def.mobile, ...(spec.mobile || {}) },
-                    tablet: { ...def.tablet, ...(spec.tablet || {}) },
-                    pc:     { ...def.pc,     ...(spec.pc || {})     }
-                };
-
-                const imgUrl = `url('../images/background/${charId}.PNG')`;
+                // 모바일 변수
+                contentDisplay.style.setProperty('--bg-x-mob', config.mobile.xPos);
+                contentDisplay.style.setProperty('--bg-y-mob', config.mobile.yPos);
+                contentDisplay.style.setProperty('--bg-size-mob', config.mobile.size);
                 
-                const tempImg = new Image();
-                tempImg.onload = () => { 
-                    contentDisplay.style.setProperty('--bg-url', imgUrl);
-                    
-                    // 모바일/공통 설정 주입
-                    contentDisplay.style.setProperty('--bg-align-mob', config.mobile.align);
-                    contentDisplay.style.setProperty('--bg-x-mob', config.mobile.xPos);
-                    contentDisplay.style.setProperty('--bg-y-mob', config.mobile.yPos);
-                    contentDisplay.style.setProperty('--bg-size-mob', config.mobile.size);
-                    
-                    // 태블릿 설정 주입
-                    contentDisplay.style.setProperty('--bg-align-tab', config.tablet.align);
-                    contentDisplay.style.setProperty('--bg-x-tab', config.tablet.xPos);
-                    contentDisplay.style.setProperty('--bg-y-tab', config.tablet.yPos);
-                    contentDisplay.style.setProperty('--bg-size-tab', config.tablet.size);
-                    
-                    // PC 설정 주입
-                    contentDisplay.style.setProperty('--bg-align-pc', config.pc.align);
-                    contentDisplay.style.setProperty('--bg-x-pc', config.pc.xPos);
-                    contentDisplay.style.setProperty('--bg-y-pc', config.pc.yPos);
-                    contentDisplay.style.setProperty('--bg-size-pc', config.pc.size);
-                };
-                tempImg.onerror = () => { 
-                    contentDisplay.style.setProperty('--bg-url', 'none'); 
-                };
-                tempImg.src = `images/background/${charId}.PNG`;
-            } else {
-                contentDisplay.style.setProperty('--bg-url', 'none');
+                // 태블릿 변수
+                contentDisplay.style.setProperty('--bg-x-tab', config.tablet.xPos);
+                contentDisplay.style.setProperty('--bg-y-tab', config.tablet.yPos);
+                contentDisplay.style.setProperty('--bg-size-tab', config.tablet.size);
+                
+                // PC 변수
+                contentDisplay.style.setProperty('--bg-x-pc', config.pc.xPos);
+                contentDisplay.style.setProperty('--bg-y-pc', config.pc.yPos);
+                contentDisplay.style.setProperty('--bg-size-pc', config.pc.size);
+            } else { 
+                contentDisplay.style.setProperty('--bg-url', 'none'); 
             }
         };
 
-        // [추가] 캐릭터 선택 시 기본 타겟 속성을 본인 속성으로 맞춤 (무상성 기준)
-        if (data.info && data.info.속성 !== undefined) {
-            state.currentDisplayedAttribute = constants.attributeList[data.info.속성];
-        }
-
-        // UI 갱신 로직...
-        if (dom.titleArea) {
+        if (data.info && data.info.속성 !== undefined) state.currentDisplayedAttribute = constants.attributeList[data.info.속성];
+        
+        const favBtn = document.querySelector('#content-display .char-fav-btn');
+        if (favBtn) {
             const isFav = saved.isFavorite || false;
-            const isSimDisabled = constants.disabledSimChars.includes(id);
-            
-            // 시뮬레이터 바로가기 버튼 (왼쪽 상단)
-            const simBtnHtml = `<button class="sim-shortcut-btn" ${isSimDisabled ? 'disabled' : ''} title="${isSimDisabled ? '시뮬레이터 미지원' : '이 캐릭터의 시뮬레이터로 이동'}">⚡</button>`;
-            
-            // 제목은 이름만 표시 (가운데 정렬 유지)
-            dom.titleArea.innerHTML = `${simBtnHtml} <span>${data.title}</span>`;
-            
-            // 초기 배경 적용
-            applyBackground(id, isFav);
-
-            // 즐겨찾기 버튼은 별도로 생성하여 맨 뒤(오른쪽 끝)에 배치되도록 함
-            let favBtn = contentDisplay.querySelector('.char-fav-btn');
-            if (!favBtn) {
-                favBtn = document.createElement('button');
-                favBtn.className = 'char-fav-btn';
-                contentDisplay.appendChild(favBtn);
-            }
-            favBtn.style.display = ''; // [수정] 시뮬레이터에서 숨겨진 버튼 다시 보이기
+            favBtn.style.display = 'flex';
             favBtn.className = `char-fav-btn ${isFav ? 'active' : ''}`;
             favBtn.innerText = isFav ? '★' : '☆';
-
-            const currentIdForFav = id;
             favBtn.onclick = (e) => {
                 e.stopPropagation();
                 const nowFav = !favBtn.classList.contains('active');
                 favBtn.classList.toggle('active', nowFav);
                 favBtn.innerText = nowFav ? '★' : '☆';
-                if (!state.savedStats[currentIdForFav]) state.savedStats[currentIdForFav] = {};
-                state.savedStats[currentIdForFav].isFavorite = nowFav;
-                
-                // [추가] 별 누르는 즉시 배경 토글
-                applyBackground(currentIdForFav, nowFav);
-                
+                if (!state.savedStats[id]) state.savedStats[id] = {};
+                state.savedStats[id].isFavorite = nowFav;
+                applyBackground(id, nowFav);
                 logic.saveCurrentStats();
             };
-
-            const simBtn = dom.titleArea.querySelector('.sim-shortcut-btn');
-            if (simBtn && !isSimDisabled) {
-                simBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    localStorage.setItem('sim_last_char_id', id);
-                    const simNavBtn = document.getElementById('nav-simulator-btn');
-                    if (simNavBtn) handleImageClick(simNavBtn);
-                };
-            }
-        }
-
-        const infoDisplay = document.getElementById('info-display');
-        if (infoDisplay && data.info) {
-            infoDisplay.innerHTML = '';
-            Object.entries(data.info).forEach(([k, v]) => {
-                const s = document.createElement('span');
-                // [수정] 아이콘 간 확실한 간격을 위해 마진 추가
-                s.style.margin = '0 10px'; 
-                if (k === "속성") s.innerHTML = `<img src="${constants.attributeImageMap[constants.attributeList[v]]}" style="width:40px;height:40px;">`;
-                else if (k === "포지션") s.innerHTML = `<img src="${constants.positionImageMap[v]}" style="width:40px;height:40px;">`;
-                else s.innerHTML = `<b>${k}:</b> ${v}`;
-                infoDisplay.appendChild(s);
-            });
+            applyBackground(id, isFav);
         }
 
         dom.sliderInput.value = saved.lv || 1; dom.extraSlider1.value = saved.s1 || 0; dom.extraSlider2.value = saved.s2 || 0;
@@ -351,26 +317,17 @@ export function handleImageClick(img) {
                 saved.appliedBuffs[bId].forEach(sb => { const ex = state.appliedBuffs[bId].find(b => b.skillId === sb.skillId); if (ex) Object.assign(ex, sb); else state.appliedBuffs[bId].push({ ...sb }); });
             }
         }
-        
         renderSkills(id, charData, state.savedStats, state.currentSkillLevels, dom.skillContainer, logic.updateStats, logic.saveCurrentStats, dom.sliderInput);
-        setupInitialNewSection(id, data, saved.s1 || 0);
         onExtraSliderChange(); logic.updateStats();
-        
-        // 캐릭터 탭은 저장된 위치로 즉시 이동
-        const savedScroll = localStorage.getItem(`scroll_pos_${id}`);
-        if (savedScroll) window.scrollTo(0, parseInt(savedScroll));
     }
     logic.saveCurrentStats();
 }
 
-function setupInitialNewSection(id, data, brVal) {
-    dom.newSectionArea.innerHTML = `<div class="skill-detail-display"><div class="skill-detail-tab-tag"><div class="skill-detail-tab-content">스킬 데미지 계산</div></div><p style="margin:0; color:#888; font-size:0.85em; text-align:center; padding:20px 0;">아이콘을 클릭하여 상세 정보를 확인하세요.</p></div><div class="icon-list-row"><div class="detail-icon-list"></div><div class="controls-wrapper"><div id="custom-controls-container" style="display: flex; gap: 8px; align-items: flex-end;"></div><div id="global-target-control"></div></div></div>`;
-    renderSkillIconList(id, brVal, dom, logic); renderCustomControls(id, data, logic); renderGlobalTargetControl(id, data, logic);
-    if (state.selectedSkillIndex !== null && data.skills[state.selectedSkillIndex]) updateSkillDetailDisplay(data.skills[state.selectedSkillIndex], state.selectedSkillIndex, dom, logic);
-    renderDamageRecords(id, dom.newSectionArea, logic.saveCurrentStats);
-}
+function cycleValue(slider, min, max, step) { let val = parseInt(slider.value); let next = (val < step && step > 1) ? step : (Math.floor(val / step) * step + step); if (next > max) next = min; slider.value = next; onExtraSliderChange(); }
+function cycleThresholds(slider, thresholds) { let val = parseInt(slider.value); let next = thresholds.find(t => t > val); slider.value = next !== undefined ? next : thresholds[0]; onExtraSliderChange(); }
+function adjustSlider(slider, delta, max) { let val = parseInt(slider.value) + delta; if (val >= 0 && val <= max) { slider.value = val; onExtraSliderChange(); } }
 
-function setupSortListeners() {
+export function setupSortListeners() {
     const imageRow = document.querySelector('.image-row');
     const applyFilter = (type, value = null) => {
         imageRow.querySelectorAll('.main-image').forEach(img => { const charId = img.dataset.id; if (charId === 'hero' || charId === 'simulator') { img.style.display = 'block'; return; }
@@ -379,10 +336,6 @@ function setupSortListeners() {
     document.querySelector('.sort-icon-all')?.addEventListener('click', () => applyFilter('all')); document.querySelector('.sort-icon-fav')?.addEventListener('click', () => applyFilter('fav'));
     document.querySelectorAll('.sort-icon').forEach(icon => { icon.onclick = () => applyFilter('attr', parseInt(icon.dataset.attr)); });
 }
-
-function adjustSlider(slider, delta, max) { let val = parseInt(slider.value) + delta; if (val >= 0 && val <= max) { slider.value = val; onExtraSliderChange(); } }
-function cycleValue(slider, min, max, step) { let val = parseInt(slider.value); let next = (val < step && step > 1) ? step : (Math.floor(val / step) * step + step); if (next > max) next = min; slider.value = next; onExtraSliderChange(); }
-function cycleThresholds(slider, thresholds) { let val = parseInt(slider.value); let next = thresholds.find(t => t > val); slider.value = next !== undefined ? next : thresholds[0]; onExtraSliderChange(); }
 
 export function setupBuffSearchListeners() {
     const searchInput = document.getElementById('buff-char-search'); if (!searchInput) return;

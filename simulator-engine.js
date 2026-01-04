@@ -71,6 +71,7 @@ export function runSimulationCore(context) {
         let cd = { ult: ultCD };
 
         for (let t = 1; t <= turns; t++) {
+            logs.push(`<div class="sim-log-turn-header" data-turn="${t}">----- ${t}턴 -----</div>`);
             const turnDebugLogs = [];
             let currentTDmg = 0;
             const actionType = manualPattern[t-1] || (cd.ult === 0 ? 'ult' : 'normal');
@@ -272,7 +273,7 @@ export function runSimulationCore(context) {
 
                         if (mDmgSum > 0) {
                             const mainTag = `<span class="sim-log-tag">[${isUlt?'필살기':'보통공격'}]</span>`;
-                            logs.push(`<div class="sim-log-line"><span>${t}턴: ${mainTag} ${skill.name}:</span> <span class="sim-log-dmg">+${mDmgSum.toLocaleString()}</span></div>`);
+                            logs.push(`<div class="sim-log-line"><span>${mainTag} ${skill.name}:</span> <span class="sim-log-dmg">+${mDmgSum.toLocaleString()}</span></div>`);
                             dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${skill.icon}|${mainTag} ${skill.name}: +${mDmgSum.toLocaleString()}`, 
                                 statMsg: `Coef:${parseFloat(mCoef.toFixed(1))}% / Atk:${st.atk.toLocaleString()}${dmgStr}` 
                             });
