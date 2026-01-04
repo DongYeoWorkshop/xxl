@@ -18,28 +18,18 @@ export function getDynamicDesc(skill, level, isStamped, descriptionToFormat = nu
     let desc = descriptionToFormat || ((isStamped && skill.stampDesc) ? skill.stampDesc : skill.desc);
 
     // [추가] 속성 기반 수치 선택 로직 (설명문에 하나만 표시하기 위함)
-    const isTargetAttr = (targetAttrIdx !== null && skill.buffEffects?.공증?.targetAttribute === targetAttrIdx);
+    const buffEff = skill.buffEffects;
+    const isTargetAttr = (targetAttrIdx !== null && buffEff && 
+                         ((buffEff.공증 && buffEff.공증.targetAttribute === targetAttrIdx) || 
+                          (buffEff.HP증가 && buffEff.HP증가.targetAttribute === targetAttrIdx)));
     
-    if (desc.includes('{2}')) {
-        if (isTargetAttr) {
-            // 속성 일치 시: {0}과 괄호 시작 부분만 지우고 {2}는 남김
-            desc = desc.replace(/\{0\}%?\s*\(.*?(?=\{2\})/, ''); 
-            desc = desc.replace(/\)\s*/, ' '); // 닫는 괄호를 지우고 공백 한 칸 삽입
-        } else {
-            // 속성 불일치 시: 괄호 부분 전체 제거
-            desc = desc.replace(/\s*\(.*?\{2\}.*?\)/, '');
-        }
-    }
-
-    skill.calc.forEach((formula, idx) => {
-        let val = 0;
-        // [수정] 개별 항목의 startRate 또는 stampStartRate를 우선 참조
+    // 계산된 수치들을 먼저 준비
+    const calculatedValues = skill.calc.map((formula) => {
         const currentStartRate = (isStamped && formula.stampStartRate !== undefined) 
                                  ? formula.stampStartRate 
                                  : (formula.startRate !== undefined ? formula.startRate : (skill.startRate !== undefined ? skill.startRate : 0.6));
-        
         const rate = getSkillMultiplier(safeLevel, currentStartRate);
-
+        let val = 0;
         if (formula.fixed !== undefined || (isStamped && formula.stampFixed !== undefined)) {
             val = (isStamped && formula.stampFixed !== undefined) ? formula.stampFixed : formula.fixed;
         } else if (formula.max !== undefined || (isStamped && formula.stampMax !== undefined)) {
@@ -49,10 +39,23 @@ export function getDynamicDesc(skill, level, isStamped, descriptionToFormat = nu
                 val = Number(val.toFixed(skill.decimalPlaces));
             }
         }
-        
-        // [추가] 결과값이 NaN인 경우 0으로 치환
-        if (isNaN(val)) val = 0;
-        
+        return isNaN(val) ? 0 : val;
+    });
+
+    // 속성 보너스 처리 로직
+    if (isTargetAttr && calculatedValues[1] !== undefined) {
+        // 공격 강화, 생명 강화 모두 1번 항목이 추가 보너스 수치이므로 합산
+        calculatedValues[0] += calculatedValues[1];
+    }
+
+    // 설명문 치환
+    if (desc.includes('{2}')) {
+        // 속성 보너스 구문 제거 (이미 합산했으므로)
+        // 예: "공격력 {0}% (불속성 시 {2}%) 증가" -> "공격력 {0}% 증가"
+        desc = desc.replace(/\s*\(.*?\{2\}.*?\)/, '');
+    }
+
+    calculatedValues.forEach((val, idx) => {
         desc = desc.replace(`{${idx}}`, val.toLocaleString());
     });
 

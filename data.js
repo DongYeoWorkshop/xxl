@@ -1085,7 +1085,7 @@ export const charData = {
         name: "물속성 공격 강화Ⅳ", 
         icon: "icon/passive2.webp", 
         desc: "아군 전체의 공격력을 {0}% 증가시키며, 영향을 받은 아군이 물속성일 경우 추가로 {1}% 증가", 
-        calc: [{ max: 12 }, { max: 6 }, { max: 18 }] 
+        calc: [{ max: 12 }, { max: 6 }, ] 
       },
       {
         id: "tyrantino_skill4",
@@ -1370,7 +1370,7 @@ export const charData = {
         name: "불속성 공격 강화Ⅳ", 
         icon: "icon/passive2.webp", 
         desc: "아군 전체의 공격력을 {0}% 증가시키며, 영향을 받은 아군이 불속성일 경우 추가로 {1}% 증가", 
-        calc: [{ max: 12 }, { max: 6 }, { max: 18 }] 
+        calc: [{ max: 12 }, { max: 6 }, ] 
       },
       {
         id: "tamrang_skill4",
