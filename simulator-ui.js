@@ -107,9 +107,9 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                                 <div style="font-size:0.65em; color:#888; margin-bottom:2px;">최소</div>
                                 <div id="sim-min-dmg" style="font-weight:bold; color:#333; font-size:0.9em;">0</div>
                             </div>
-                            <div style="background:#6f42c1; padding: 10px 5px; border-radius:10px; text-align:center; box-shadow: 0 4px 10px rgba(111, 66, 193, 0.2);">
-                                <div style="font-size:0.65em; color:rgba(255,255,255,0.9); margin-bottom:2px; font-weight:bold;">평균</div>
-                                <div id="sim-avg-dmg" style="font-weight:900; color:white; font-size:1.1em;">0</div>
+                            <div style="background:#f8f9fa; padding: 10px 5px; border-radius:10px; text-align:center;">
+                                <div style="font-size:0.65em; color:#888; margin-bottom:2px;">평균</div>
+                                <div id="sim-avg-dmg" style="font-weight:bold; color:#333; font-size:0.9em;">0</div>
                             </div>
                             <div style="background:#f8f9fa; padding: 10px 5px; border-radius:10px; text-align:center;">
                                 <div style="font-size:0.65em; color:#888; margin-bottom:2px;">최대</div>

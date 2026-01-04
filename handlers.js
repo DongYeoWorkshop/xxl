@@ -174,7 +174,7 @@ export function handleImageClick(img) {
     window.scrollTo(0, 0);
     
     // [보강] 모든 페이지 상태 클래스 초기화 후 현재 상태 적용
-    document.body.classList.remove('landing-page-active', 'hero-mode-active');
+    document.body.classList.remove('landing-page-active', 'hero-mode-active', 'char-page-active');
     document.body.classList.add('sub-page-active');
     
     document.querySelector('.main-image.selected')?.classList.remove('selected');
@@ -187,18 +187,19 @@ export function handleImageClick(img) {
 
     if (id === 'hero') {
         contentDisplay.className = 'hero-mode'; 
-        document.body.classList.add('hero-mode-active'); // 히어로 모드 클래스 추가
+        document.body.classList.add('hero-mode-active'); // 히어로/시뮬 공통 클래스
         forceMainHeader();
         import('./hero-tab.js').then(mod => { mod.clearHeroTabRemnants(); mod.renderHeroTab(dom, logic.updateStats); });
     } else if (id === 'simulator') {
         contentDisplay.className = 'hero-mode';
-        document.body.classList.add('hero-mode-active'); // 시뮬레이터도 히어로 모드 취급
+        document.body.classList.add('hero-mode-active'); // 히어로/시뮬 공통 클래스
         document.querySelector('.main-content-column').style.setProperty('display', 'block', 'important');
         document.getElementById('simulator-page').style.setProperty('display', 'block', 'important');
         forceMainHeader();
         import('./hero-tab.js').then(mod => mod.clearHeroTabRemnants());
         import('./simulator.js').then(mod => mod.initSimulator());
     } else {
+        document.body.classList.add('char-page-active'); // [추가] 일반 캐릭터 탭 전용 클래스
         contentDisplay.className = '';
         const charHeader = document.querySelector('.char-header-row');
         if (charHeader) charHeader.style.setProperty('display', 'block', 'important');

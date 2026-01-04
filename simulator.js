@@ -89,10 +89,131 @@ function renderAxisLabels(axisData, yMax, type = 'dist') {
     }
 }
 
-function renderDamageLineChart(charId) {
-    const container = document.getElementById('sim-line-graph'), res = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
-    if (!container || !res) return;
-    const turnData = res.turnData, maxCum = Math.max(...turnData.map(d => d.cumulative)), maxTrn = Math.max(...turnData.map(d => d.dmg)), turnCount = turnData.length;
+/**
+ * 시뮬레이션 결과 데이터를 특정 타입(min, avg, max)에 맞춰 UI에 렌더링함
+ */
+function displaySimResult(charId, fullResult, type = 'avg') {
+    // [추가] 구버전 데이터 호환성 처리
+    if (!fullResult.results) {
+        fullResult.results = {
+            avg: {
+                logs: fullResult.closestLogs || [],
+                total: fullResult.closestTotal || 0,
+                detailedLogs: fullResult.closestDetailedLogs || [],
+                stateLogs: fullResult.closestStateLogs || [],
+                turnInfoLogs: fullResult.closestTurnInfoLogs || [],
+                perTurnDmg: fullResult.turnData || []
+            }
+        };
+        fullResult.results.min = fullResult.results.avg;
+        fullResult.results.max = fullResult.results.avg;
+    }
+
+    const res = fullResult.results[type];
+    const stats = state.savedStats[charId] || {};
+    
+    // 1. 요약 정보 업데이트 (활성화 표시 포함)
+    const boxes = {
+        min: document.getElementById('sim-min-dmg').parentElement,
+        avg: document.getElementById('sim-avg-dmg').parentElement,
+        max: document.getElementById('sim-max-dmg').parentElement
+    };
+    
+    Object.keys(boxes).forEach(key => {
+        const isTarget = (key === type);
+        const box = boxes[key];
+        const label = box.querySelector('div:first-child');
+        const value = box.querySelector('div:last-child');
+
+        if (isTarget) {
+            box.style.background = '#6f42c1';
+            box.style.boxShadow = '0 4px 10px rgba(111, 66, 193, 0.2)';
+            box.style.opacity = '1';
+            if (label) {
+                label.style.color = 'rgba(255,255,255,0.9)';
+                label.style.fontWeight = 'bold';
+            }
+            if (value) {
+                value.style.color = 'white';
+                value.style.fontSize = '1.1em';
+                value.style.fontWeight = '900';
+            }
+        } else {
+            box.style.background = '#f8f9fa';
+            box.style.boxShadow = 'none';
+            box.style.opacity = '0.7';
+            if (label) {
+                label.style.color = '#888';
+                label.style.fontWeight = 'normal';
+            }
+            if (value) {
+                value.style.color = '#333';
+                value.style.fontSize = '0.9em';
+                value.style.fontWeight = 'bold';
+            }
+        }
+        box.style.border = 'none';
+        box.style.cursor = 'pointer';
+        box.style.transition = 'all 0.2s';
+        box.onclick = () => displaySimResult(charId, fullResult, key);
+    });
+
+    // 2. 로그 업데이트
+    document.getElementById('sim-log').innerHTML = res.logs.join('');
+    const totalHeader = document.getElementById('sim-total-dmg-header');
+    if (totalHeader) totalHeader.innerText = `: ${res.total.toLocaleString()}`;
+
+    // 3. 버튼 및 상세 데이터 갱신 (비교탭 추가 등)
+    // simulator-engine.js에서 반환한 최상위 메타데이터와 현재 선택된 세부 데이터를 병합하여 전달
+    const mergedResult = {
+        ...fullResult,
+        closestTotal: res.total,
+        closestLogs: res.logs,
+        closestDetailedLogs: res.detailedLogs,
+        closestStateLogs: res.stateLogs,
+        closestTurnInfoLogs: res.turnInfoLogs,
+        turnData: res.perTurnDmg
+    };
+    
+    renderActionButtons(charId, mergedResult, stats);
+
+    // 4. 그래프 막대 강조 업데이트 (분포도 기준)
+    const distGraph = document.getElementById('sim-dist-graph');
+    if (distGraph && fullResult.graphData) {
+        const minVal = parseFloat(fullResult.min.replace(/,/g, ''));
+        const maxVal = parseFloat(fullResult.max.replace(/,/g, ''));
+        const currentVal = res.total;
+        const range = maxVal - minVal;
+        const binCount = distGraph.children.length;
+        
+        // 현재 데미지가 속한 막대 인덱스 계산
+        let targetIdx = (range === 0) ? Math.floor(binCount / 2) : Math.floor(((currentVal - minVal) / range) * (binCount - 1));
+        targetIdx = Math.max(0, Math.min(binCount - 1, targetIdx));
+
+        Array.from(distGraph.children).forEach((bar, idx) => {
+            bar.style.background = (idx === targetIdx) ? '#6f42c1' : '#e0e0e0';
+        });
+    }
+
+    // 5. 딜 그래프 업데이트 (현재 보고 있는 타입이 딜 그래프일 경우에만)
+    if (document.getElementById('sim-line-graph').style.display !== 'none') {
+        renderDamageLineChart(charId, mergedResult);
+    }
+}
+
+// 기존 renderDamageLineChart 함수 수정 (결과 데이터를 인자로 받도록)
+function renderDamageLineChart(charId, specificResult = null) {
+    const container = document.getElementById('sim-line-graph');
+    let res = specificResult;
+    
+    if (!res) {
+        const full = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
+        if (!full) return;
+        // 저장된 결과가 이전 방식이면 호환성을 위해 처리, 아니면 현재 선택된 세부 데이터 찾기
+        res = full.results ? full.results.avg : full; 
+    }
+    
+    const turnData = res.turnData || res.perTurnDmg, maxCum = Math.max(...turnData.map(d => d.cumulative)), maxTrn = Math.max(...turnData.map(d => d.dmg)), turnCount = turnData.length;
     let html = `<svg width="100%" height="100%" viewBox="0 0 400 220" preserveAspectRatio="none" style="overflow:visible;"><defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6f42c1" stop-opacity="0.3"/><stop offset="100%" stop-color="#6f42c1" stop-opacity="0"/></linearGradient></defs>`;
     
     turnData.forEach((d, i) => { 
@@ -268,16 +389,17 @@ function renderSimulatorUI(charId) {
             document.getElementById('sim-min-dmg').innerText=res.min; 
             document.getElementById('sim-avg-dmg').innerText=res.avg; 
             document.getElementById('sim-max-dmg').innerText=res.max; 
-            document.getElementById('sim-log').innerHTML=res.logHtml; 
             
-            // [추가] 그래프 막대 복구
+            // [수정] 새로운 표시 함수 호출
+            displaySimResult(charId, res, 'avg');
+            
+            // [수정] 그래프 막대 복구 (분포도용 메타데이터 사용)
             const distGraph = document.getElementById('sim-dist-graph');
             if (distGraph && res.graphData) {
                 distGraph.innerHTML = res.graphData.map(b => `<div class="bar-grow-item" style="flex:1; height:${b.h}%; background:${b.isAvg ? '#6f42c1' : '#e0e0e0'};"></div>`).join('');
             }
-            // [추가] 축 라벨 복구
+            // 축 라벨 복구
             renderAxisLabels(res.axisData, res.yMax, 'dist'); 
-            renderActionButtons(charId, res, stats); 
         } catch(e) { console.error('결과 복구 실패:', e); } 
     }
     document.getElementById('sim-turns').oninput = (e) => { document.getElementById('sim-turns-val').innerText = e.target.value; localStorage.setItem('sim_last_turns', e.target.value); updateActionEditor(charId); };
@@ -381,14 +503,11 @@ function runSimulation(charId) {
         document.getElementById('sim-min-dmg').innerText = result.min; 
         document.getElementById('sim-avg-dmg').innerText = result.avg; 
         document.getElementById('sim-max-dmg').innerText = result.max; 
-        document.getElementById('sim-log').innerHTML = result.closestLogs.join('');
         
-        // [추가] 분석 로그 제목 옆에 총 데미지 표시
-        const totalHeader = document.getElementById('sim-total-dmg-header');
-        if (totalHeader) totalHeader.innerText = `: ${result.closestTotal.toLocaleString()}`;
+        // [수정] 새로운 표시 함수 호출
+        displaySimResult(charId, result, 'avg');
         
         document.getElementById('sim-empty-msg').style.display = 'none';
-        renderActionButtons(charId, result, stats);
         
         distGraph.innerHTML = result.graphData.map(b => `<div class="bar-grow-item" style="flex:1; height:${b.h}%; background:${b.isAvg ? '#6f42c1' : '#e0e0e0'};"></div>`).join('');
         
