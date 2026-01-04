@@ -1684,7 +1684,7 @@ export const charData = {
         buffEffects: { "기초공증": { max: 15} },
         hasCounter: true, 
         counterRange: { min: 0, max: 2 },      
-        buffDesc: "보통공격 시 50% 확률로 기초공격력 {0}% 증가(최대 2중첩)",         
+        buffDesc: "보통공격 시 50% 확률로 기초공격력 {1}% 증가(최대 2중첩)",         
         name: "매직 큐브의 봉인벽",
         icon: "icon/passive2.webp",
         desc: "보통공격 시 2턴 간 적 전체에게 공격력 {0}% 감소를 부여하며, 50% 확률로 3턴 간 루테닉스의 기초공격력 {1}% 증가(최대 2중첩)",

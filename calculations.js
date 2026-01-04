@@ -95,7 +95,8 @@ export function calculateCharacterStats(charId, charData, skillLevels, isUltStam
             const processExtraDamage = (effectObj) => {
                 if (effectObj && effectObj["추가데미지"]) {
                     const levelToUse = getEffectiveLevel();
-                    const rate = getSkillMultiplierFn(Math.max(1, Math.min(levelToUse, 10)), buffSkill.startRate);
+                    const sRate = buffSkill.startRate || buffSkill.calc?.[0]?.startRate || 0.6;
+                    const rate = getSkillMultiplierFn(Math.max(1, Math.min(levelToUse, 10)), sRate);
                     
                     let baseVal = 0;
                     if (typeof effectObj["추가데미지"] === 'object') {
@@ -148,7 +149,8 @@ export function calculateCharacterStats(charId, charData, skillLevels, isUltStam
 
                 if (shouldApplyAuto) {
                     const levelToUse = getEffectiveLevel();
-                    const rate = getSkillMultiplierFn(Math.max(1, Math.min(levelToUse, 10)), buffSkill.startRate);
+                    const sRate = buffSkill.startRate || buffSkill.calc?.[0]?.startRate || 0.6;
+                    const rate = getSkillMultiplierFn(Math.max(1, Math.min(levelToUse, 10)), sRate);
                     let stackMultiplier = buffSkill.hasCounter ? (buff.count !== undefined ? buff.count : 0) : 1;
 
                     // [추가] 커스텀 컨트롤 연동 로직
@@ -226,7 +228,8 @@ export function calculateCharacterStats(charId, charData, skillLevels, isUltStam
                 }
 
                 const levelToUse = getEffectiveLevel();
-                const rate = getSkillMultiplierFn(Math.max(1, Math.min(levelToUse, 10)), buffSkill.startRate);
+                const sRate = buffSkill.startRate || buffSkill.calc?.[0]?.startRate || 0.6;
+                const rate = getSkillMultiplierFn(Math.max(1, Math.min(levelToUse, 10)), sRate);
 
                 for (const effectStat in buffSkill.ratioEffects) {
                     if (stats.hasOwnProperty(effectStat)) {

@@ -84,6 +84,18 @@ export const statusRegistry = {
         icon: "icon/compe.PNG",
         type: "stack",
         unit: "중첩"
+    },
+
+    // 12. 흑구/백구 (아누비로스 전용)
+    "skill4_black_timer": {
+        name: "[흑구]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+    "skill4_white_timer": {
+        name: "[백구]",
+        icon: "icon/compe.png",
+        type: "status"
     }
 };
 

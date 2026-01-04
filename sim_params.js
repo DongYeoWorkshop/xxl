@@ -13,7 +13,7 @@ export const simParams = {
       prob: 0.5,
       duration: 1,
       condition: "isUlt",
-      label: "버프 발동"
+      label: "발동"
     },
     skill4_hit: { 
       type: "hit",
@@ -22,6 +22,7 @@ export const simParams = {
       order: 2,
       prob: 0.5,
       valKey: "추가공격",
+      customTag:"패시브2",
       condition: "isUlt",
       label: "내기혼신・늑대"
     },
@@ -36,7 +37,7 @@ export const simParams = {
       duration: 2,
       skipTrigger: true, 
       triggers: ["being_hit"],
-      label: "버프 발동"
+      label: "발동"
     },
     skill5_counter: { 
       type: "hit",
@@ -45,6 +46,7 @@ export const simParams = {
       order: 2,
       valKey: "추가공격",
       triggers: ["being_hit"],
+      customTag:"패시브3",
       label: "반격 연환각"
     },
 
@@ -58,7 +60,7 @@ export const simParams = {
       triggers: ["being_hit"], // 피격(반격) 시에도 적립
       order: 1,
       maxStacks: 10,
-      label: "발동"
+      label: "획득"
     },
 
     // [도장] 내기혼신·늑대 (강화)
@@ -70,7 +72,7 @@ export const simParams = {
       prob: 0.5,
       duration: 1,
       condition: ["isUlt", "isStamp"],
-      label: "버프 발동"
+      label: "발동"
     },
     skill8_hit: { 
       type: "hit",
@@ -91,11 +93,10 @@ export const simParams = {
       type: "stack",
       id: "skill4_spirit_stacks", 
       originalId: "tayangsuyi_skill4",
-      customTag: "전의",
       maxStacks: 9,
       bonusPerStack: 6, 
       triggers: ["ally_attack"], 
-      label: "획득",
+      label: "[전의] 획득",
       prob: 0.5,
       scaleProb: true,
       startRate: 0.64
@@ -145,7 +146,7 @@ export const simParams = {
       order: 1,
       duration: 1,
       probSource: "hp_100_prob",
-      label: "HP 100% 유지"
+      label: "발동"
     },
     skill5_buff: {
       type: "buff",
@@ -154,7 +155,7 @@ export const simParams = {
       order: 2,
       duration: 2,
       condition: "isDefend",
-      label: "추가데미지 준비"
+      label: "발동"
     },
     skill5_hit: {
       type: "hit",
@@ -163,7 +164,8 @@ export const simParams = {
       order: 1,
       condition: ["!isDefend", "hasBuff:skill5"], 
       valKey: "max",
-      label: "신화성신환"
+      label: "신화성신환",
+      customTag: "패시브3"
     },
     skill7_hit_5: {
       type: "hit",
@@ -174,7 +176,8 @@ export const simParams = {
       condition: ["isUlt", "targetCount:5"], 
       isMulti: true,
       valIdx: 0, 
-      label: "검추백형"
+      label: "검추백형",
+      customTag: "패시브5"
     },
     // [패시브5] 검추백형 (1인용)
     skill7_hit_1: {
@@ -185,7 +188,8 @@ export const simParams = {
       order: 3,
       condition: ["isUlt", "targetCount:1"], 
       val: 75.0, 
-      label: "검추백형"
+      label: "검추백형",
+      customTag: "패시브5"
     }
   },
   "baade": {
@@ -208,7 +212,8 @@ export const simParams = {
       order: 2,
       condition: ["isUlt", "isStamp", "hasStack:scar_stacks:1"], 
       valKey: "추가공격",
-      label: "쇄강 파공격 (도장)"
+      label: "쇄강 파공격",
+      customTag: "도장"      
     }
   },
   "khafka": {
@@ -224,8 +229,8 @@ export const simParams = {
       prob: 0.5,
       duration: 2,
       condition: "!isDefend",
-      customTag: "밧줄",
-      label: "부여"
+      customTag: "패시브2",
+      label: "디버프 부여"
     },
     skill5_buff: {
       type: "buff",
@@ -235,8 +240,8 @@ export const simParams = {
       order: 2,
       duration: 2,
       condition: "isDefend",
-      customTag: "밧줄",
-      label: "발동"
+      customTag: "패시브3",
+      label: "디버프 부여"
     },
     skill7_buff: {
       type: "buff",
@@ -246,8 +251,8 @@ export const simParams = {
       order: 3,
       duration: 1,
       condition: "isUlt",
-      customTag: "밧줄",
-      label: "발동"
+      customTag: "패시브5",
+      label: "디버프 부여"
     }
   },
     "anuberus": {
@@ -262,8 +267,7 @@ export const simParams = {
         maxStacks: 4,
         duration: 3,
         triggers: ["dog_attack"],
-        customTag: "속성디버프",
-        label: "부여",
+        label: "디버프 부여",
         order: 1
       },
       // [패시브3] 지옥의 사냥개 스택 (개들이 공격할 때 트리거)
@@ -274,7 +278,6 @@ export const simParams = {
         maxStacks: 4,
         duration: 3,
         triggers: ["dog_attack"],
-        customTag: "사냥개",
         label: "부여",
         order: 2
       },
@@ -286,6 +289,7 @@ export const simParams = {
             condition: "isStamp",
             valKey: "추가공격", // 고정값 30 제거, 동적 참조로 변경
             label: "니히히~ 우리도 왔다!",
+            customTag: "도장",            
             order: 3
           },      // [패시브2] 흑구 깨우기 (행동 완료 시점)
       black_dog: {
@@ -298,7 +302,7 @@ export const simParams = {
         scaleProb: true,
         duration: 2,
         customTag: "흑구",
-        label: "깨우기"
+        label: "[흑구] 발동"
       },
       // [패시브2] 백구 깨우기 (행동 완료 시점)
       white_dog: {
@@ -311,7 +315,7 @@ export const simParams = {
         scaleProb: true,
         duration: 2,
               customTag: "백구",
-              label: "깨우기"
+              label: "[백구] 발동"
             }
           },
           "kumoyama": {
@@ -356,7 +360,8 @@ export const simParams = {
                   type: "hit",
                   originalId: "kumoyama_skill2",
                   valKey: "추가공격",
-                  label: "열풍요란 (반격)"
+                  customTag: "필살기",                        
+                  label: "열풍요란"
                 }
               },
   "locke": {
@@ -380,29 +385,32 @@ export const simParams = {
       originalId: "locke_skill7",
       valKey: "추가공격",
       label: "피의 공명",
+      customTag: "패시브5",  
       order: 1
     },
     // [도장] 호혈표지 획득 (평타 시)
     skill8_stamp_stack: {
       type: "buff", 
       originalId: "locke_skill8",
-      timerKey: "skill8_timer", // _timer로 끝나야 시간이 줄어듦
+      timerKey: "blood_mark_timer", 
       phase: "onAttack",
       condition: ["isNormal", "isStamp", "enemy_hp_50"],
       maxStacks: 2,
       duration: 5,
-      label: "획득",
+      label: "[호혈표지] 획득",
+      customTag: "도장",        
       order: 1
     },
     // [도장] 광야 포격 돌진 (필살기 전용 버프)
     skill8_stamp_buff: {
       type: "buff",
       originalId: "locke_skill8",
-      timerKey: "skill8_buff_timer", // 명칭 구분
+      timerKey: "skill8_buff_timer", 
       phase: "onCalculateDamage", 
       duration: 1, 
-      condition: ["isUlt", "isStamp", "hasStack:skill8_timer:2"], // 변경된 스택 이름 참조
-      label: "도장 효과",
+      condition: ["isUlt", "isStamp", "hasStack:blood_mark_timer:2"], 
+      label: "발동",
+      customTag: "도장",
       order: 1
     }
   },
@@ -412,10 +420,10 @@ export const simParams = {
       type: "stack",
       id: "fury_stacks",
       originalId: "tyrantino_skill4",
-      customTag: "용의 분노",      
+      customTag: "패시브2",      
       maxStacks: 3,
       triggers: ["being_hit"],
-      label: "획득",
+      label: "[용의 분노] 획득",
       order: 1
     },
     // [패시브4] 용족의 분노 (3스택 시 추가타)
@@ -425,7 +433,7 @@ export const simParams = {
       triggers: [], 
       phase: "onAttack", 
       condition: ["isUlt", "hasStack:fury_stacks:3"],
-      customTag: "용의 분노",      
+      customTag: "패시브2",      
       isMulti: true, 
       valKey: "추가공격",
       label: "용족의 분노",
@@ -439,7 +447,9 @@ export const simParams = {
       order: 2,
       condition: ["isUlt", "hasStack:fury_stacks:3"],
       action: "all_consume",
-      label: "용족의 분노"
+      label: "용족의 분노 [용의 분노]",
+      customTag: "패시브2",
+      icon: "icon/passive2.webp"
     },
     // [패시브5] 용의 역린
     skill5_hit: {
@@ -451,21 +461,37 @@ export const simParams = {
       isMulti: true, 
       valKey: "추가공격",
       label: "용의 역린",
-      order: 1 
+      customTag: "패시브5",
+      order: 3
+    },
+    // [도장] 필살기 위압 부여 및 로그 (순서 조정용)
+    fear_ult_log: {
+      phase: "onAttack",
+      condition: ["isUlt", "isStamp"],
+      step1: (ctx) => {
+        // 실제 스택 수급
+        for (let i = 0; i < 3; i++) {
+            ctx.addTimer("fear_timer", 2, {}, 5); 
+        }
+        // [수정] 스킬 이름과 겹치지 않게 메시지만 전달
+        ctx.log(ctx.getSkillIdx("tyrantino_skill2"), "[용족의 위압] 3중첩 부여", null, null, false, "도장");
+        return null;
+      },
+      order: 99
     },
     // [도장] 용족의 위압 부여 (피격 시)
-    fear_hit_stack: {
+    fear_hit_buff: {
+      type: "buff",
       originalId: "tyrantino_skill2",
       timerKey: "fear_timer",
       triggers: ["being_hit"],
       condition: "isStamp",
-      customTag: "용족의 위압", 
-      step1: (ctx) => {
-        ctx.addTimer("fear_timer", 1, {}, 5);
-        // 실제 데이터는 1턴이지만 로그에는 예외적으로 2턴으로 표시
-        ctx.log({ name: "용족의 위압", icon: "images/sigilwebp/sigil_tyrantino.webp" }, "apply", null, 2, false, "도장");
-        return null;
-      },
+      duration: 1, // 2턴 유지를 위해 1로 설정 (+1 보정)
+      maxStacks: 5,
+      label: "[용족의 위압] 부여",
+      skipDurLog: true,
+      customTag: "도장",
+      icon: "images/sigilwebp/sigil_tyrantino.webp",
       order: 2
     },
     // [필살기] 적 데미지 감소 부여 (공격 전)
@@ -476,22 +502,8 @@ export const simParams = {
       phase: "onCalculateDamage",
       condition: "isUlt",
       duration: 2,
-      label: "데미지 감소",
+      label: "디버프 부여",
       order: 1
-    },
-    // [도장] 필살기 시 위압 3중첩 부여 (공격 후)
-    fear_ult_stack: {
-      phase: "onAttack",
-      condition: ["isUlt", "isStamp"],
-      step1: (ctx) => {
-        for (let i = 0; i < 3; i++) {
-            ctx.addTimer("fear_timer", 2, {}, 5); 
-        }
-        // 객체로 전달하여 아이콘과 이름 동시 해결
-        ctx.log({ name: "용족의 위압 (3중첩)", icon: "images/sigilwebp/sigil_tyrantino.webp" }, "apply", null, 2, false, "도장");
-        return null; 
-      },
-      order: 10 
     },
     // [패시브7] 승리의 Lowball
     skill7_buff: {
@@ -510,7 +522,7 @@ export const simParams = {
       phase: "onAttack",
       condition: ["isUlt", "isStamp"],
       duration: 3,
-      label: "부여",
+      label: "버프 부여",
       order: 1
     },
     // [도장] 패란의 영감 추가타 (영감 상태에서 평타 시 확정)
@@ -547,7 +559,7 @@ export const simParams = {
       maxStacks: 2,
       duration: 2,
       triggers: ["being_hit"],
-      label: "발동",
+      label: "버프 부여",
       order: 1
     }
   },
@@ -564,7 +576,7 @@ export const simParams = {
       phase: "onAttack",
       prob: 0.5,
       duration: 2,
-      label: "부여",
+      label: "디버프 부여",
       order: 1
     },
     // [패시브5] 홍란천희 (필살기 시 전체 받뎀증)
@@ -575,7 +587,7 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 1,
-      label: "부여",
+      label: "디버프 부여",
       order: 2
     },
     // [도장] 선향욕기 (필살기 시 전체 강력 받뎀증 75%)
@@ -586,7 +598,7 @@ export const simParams = {
       phase: "onAttack",
       condition: ["isUlt", "isStamp"],
       duration: 2, // 1에서 2로 수정
-      label: "부여",
+      label: "디버프 부여",
       order: 3
     },
     // [필살기] 수면 상태 타이머
@@ -597,7 +609,7 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 2,
-      label: "수면 부여",
+      label: "[수면] 부여",
       order: 4
     }
   },
@@ -614,8 +626,9 @@ export const simParams = {
       phase: "onAttack",
       prob: 0.33,
       duration: 2,
-      customTag: "열화질보",
-      label: "획득",
+      label: "[열화질보] 획득",
+      skipDurLog: true,
+      customTag: "패시브2",
       order: 5
     },
     // [도장] 공격 시 33% 확률로 열화질보 획득
@@ -628,8 +641,10 @@ export const simParams = {
       condition: "isStamp",
       prob: 0.33,
       duration: 2,
-      customTag: "열화질보",
-      label: "획득",
+      label: "[열화질보] 획득", // 사용자 커스텀 라벨 유지
+      skipDurLog: true,
+      customTag: "도장",
+      icon: "images/sigilwebp/sigil_goldenryder.webp",
       order: 6
     },
     // [패시브5] 공격 시 33% 확률로 열화질보 획득 (75단)
@@ -642,24 +657,22 @@ export const simParams = {
       condition: "isUnlocked:6", 
       prob: 0.33,
       duration: 2,
-      customTag: "열화질보",
-      label: "획득",
+      label: "불타오른다——! [열화질보] 획득",
+      skipDurLog: true,
+      customTag: "패시브5",
       order: 7
     },
     // [패시브3] 피격 시 열화질보 확정 획득
-    stride_hit: {
+    skill5_stack: {
+      type: "buff",
       originalId: "goldenryder_skill5",
       timerKey: "blazing_stride_timer",
-      maxStacks: 6,
       triggers: ["being_hit"],
-      customTag: "열화질보",
-      step1: (ctx) => {
-        // 실제 데이터는 2턴(1+1)이 되도록 1 전달
-        ctx.addTimer("blazing_stride_timer", 1, {}, 6);
-        // 로그에는 2턴으로 표시
-        ctx.log(4, "apply", null, 2, false, "열화질보");
-        return null;
-      },
+      duration: 1,
+      maxStacks: 6,
+      label: "불타오른다——! [열화질보] 획득",
+      skipDurLog: true,
+      customTag: "패시브3",
       order: 1
     },
     // [패시브3] 피격 시 뎀증 부여
@@ -668,8 +681,10 @@ export const simParams = {
       originalId: "goldenryder_skill5",
       timerKey: "skill5_timer",
       triggers: ["being_hit"],
-      duration: 1, // 데이터 2턴(1+1)을 위해 1로 수정
-      label: "뎀증 부여",
+      duration: 1,
+      label: "불타오른다——! 발동 (2턴)",
+      skipDurLog: true,
+      customTag: "패시브3",
       order: 2
     },
     // 필살기 및 패시브5 버프 타이머
@@ -680,7 +695,7 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 3,
-      label: "버프 활성화",
+      label: "발동",
       order: 1
     },
     skill7_timer: {
@@ -690,7 +705,7 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 3,
-      label: "버프 활성화",
+      label: "발동",
       order: 2
     },
     // [필살기 버프] 보통공격 시 추가타
@@ -729,7 +744,7 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 2,
-      label: "배리어 부여",
+      label: "발동",
       order: 1
     },
     // [패시브2] 전함 명령:엄수 (50% 확률 배리어 강화)
@@ -741,7 +756,7 @@ export const simParams = {
       condition: "isNormal",
       prob: 0.5,
       duration: 3,
-      label: "배리어 강화",
+      label: "발동",
       order: 2
     },
     // [도장] 배리어 공격 추가타 (배리어 보유 중 공격 시)
@@ -751,7 +766,8 @@ export const simParams = {
       phase: "onAttack",
       condition: ["isNormal", "hasBuff:shield", "isStamp"],
       valKey: "추가공격",
-      label: "현측 방어 전개 (추가타)",
+      label: "현측 방어 전개",
+      customTag: "도장",        
       order: 3
     },
     // [패시브5] 충격 역류 (배리어 보유 중 피격 시)
@@ -762,6 +778,283 @@ export const simParams = {
       condition: "hasBuff:shield",
       valKey: "추가공격",
       label: "충격 역류",
+      customTag: "패시브5",        
+      order: 1
+    }
+  },
+  "famido": {
+    normalTrigger: "famido_skill1",
+    ultTrigger: "famido_skill2",
+
+    // [스킬2] 필살기 사용 시 기초공증 (2턴)
+    skill2_buff: {
+      type: "buff",
+      originalId: "famido_skill2",
+      timerKey: "skill2_timer",
+      phase: "onCalculateDamage",
+      condition: "isUlt",
+      duration: 2,
+      label: "발동",
+      valKey: 0,
+      order: 1
+    },
+    // [필살기 도장] 공격력 가산 (2턴)
+    skill2_fixed_buff: {
+      type: "buff",
+      originalId: "famido_skill2",
+      timerKey: "skill2_fixed_timer",
+      phase: "onAttack",
+      condition: ["isUlt", "isStamp"],
+      duration: 2,
+      label: "버프 부여",
+      valKey: 2, // calc[2]
+      showAtkBoost: true,
+      order: 5
+    },
+    // [스킬4] 방어 시 기초공증 (2턴)
+    skill4_buff: {
+      type: "buff",
+      originalId: "famido_skill4",
+      timerKey: "skill4_timer",
+      phase: "onAttack",
+      condition: "isDefend",
+      duration: 2,
+      label: "발동",
+      valKey: 0,
+      order: 1
+    },
+        // [스킬4] 전술 판독 3스택 이상 시 가산 버프 부여 (공격 시 소모)
+        skill4_fixed_buff: {
+          type: "buff",
+          originalId: "famido_skill4",
+          timerKey: "skill4_boost_timer",
+          phase: "onAttack",
+          condition: ["!isDefend", "hasStack:tactical_stacks:3"],
+          duration: 2,
+          label: "버프 부여",
+          valKey: 1, // calc[1]
+          showAtkBoost: true,
+          customTag: "패시브2",
+          order: 6
+        },
+        skill4_consume: {
+          type: "action",
+          stateKey: "tactical_stacks",
+          phase: "onAttack",
+          condition: ["!isDefend", "hasStack:tactical_stacks:3"],
+          action: "all_consume",
+          label: "롱 패스 준비 [전술 판독]",
+          customTag: "패시브2",
+          icon: "icon/passive2.webp",
+          order: 7
+        },    // [스킬5] 아군 피격 시 기초공증 (최대 4중첩)
+    skill5_buff: {
+      type: "buff",
+      originalId: "famido_skill5",
+      timerKey: "skill5_timer",
+      triggers: ["ally_hit"],
+      duration: 2,
+      maxStacks: 4,
+      label: "발동",
+      order: 1
+    }
+  },
+  "rikano": {
+    normalTrigger: "rikano_skill1",
+    ultTrigger: "rikano_skill2",
+
+    // [스킬1] 보통공격 받뎀증 디버프 (2턴)
+    skill1_debuff: {
+      type: "buff",
+      originalId: "rikano_skill1",
+      timerKey: "skill1_timer",
+      phase: "onCalculateDamage",
+      condition: "isNormal",
+      duration: 2,
+      label: "디버프 부여",
+      order: 1
+    },
+    // [스킬2] 필살기 받뎀증 디버프 (2턴)
+    skill2_debuff: {
+      type: "buff",
+      originalId: "rikano_skill2",
+      timerKey: "skill2_timer",
+      phase: "onCalculateDamage",
+      condition: "isUlt",
+      duration: 2,
+      label: "디버프 부여",
+      order: 1
+    },
+    // [스킬8] 필살기 사용 시 추가 받뎀증 (1턴)
+    skill8_debuff: {
+      type: "buff",
+      originalId: "rikano_skill8",
+      timerKey: "skill8_timer",
+      phase: "onAttack",
+      condition: "isUlt",
+      duration: 1,
+      label: "디버프 부여",
+      order: 5
+    },
+    // [스킬5] 필살기 추가타 1
+    skill5_hit1: {
+      type: "hit",
+      originalId: "rikano_skill5",
+      phase: "onAttack",
+      condition: "isUlt",
+      hitType: "필살공격",
+      valIdx: 0,
+      label: "매력 발산",
+      customTag:"패시브3",      
+      order: 10
+    },
+    // [스킬5] 필살기 추가타 2
+    skill5_hit2: {
+      type: "hit",
+      originalId: "rikano_skill5",
+      phase: "onAttack",
+      condition: "isUlt",
+      hitType: "필살공격",
+      valIdx: 0,
+      label: "매력 발산",
+      customTag:"패시브3",      
+      order: 11
+    }
+  },
+  "duncan": {
+    normalTrigger: "duncan_skill1",
+    ultTrigger: "duncan_skill2",
+
+    // [스킬2] 필살기 공증 (1턴)
+    skill2_buff: {
+      type: "buff",
+      originalId: "duncan_skill2",
+      timerKey: "skill2_timer",
+      phase: "onCalculateDamage",
+      condition: "isUlt",
+      duration: 1,
+      label: "버프 부여",
+      order: 2
+    },
+    // [도장] 필살기 사용 시 [마도 집중] 획득
+    skill8_gain: {
+      type: "stack",
+      id: "skill8_stacks",
+      originalId: "duncan_skill8",
+      phase: "onAttack",
+      condition: ["isUlt", "isStamp"],
+      maxStacks: 2,
+      customTag:"도장",
+      label: "[마도 집중] 획득",
+      order: 90 // 공격 처리 후에 획득하도록 뒤로 미룸
+    },
+    // [도장] 공격 시 [마도 집중] 소모
+    skill8_consume: {
+      type: "action",
+      stateKey: "skill8_stacks",
+      phase: "onAttack",
+      condition: ["!isDefend", "hasStack:skill8:2"],
+      action: "all_consume",
+      label: "지팡이보다 먹힌다구! [마도 집중]",
+      customTag:"도장",
+      order: 1 // 공격 시작 시점에 이미 2스택이면 바로 소모 처리 (하지만 버프는 이번 공격까지 유지됨)
+    },
+    // [스킬4] 보통공격 시 확정 공증 (2턴)
+    skill4_buff: {
+      type: "buff",
+      originalId: "duncan_skill4",
+      timerKey: "skill4_timer",
+      phase: "onAttack",
+      condition: "isNormal",
+      duration: 2,
+      label: "버프 부여",
+      order: 2
+    },
+    // [스킬9] 보통공격 시 확률 공증 (2턴)
+    skill9_buff: {
+      type: "buff",
+      originalId: "duncan_skill9",
+      timerKey: "skill9_timer",
+      phase: "onAttack",
+      condition: "isNormal",
+      prob: 0.5,
+      duration: 2,
+      label: "버프 부여",
+      order: 3
+    },
+    // [스킬5] 방어 시 보통공격 데미지 부여
+    skill5_buff: {
+      type: "buff",
+      originalId: "duncan_skill5",
+      timerKey: "skill5_timer",
+      phase: "onAttack",
+      condition: "isDefend",
+      duration: 2,
+      label: "발동",
+      order: 1
+    },
+    // [스킬5] 방어 버프 상태 시 보통공격 추가타
+    skill5_hit: {
+      type: "hit",
+      originalId: "duncan_skill5",
+      phase: "onAttack",
+      condition: ["isNormal", "hasBuff:skill5"],
+      hitType: "보통공격", // 추가타지만 보통공격 판정 (평타뎀증 적용)
+      valKey: 0,
+      label: "저격 전의 정적",
+      order: 0
+    },
+  },
+  "rutenix": {
+    normalTrigger: "rutenix_skill1",
+    ultTrigger: "rutenix_skill2",
+
+    // [스킬2] 앵커 혼란 (고정공증 부여)
+    skill2_buff: {
+      type: "buff",
+      originalId: "rutenix_skill2",
+      timerKey: "skill2_timer",
+      phase: "onCalculateDamage",
+      condition: ["isUlt", "self_buff_mode"],
+      duration: 1, // 아군 부여는 1턴임
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
+      order: 2
+    },
+    // [스킬4] 보통공격 시 기초공증 (최대 2중첩)
+    skill4_buff: {
+      type: "buff",
+      originalId: "rutenix_skill4",
+      timerKey: "skill4_timer",
+      phase: "onAttack",
+      condition: "isNormal",
+      prob: 0.5,
+      duration: 3,
+      maxStacks: 2,
+      label: "발동",
+      order: 1
+    },
+    // [스킬5] 피격 시 기초공증 (1중첩)
+    skill5_buff: {
+      type: "buff",
+      originalId: "rutenix_skill5",
+      timerKey: "skill5_timer",
+      triggers: ["being_hit"],
+      duration: 1,
+      label: "발동",
+      order: 1
+    },
+    // [스킬7] 아군 보통공격 시 기초공증 (최대 4중첩)
+    skill7_buff: {
+      type: "buff",
+      originalId: "rutenix_skill7",
+      timerKey: "skill7_timer",
+      triggers: ["ally_attack"],
+      prob: 0.5,
+      duration: 2,
+      maxStacks: 4,
+      label: "발동",
       order: 1
     }
   },
@@ -777,7 +1070,9 @@ export const simParams = {
       phase: "onAttack",
       condition: "isNormal",
       duration: 1,
-      label: "부여",
+      label: "버프 부여",
+      valKey: "max",
+      showAtkBoost: true,
       order: 1
     },
     // [필살기] 고요한 호흡 (3턴 버프 타이머)
@@ -788,7 +1083,9 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 3,
-      label: "부여",
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
       order: 1
     },
     // [패시브2] 체력응축 스택 (자가 획득)
@@ -797,10 +1094,11 @@ export const simParams = {
       id: "skill4_stacks", 
       originalId: "jetblack_skill4",
       phase: "onAttack",
-      condition: "!isDefend",
+      condition: "isNormal",
       maxStacks: 6,
-      label: "획득",
-      order: 2
+      label: "[체력응축] 획득",
+      customTag: "패시브2",
+      order: 4
     },
     // [도장] 체력응축 스택 (아군 공격 시 획득)
     skill4_stack_ally: {
@@ -811,7 +1109,8 @@ export const simParams = {
       condition: "isStamp",
       prob: 0.33,
       maxStacks: 6,
-      label: "아군 지원 획득",
+      label: "[체력응축] 획득",
+      customTag: "도장",
       order: 1
     },
     // [패시브2] 체력응축 6스택 필살기 추가타
@@ -822,7 +1121,8 @@ export const simParams = {
       condition: ["isUlt", "hasStack:skill4:6"],
       valKey: "추가공격",
       label: "매서운 질주의 길",
-      order: 10 // 스택 적립(order 2) 이후에 판정
+      customTag: "패시브2",
+      order: 10 
     },
     // [패시브2] 체력응축 스택 소모
     skill4_consume: {
@@ -831,7 +1131,9 @@ export const simParams = {
       phase: "onAttack",
       condition: ["isUlt", "hasStack:skill4:6"],
       action: "all_consume",
-      label: "체력응축",
+      label: "매서운 질주의 길 [체력응축]",
+      customTag: "패시브2",
+      icon: "icon/passive2.webp",
       order: 11 
     },
     // [패시브5] 전력 응원 (보통공격 시 상시 추가타)
@@ -841,8 +1143,9 @@ export const simParams = {
       phase: "onAttack",
       condition: "isNormal",
       valKey: "추가공격",
+      customTag:"패시브5",      
       label: "전력 응원",
-      order: 1
+      order: 3
     },
     // [패시브3] 마음의 물결 (확률 트리거뎀증)
     skill5_buff: {
@@ -853,8 +1156,8 @@ export const simParams = {
       condition: "isNormal",
       prob: 0.5,
       duration: 2,
-      label: "발동",
-      order: 3
+      label: "버프 부여",
+      order: 2
     }
   }
 };

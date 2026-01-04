@@ -36,6 +36,9 @@ export const simCharData = {
     }
   },
   "tayangsuyi": {
+    stateDisplay: {
+        "skill4_spirit_stacks": "[전의]"
+    },
     commonControls: ["ally_warrior_debuffer_count", "ally_ult_count"],
     initialState: {
         skill4_spirit_stacks: 0,
@@ -161,11 +164,11 @@ export const simCharData = {
             if (hasScar) {
                 // 각흔 소모 (패시브4 조건: 필살기로 타격 시 해제)
                 ctx.simState.scar_stacks = 0;
-                ctx.log("각흔", "consume");
+                ctx.log({ name: "쇄강파 공격 [각흔]", icon: "icon/attack(strong).webp" }, "consume", null, null, false, "필살기");
             } else {
                 // 각흔 부여
                 ctx.simState.scar_stacks = 1;
-                ctx.log("각흔", "apply");
+                ctx.log({ name: "쇄강파 공격 [각흔]", icon: "icon/attack(strong).webp" }, "apply", null, null, false, "필살기");
             }
         }
         return { extraHits: [] };
@@ -321,6 +324,10 @@ export const simCharData = {
   },
   "tyrantino": {
     commonControls: ["hit_prob"],
+    stateDisplay: {
+        "fury_stacks": "용의 분노",
+        "fear_timer": "용족의 위압"
+    },
     initialState: {
         fury_stacks: 0,      // 이름 복구
         fear_timer: [],      // 이름 복구
@@ -334,7 +341,7 @@ export const simCharData = {
 
     // 2. 공격
     onAttack: (ctx) => {
-        // 모든 추가타 로직은 sim_params.js에서 자동 처리됨
+        // [도장] 필살기 시 위압 수급 로직은 순서 보장을 위해 sim_params로 이관
         return { extraHits: [] };
     },
 
@@ -442,12 +449,15 @@ export const simCharData = {
   },
   "locke": {
     commonControls: ["hit_prob"],
+    stateDisplay: {
+        "blood_mark_timer": "호혈표지"
+    },
     tooltipDesc: "자동 체크 시 적군의 HP는 1턴에 100%로 시작해 마지막 턴에 0%가 되게 설정하며, 턴 내에서는 파티원이 먼저 행동한다 가정합니다.",
     customControls: [
         { id: "enemy_hp_percent", type: "input", label: "적 HP(%)", min: 1, max: 100, initial: 100, hasAuto: true, autoId: "enemy_hp_auto" }
     ],
     initialState: {
-        skill8_timer: [],      // 호혈표지 (배열)
+        blood_mark_timer: [],      // 호혈표지 (배열)
         skill5_timer: [],     
         skill8_buff_timer: 0   // 필살기 버프 (숫자)
     },
@@ -460,12 +470,12 @@ export const simCharData = {
         if (ctx.isUlt) {
             // [필살기]
             // 1. 도장 조건 체크: 호혈표지 2중첩 이상 시 필살기 버프
-            if (ctx.stats.stamp && ctx.simState.skill8_timer.length >= 2) {
+            if (ctx.stats.stamp && ctx.simState.blood_mark_timer.length >= 2) {
                 ctx.setTimer("skill8_buff_timer", 1);
             }
 
             // 2. 패시브5 (피의 공명) 추가타: 호혈표지 2중첩 이상 OR 적 HP 25% 미만
-            if (ctx.simState.skill8_timer.length >= 2 || enemyHp < 25) {
+            if (ctx.simState.blood_mark_timer.length >= 2 || enemyHp < 25) {
                 extraHits.push(p.skill7_hit);
             }
         }
@@ -522,7 +532,10 @@ export const simCharData = {
     }
   },
   "jetblack": {
-    commonControls: ["ally_warrior_debuffer_count"],
+    stateDisplay: {
+        "skill4_stacks": "[체력응축]"
+    },
+    commonControls: [],
     initialState: {
         skill4_stacks: 0, // 명칭 변경
         skill1_timer: 0,
@@ -530,10 +543,14 @@ export const simCharData = {
         skill5_timer: 0
     },
     onTurn: (ctx) => {
-        // [다양수이 방식] 아군 전사/방해 수만큼 트리거 발생
-        const allyCount = ctx.customValues.ally_warrior_debuffer_count || 0;
-        for (let i = 0; i < allyCount; i++) {
-            ctx.checkStackTriggers("ally_attack");
+        // 1+3n턴(1턴 제외)은 아군 필살기 턴이므로 보통공격 트리거 미발생
+        const isAllyUltTurn = (ctx.t > 1 && (ctx.t - 1) % 3 === 0);
+        
+        if (!isAllyUltTurn) {
+            const allyCount = 4;
+            for (let i = 0; i < allyCount; i++) {
+                ctx.checkStackTriggers("ally_attack");
+            }
         }
     },
     onAttack: (ctx) => {
@@ -545,21 +562,191 @@ export const simCharData = {
     },
     getLiveBonuses: (ctx) => {
         const bonuses = { "고정공증": 0, "트리거뎀증": 0 };
+        const baseAtk = ctx.baseStats ? ctx.baseStats["공격력"] : 0;
         
         // 1. [스킬1] 보통공격 후 고정공증 (30%)
         if (ctx.simState.skill1_timer > 0) {
-            bonuses["고정공증"] += ctx.getVal(0, '고정공증');
+            // 기초공격력의 n% 만큼 가산
+            const rate = ctx.getVal(0, 'max');
+            bonuses["고정공증"] += baseAtk * (rate / 100);
         }
 
         // 2. [스킬2] 필살기 후 고정공증 (15%) 및 트리거뎀증 (30%)
         if (ctx.simState.skill2_timer > 0) {
-            bonuses["고정공증"] += ctx.getVal(1, '고정공증');
-            bonuses["트리거뎀증"] += ctx.getVal(1, '트리거뎀증');
+            // 기초공격력의 n% 만큼 가산 (calc[0])
+            const rate = ctx.getVal(1, 0); 
+            bonuses["고정공증"] += baseAtk * (rate / 100);
+            
+            // 발동 스킬 효과 증가 (calc[1])
+            bonuses["트리거뎀증"] += ctx.getVal(1, 1);
         }
 
         // 3. [스킬5] 확률형 트리거뎀증 (24%)
         if (ctx.simState.skill5_timer > 0) {
-            bonuses["트리거뎀증"] += ctx.getVal(4, '트리거뎀증');
+            bonuses["트리거뎀증"] += ctx.getVal(4, '트리거뎀증'); // buffEffects 참조
+        }
+
+        return bonuses;
+    }
+  },
+  "famido": {
+    stateDisplay: {
+        "tactical_stacks": "[전술 판독]"
+    },
+    customControls: [
+        { id: "ally_hit_prob", type: "input", label: "아군 피격 확률(%)", min: 0, max: 100, initial: 30, description: "매 턴 아군 4명이 각각 공격받을 확률입니다." }
+    ],
+    initialState: {
+        tactical_stacks: 0,
+        skill2_timer: 0,
+        skill2_fixed_timer: 0,
+        skill4_timer: 0,
+        skill5_timer: [],
+        skill4_boost_timer: 0
+    },
+    onTurn: (ctx) => {
+        // 1. [포지션3 고정] 매턴 전술 판독 1스택 획득
+        ctx.gainStack({ id: "tactical_stacks", originalId: "famido_skill4", maxStacks: 3, label: "[전술 판독] 획득", customTag: "패시브2" });
+    },
+    onEnemyHit: (ctx) => {
+        // 아군 4명 피격 시뮬레이션 (5스킬 스택 수급)
+        // 본인 피격 여부와 상관없이 엔진 예외처리에 의해 매턴 실행됨
+        const hitProb = (ctx.customValues.ally_hit_prob || 0) / 100;
+        for (let i = 0; i < 4; i++) {
+            if (Math.random() < hitProb) {
+                ctx.checkBuffTriggers("ally_hit");
+            }
+        }
+    },
+    onAfterAction: (ctx) => {
+        // ... (필요 시 다른 로직 추가)
+    },
+    getLiveBonuses: (ctx) => {
+        const bonuses = { "기초공증": 0, "고정공증": 0 };
+        
+        // 1. 기초공증 합산 (스택형: 스킬 2, 4, 5) - 스킬 6(15%)은 엔진이 자동 합산
+        if (ctx.simState.skill2_timer > 0) bonuses["기초공증"] += ctx.getVal(1, 0);
+        if (ctx.simState.skill4_timer > 0) bonuses["기초공증"] += ctx.getVal(3, 0);
+        
+        const s5Stacks = (ctx.simState.skill5_timer || []).length;
+        if (s5Stacks > 0) bonuses["기초공증"] += s5Stacks * ctx.getVal(4, '기초공증');
+
+        // 2. 현재 기초공격력 계산 (가산 버프의 기준점)
+        const br = Number(ctx.stats.s1) || 0;
+        const totalBaseAtkRate = 100 + (br >= 50 ? 15 : 0) + bonuses["기초공증"];
+        const currentBaseAtk = ctx.baseStats["공격력"] * (totalBaseAtkRate / 100);
+
+        // 3. 고정공증 합산 (필살기 도장 + 4스킬 전술 판독)
+        // [필살기 도장] 전용 타이머(skill2_fixed_timer)를 체크하여 후적용 보장
+        if (ctx.stats.stamp && ctx.simState.skill2_fixed_timer > 0) {
+            bonuses["고정공증"] += currentBaseAtk * (ctx.getVal(1, 2) / 100);
+        }
+        // [4스킬 전술 판독]
+        if (ctx.simState.skill4_boost_timer > 0) {
+            bonuses["고정공증"] += currentBaseAtk * (ctx.getVal(3, 1) / 100);
+        }
+
+        return bonuses;
+    }
+  },
+  "rikano": {
+    getLiveBonuses: (ctx) => {
+        const bonuses = { "공증": 0, "뎀증디버프": 0, "필살기뎀증": 0 };
+        
+        // 1. 공증/필살기뎀증
+        // 스킬 3(18%)과 스킬 4(13.8%)는 엔진이 defaultBuffSkills를 통해 자동으로 합산하므로 수동 추가 제외
+
+        // 2. 뎀증디버프 합산 (중첩 가능)
+        if (ctx.simState.skill1_timer > 0) bonuses["뎀증디버프"] += ctx.getVal(0, 0);
+        if (ctx.simState.skill2_timer > 0) bonuses["뎀증디버프"] += ctx.getVal(1, 0, !!ctx.stats.stamp);
+        if (ctx.simState.skill8_timer > 0) bonuses["뎀증디버프"] += ctx.getVal(7, 0);
+
+        return bonuses;
+    }
+  },
+  "duncan": {
+    initialState: {
+        skill8_stacks: 0,
+        skill2_timer: 0,
+        skill4_timer: 0,
+        skill9_timer: 0,
+        skill5_timer: 0
+    },
+    getLiveBonuses: (ctx) => {
+        const bonuses = { "공증": 0, "뎀증": 0, "평타뎀증": 0 };
+        
+        // 1. 공증 합산
+        // [스킬2] 필살기 사용 시 공증 (30%)
+        if (ctx.simState.skill2_timer > 0) bonuses["공증"] += ctx.getVal(1, 0);
+        // [스킬4] 보통공격 시 확정 공증 (16%)
+        if (ctx.simState.skill4_timer > 0) bonuses["공증"] += ctx.getVal(3, 0);
+        // [스킬9] 보통공격 시 확률 공증 (32%)
+        if (ctx.simState.skill9_timer > 0) bonuses["공증"] += ctx.getVal(8, 0);
+
+        // 2. 뎀증 합산 (마도 집중)
+        // [스킬8] 스택 2 이상 시 뎀증 150%
+        if (ctx.simState.skill8_stacks >= 2) bonuses["뎀증"] += ctx.getVal(7, 0);
+
+        // 3. 평타뎀증 합산
+        // [스킬7] 상시 평타뎀증 (45%)
+        // (엔진이 자동 합산하므로 여기서는 빈 객체 유지 또는 다른 조건 필요 시 사용)
+        
+        return bonuses;
+    }
+  },
+  "rutenix": {
+    customControls: [
+        { id: "self_buff_mode", type: "toggle", label: "2스킬 자가 수급", initial: false, description: "체크 시 필살기의 공격력 흡수 버프를 본인이 받습니다." }
+    ],
+    commonControls: ["hit_prob"],
+    initialState: {
+        skill2_timer: 0,
+        skill4_timer: [],
+        skill5_timer: 0,
+        skill7_timer: []
+    },
+    onTurn: (ctx) => {
+        // 아군 4명 기준으로 트리거 발생 (1+3n턴 제외)
+        const isAllyUltTurn = (ctx.t > 1 && (ctx.t - 1) % 3 === 0);
+        if (!isAllyUltTurn) {
+            const allyCount = 4;
+            for (let i = 0; i < allyCount; i++) {
+                ctx.checkBuffTriggers("ally_attack");
+            }
+        }
+    },
+    getLiveBonuses: (ctx) => {
+        const bonuses = { "기초공증": 0, "고정공증": 0 };
+        
+        // 1. 기초공증 합산 (스택형: 스킬 4, 5, 7)
+        // [스킬4] 보통공격 시 15% (최대 2중첩)
+        const s4Stacks = (ctx.simState.skill4_timer || []).length;
+        if (s4Stacks > 0) bonuses["기초공증"] += s4Stacks * ctx.getVal(3, 1);
+        
+        // [스킬5] 피격 시 30% (1중첩)
+        if (ctx.simState.skill5_timer > 0) bonuses["기초공증"] += ctx.getVal(4, '기초공증');
+        
+        // [스킬7] 아군 보통공격 시 12% (최대 4중첩)
+        const s7Stacks = (ctx.simState.skill7_timer || []).length;
+        if (s7Stacks > 0) bonuses["기초공증"] += s7Stacks * ctx.getVal(6, '기초공증');
+
+        // 2. 상시 기초공증 (패시브4: 스킬6) - 4성(50단계) 해금 체크
+        const br = Number(ctx.stats.s1) || 0;
+        let passiveBaseAtkRate = 0;
+        if (br >= 50) {
+            passiveBaseAtkRate = ctx.getVal(5, '기초공증');
+        }
+
+        // 3. [스킬2] 필살기 고정공증 계산 (자가 수급 모드일 때만)
+        if (ctx.customValues.self_buff_mode && ctx.simState.skill2_timer > 0) {
+            // 현재의 '진짜 기초공격력' 계산 (기본값 + 상시 패시브 + 실시간 스택)
+            const totalBaseAtkRate = 100 + passiveBaseAtkRate + bonuses["기초공증"];
+            const currentBaseAtk = ctx.baseStats["공격력"] * (totalBaseAtkRate / 100);
+            
+            // 도장 여부에 따른 배율 가져오기 (45% vs 90%)
+            const isStamped = !!ctx.stats.stamp; 
+            const boostRate = ctx.getVal(1, 0, isStamped); 
+            bonuses["고정공증"] += currentBaseAtk * (boostRate / 100);
         }
 
         return bonuses;

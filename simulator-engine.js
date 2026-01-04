@@ -28,33 +28,38 @@ export function formatBuffState(charId, state, charDataObj, sData, stats) {
         let foundCustomTag = null;
         const matchedParam = Object.values(charParams).find(p => p.stateKey === key || p.id === key || (p.id && `${p.id}_stacks` === key) || p.timerKey === key);
         if (matchedParam && matchedParam.customTag) foundCustomTag = matchedParam.customTag;
+
+        // [수정] 스킬 매칭보다 statusRegistry를 먼저 확인하여 아이콘 우선순위 보장
+        const statusInfo = getStatusInfo(key);
         const skillMatch = key.match(/^skill(\d+)/);
-        if (skillMatch) {
+
+        if (statusInfo) {
+            name = statusInfo.name; icon = statusInfo.icon;
+            if (Array.isArray(val)) displayDur = `${Math.max(...val.map(v => v.dur || v))}턴 / ${val.length}중첩`;
+            else displayDur = typeof val === 'number' ? `${val}${statusInfo.unit || '턴'}` : "ON";
+        } else if (skillMatch) {
             const skillIdx = parseInt(skillMatch[1]) - 1, br = parseInt(stats.s1 || 0);
             if ((skillIdx === 4 && br < 30) || (skillIdx === 5 && br < 50) || (skillIdx === 6 && br < 75)) continue;
+            
+            // [수정] 턴 옆 상태창에서는 부모 카테고리([패시브2]) 대신 고유 이름만 사용
             const info = getSkillInfo(skillIdx);
-            name = foundCustomTag ? `[${foundCustomTag}]` : (customName || `[${info.label}]`);
+            name = customName || `[${info.label}]`; // customName(체력응축 등)이 있으면 그것을 최우선 사용
             icon = info.icon;
+            
             if (Array.isArray(val)) displayDur = `${Math.max(...val.map(v => v.dur || v))}턴 / ${val.length}중첩`;
             else displayDur = key.includes('stack') ? `${val}중첩` : `${val}턴`;
-        } else {
-            const statusInfo = getStatusInfo(key);
-            if (statusInfo) {
-                name = statusInfo.name; icon = statusInfo.icon;
-                if (Array.isArray(val)) displayDur = `${Math.max(...val.map(v => v.dur || v))}턴 / ${val.length}중첩`;
-                else displayDur = typeof val === 'number' ? `${val}${statusInfo.unit || '턴'}` : "ON";
-            } else if (customName) {
-                name = customName;
-                displayDur = typeof val === 'number' ? (key.includes('stack') ? `${val}중첩` : `${val}턴`) : "ON";
-            } else continue;
-        }
+        } else if (customName) {
+            name = customName;
+            displayDur = typeof val === 'number' ? (key.includes('stack') ? `${val}중첩` : `${val}턴`) : "ON";
+        } else continue;
+
         entries.push({ name, duration: displayDur, icon });
     }
     return entries;
 }
 
 export function runSimulationCore(context) {
-    const { charId, charData, sData, stats, turns, iterations, targetCount, manualPattern, enemyAttrIdx, defaultGrowthRate } = context;
+    const { charId, charData, sData, stats, turns, iterations, targetCount, manualPattern, enemyAttrIdx, customValues, defaultGrowthRate } = context;
     const br = parseInt(stats.s1 || 0), baseStats = calculateBaseStats(charData.base, parseInt(stats.lv || 1), br, parseInt(stats.s2 || 0), defaultGrowthRate);
     const iterationResults = [];
     const flow = sData.flow || ['onTurn', 'onCalculateDamage', 'onAttack', 'onEnemyHit', 'onAfterAction'];
@@ -72,10 +77,10 @@ export function runSimulationCore(context) {
             const isUlt = actionType === 'ult', isDefend = actionType === 'defend';
             const skill = isUlt ? charData.skills[1] : charData.skills[0];
 
-            if (context.customValues.enemy_hp_auto) context.customValues.enemy_hp_percent = Math.max(0, Math.floor(100 * (1 - t / turns)));
+            if (customValues.enemy_hp_auto) customValues.enemy_hp_percent = Math.max(0, Math.floor(100 * (1 - t / turns)));
 
             const isAllyUltTurn = sData.isAllyUltTurn ? sData.isAllyUltTurn(t) : (t > 1 && (t - 1) % 3 === 0);
-            const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues: context.customValues, logs, debugLogs: turnDebugLogs });
+            const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs: turnDebugLogs });
 
             const getLatestSubStats = (isMulti = true) => {
                 const subStats = { "기초공증": 0, "공증": 0, "고정공증": 0, "뎀증": 0, "평타뎀증": 0, "필살기뎀증": 0, "트리거뎀증": 0, "뎀증디버프": 0, "속성디버프": 0, "HP증가": 0, "기초HP증가": 0, "회복증가": 0, "배리어증가": 0, "지속회복증가": 0 };
@@ -107,7 +112,9 @@ export function runSimulationCore(context) {
                 const latest = getLatestSubStats(isM);
                 
                 const coef = event.val !== undefined ? event.val : (event.max || event.fixed || event.coef || 0);
-                const dUnit = calculateDamage(event.type || "추가공격", latest.atk, latest.subStats, coef, false, charData.info.속성, enemyAttrIdx);
+                // [수정] event.type이 있으면 그것을 사용 (보통공격 판정용)
+                const dmgType = event.type || "추가공격";
+                const dUnit = calculateDamage(dmgType, latest.atk, latest.subStats, coef, false, charData.info.속성, enemyAttrIdx);
                 const finalD = isM ? dUnit * targetCount : dUnit;
                 currentTDmg += finalD;
 
@@ -117,19 +124,30 @@ export function runSimulationCore(context) {
                     const label = event.customTag || (sIdx !== -1 ? ( (idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
                     
                     // [수정] 요약 로그에서는 확률 표시 제거
-                    logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${label}]</span> ${event.name || s?.name || "추가타"}:</span> <span class="sim-log-dmg">+${finalD.toLocaleString()}</span></div>`);
+                    logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${dmgType === '보통공격' ? '보통공격' : label}]</span> ${event.name || s?.name || "추가타"}:</span> <span class="sim-log-dmg">+${finalD.toLocaleString()}</span></div>`);
                 }
                 
                 const sS = latest.subStats;
-                // [수정] 추가공격에 실제로 적용되는 스탯만 필터링
-                const tags = { "뎀증": "Dmg", "트리거뎀증": "T-Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
-                const dmgStr = Object.entries(tags)
+                // [수정] 공격 타입에 따라 실제 적용되는 태그만 선택
+                const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
+                let specKey = "";
+                let specLabel = "";
+                
+                if (dmgType === "보통공격") { specKey = "평타뎀증"; specLabel = "N-Dmg"; }
+                else if (dmgType === "필살공격") { specKey = "필살기뎀증"; specLabel = "U-Dmg"; }
+                else { specKey = "트리거뎀증"; specLabel = "T-Dmg"; }
+
+                let dmgStr = Object.entries(baseTags)
                     .map(([key, label]) => sS[key] !== 0 ? ` / ${label}:${parseFloat(sS[key].toFixed(1))}%` : "")
                     .join("");
+                
+                if (specKey && sS[specKey] !== 0) {
+                    dmgStr += ` / ${specLabel}:${parseFloat(sS[specKey].toFixed(1))}%`;
+                }
 
                 const iconPath = event.icon || s?.icon || 'icon/main.png';
                 const debugChanceText = event.chance ? ` (${event.chance}%)` : '';
-                dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${iconPath}|[${event.customTag || "추가타"}] ${event.name || s?.name || "추가타"}: +${finalD.toLocaleString()}${debugChanceText}`, 
+                dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${iconPath}|[${dmgType === '보통공격' ? '보통공격' : (event.customTag || "추가타")}] ${event.name || s?.name || "추가타"}: +${finalD.toLocaleString()}${debugChanceText}`, 
                     statMsg: `Coef:${parseFloat((isM ? coef * targetCount : coef).toFixed(1))}% / Atk:${latest.atk.toLocaleString()}${dmgStr}` 
                 });
             };
@@ -151,11 +169,15 @@ export function runSimulationCore(context) {
                     if (e.type === "buff") dynCtx.applyBuff(e);
                     else if (e.type === "hit") {
                         const idx = dynCtx.getSkillIdx(e.originalId);
-                        const val = e.val !== undefined ? e.val : (e.valIdx !== undefined ? dynCtx.getVal(idx, e.valIdx) : dynCtx.getVal(idx, e.valKey || '추가공격'));
+                        const valKey = e.valKey !== undefined ? e.valKey : '추가공격';
+                        const val = e.val !== undefined ? e.val : (e.valIdx !== undefined ? dynCtx.getVal(idx, e.valIdx) : dynCtx.getVal(idx, valKey));
                         const res = dynCtx.applyHit(e, val);
                         if (res) calculateAndLogHit({ ...res, isMulti: e.isMulti });
                     } else if (e.type === "action" && e.action === "all_consume") {
-                        const key = e.stateKey || (e.id + "_stacks"); dynCtx.simState[key] = 0; dynCtx.log(e.label || key, "all_consume");
+                        const key = e.stateKey || (e.id + "_stacks"); 
+                        dynCtx.simState[key] = 0; 
+                        // [수정] 객체 전체를 전달하여 태그와 아이콘 정보 누락 방지
+                        dynCtx.log(e, "all_consume");
                     } else if (e.type === "stack") {
                         dynCtx.gainStack(e);
                     }
@@ -182,7 +204,7 @@ export function runSimulationCore(context) {
             const autoExecuteParams = (phase) => {
                 const p = simParams[charId]; if (!p) return;
                 Object.values(p).filter(param => param.phase === phase || (param.triggers && param.triggers.includes(phase)))
-                    .sort((a, b) => (a.order || 999) - (b.order || 999)).forEach(processExtra);
+                    .sort((a, b) => (a.order !== undefined ? a.order : 999) - (b.order !== undefined ? b.order : 999)).forEach(processExtra);
             };
 
             const handleHook = (hook) => {
@@ -274,9 +296,11 @@ export function runSimulationCore(context) {
                             dynCtx.debugLogs.push(`ICON:icon/simul.png|${msg}`);
                             // [수정] being_hit 트리거에 연결된 모든 파라미터(스택, 버프, 반격 등)를 일괄 실행
                             autoExecuteParams("being_hit");
-                            handleHook('onEnemyHit');
                         }
                     }
+                    // [예외처리] 본인 피격 여부와 상관없이 매턴 적 공격 페이즈 훅 실행 (파미도 아군 피격 등)
+                    handleHook('onEnemyHit');
+                    
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 } else if (step === 'onAfterAction') {

@@ -21,7 +21,10 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
 
     const skillLvMap = stats.skills || {};
     const lvS = parseInt(skillLvMap[`s${targetIdx+1}`] || 1) || 1;
-    const rate = getSkillMultiplier(lvS, skill.startRate || 0.6) || 1;
+    
+    // [수정] 던컨처럼 calc[0]에 startRate가 있는 경우를 위해 탐색 순서 개선
+    const baseStartRate = skill.startRate || skill.calc?.[0]?.startRate || 0.6;
+    const rate = getSkillMultiplier(lvS, baseStartRate) || 1;
     
     let e = null;
     // [수정] effectKey가 객체(직접 정의된 val)인 경우 바로 사용
@@ -31,7 +34,8 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
     else if (typeof effectKey === 'number') {
         if (skill.calc && skill.calc[effectKey]) {
             const calcItem = skill.calc[effectKey];
-            e = (typeof calcItem === 'object') ? (isStampIcon ? (calcItem.stampMax || calcItem.max) : calcItem.max) : calcItem;
+            // [수정] 아이콘 이름뿐만 아니라 인자로 받은 isStamp 값도 확인
+            e = (typeof calcItem === 'object') ? ((isStamp || isStampIcon) ? (calcItem.stampMax || calcItem.max) : calcItem.max) : calcItem;
         }
     } else {
         const effects = isStamp ? (skill.stampBuffEffects || {}) : (skill.buffEffects || {});
@@ -80,10 +84,10 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
 }
 
 export function createSimulationContext(baseData) {
-    const { t, turns, charId, charData, stats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs } = baseData;
+    const { t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs } = baseData;
 
     const ctx = {
-        t, turns, charId, charData, stats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, debugLogs,
+        t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, debugLogs,
         isHit: false, // 엔진에서 직접 수정 가능하도록 객체 속성으로 관리
 
         setTimer: (key, dur) => {
@@ -92,14 +96,32 @@ export function createSimulationContext(baseData) {
 
         addTimer: (key, dur, data = {}, maxStacks = Infinity) => {
             if (!simState[key]) simState[key] = [];
-            const finalDur = ctx.isHit ? dur + 1 : dur;
+            // [수정] applyBuff에서 이미 보정된 dur를 받으므로 여기서 중복 가산(+1) 제거
+            const finalDur = dur; 
+            
             if (simState[key].length < maxStacks) {
                 const item = (data && typeof data === 'object' && Object.keys(data).length > 0) ? { ...data, dur: finalDur } : finalDur;
                 simState[key].push(item);
             } else {
-                const oldest = simState[key][0];
-                if (typeof oldest === 'object') oldest.dur = finalDur;
-                else simState[key][0] = finalDur;
+                // [개선] 가득 찼을 경우, 남은 시간이 가장 적은 스택을 찾아 갱신
+                let minIdx = 0;
+                let minVal = Infinity;
+                
+                simState[key].forEach((s, idx) => {
+                    const currentDur = typeof s === 'object' ? s.dur : s;
+                    if (currentDur < minVal) {
+                        minVal = currentDur;
+                        minIdx = idx;
+                    }
+                });
+
+                if (typeof simState[key][minIdx] === 'object') {
+                    simState[key][minIdx].dur = finalDur;
+                    // 데이터가 새로 들어왔다면 덮어쓰기
+                    if (data && typeof data === 'object') Object.assign(simState[key][minIdx], data);
+                } else {
+                    simState[key][minIdx] = finalDur;
+                }
             }
         },
 
@@ -117,35 +139,78 @@ export function createSimulationContext(baseData) {
         log: (idx, res, chance, dur, skipPush = false, customTag = null) => {
             let sName = "스킬", sIcon = "icon/main.png", label = "";
 
+            // 1. 스킬 정보 및 아이콘 결정
             if (typeof idx === 'object' && idx !== null) {
-                // 객체 형태: 이름과 아이콘 직접 지정 (최우선)
-                sName = idx.name || "알 수 없음";
-                sIcon = idx.icon || "icon/main.png";
-                label = customTag || idx.label || "";
+                const actualIdx = (idx.originalIdx !== undefined) ? idx.originalIdx : 
+                                  (idx.originalId ? charData.skills.findIndex(s => s.id === idx.originalId) : -1);
+                const s = (actualIdx !== -1) ? charData.skills[actualIdx] : null;
+                
+                // 이름 결정
+                sName = idx.name || s?.name || "";
+                sIcon = idx.icon || s?.icon || "icon/main.png";
+                
+                // 라벨(태그) 결정
+                let labelIdx = actualIdx;
+                if (s?.syncLevelWith) {
+                    const parentIdx = charData.skills.findIndex(ps => ps.id === s.syncLevelWith);
+                    if (parentIdx !== -1) labelIdx = parentIdx;
+                }
+                const isStampIcon = sIcon.includes('sigilwebp/');
+                const autoLabel = isStampIcon ? "도장" : (labelIdx === 0 ? "보통공격" : labelIdx === SKILL_IDX.ULT ? "필살기" : labelIdx >= 7 ? "도장" : `패시브${labelIdx-1}`);
+                
+                // [중요] customTag를 최우선으로, 그 다음 객체 내부 label, 마지막으로 자동 라벨
+                label = idx.customTag || customTag || idx.label || autoLabel;
             } else if (typeof idx === 'number') {
                 const br = parseInt(stats.s1 || 0);
                 if (UNLOCK_REQ[idx] && br < UNLOCK_REQ[idx]) return "";
                 const s = charData.skills[idx];
-                sName = s?.name || "알 수 없음"; sIcon = s?.icon || "icon/main.png";
-                // [수정] 인덱스 0은 보통공격으로 명시
-                label = customTag || (idx === 0 ? "보통공격" : idx === SKILL_IDX.ULT ? "필살기" : idx >= 7 ? "도장" : `패시브${idx-1}`);
+                const isStampIcon = s?.icon && s.icon.includes('sigilwebp/');
+                let labelIdx = idx;
+                if (s?.syncLevelWith) {
+                    const parentIdx = charData.skills.findIndex(ps => ps.id === s.syncLevelWith);
+                    if (parentIdx !== -1) labelIdx = parentIdx;
+                }
+                sName = s?.name || ""; sIcon = s?.icon || "icon/main.png";
+                const autoLabel = isStampIcon ? "도장" : (labelIdx === 0 ? "보통공격" : labelIdx === SKILL_IDX.ULT ? "필살기" : labelIdx >= 7 ? "도장" : `패시브${labelIdx-1}`);
+                label = customTag || autoLabel;
             } else if (typeof idx === 'string') {
                 const statusInfo = getStatusInfo(idx);
-                if (statusInfo) { sName = statusInfo.name; sIcon = statusInfo.icon; label = customTag || ""; }
-                else { sName = idx; if (sName === "피격") sIcon = "icon/simul.png"; else if (sName === "아군공격") sIcon = "icon/compe.png"; label = customTag || label; }
+                if (statusInfo) { 
+                    sName = statusInfo.name; 
+                    sIcon = statusInfo.icon; 
+                    // [수정] 상태이상/스택은 연동된 스킬이 있더라도 부모 카테고리를 따르지 않고 고유 이름을 유지
+                    label = customTag || ""; 
+                } else { 
+                    sName = (idx.includes('_') || idx.includes('timer')) ? "" : idx;
+                    if (idx === "피격") sIcon = "icon/simul.png"; 
+                    else if (idx === "아군공격") sIcon = "icon/compe.png"; 
+                    label = customTag || ""; 
+                }
             }
 
+            // 2. 메시지 조립
             const actionMap = { "Buff": "버프 발동", "Trigger": "발동", "apply": "부여", "consume": "소모", "all_consume": "모두 소모", "gain": "획득", "activate": "발동" };
-            let finalRes = actionMap[res] || res;
+            
+            let actionMsg = actionMap[res] || "";
+            let userMsg = "";
+            if (typeof idx === 'object' && idx !== null && idx.label) userMsg = idx.label;
+            else userMsg = (actionMap[res] === undefined) ? (res || "") : "";
+
+            // [중요] 모든 자동 생략 로직 제거. 사용자가 준 문구와 시스템 메시지를 정직하게 조립.
+            let finalRes = (userMsg + " " + actionMsg).trim();
+            
             let m = []; if (chance) m.push(`${chance}%`); if (dur) m.push(`${dur}턴`);
             const mS = m.length ? ` (${m.join(' / ')})` : "";
-            const msg = `ICON:${sIcon}|${label ? '['+label+'] ' : ""}${sName}${finalRes ? ' '+finalRes : ""}${mS}`;
+            
+            // [최종] 태그 + 이름 + 메시지 순서로 무조건 결합
+            const finalTag = label ? `[${label.replace(/[\[\]]/g, '')}] ` : "";
+            const msg = `ICON:${sIcon}|${finalTag}${sName}${sName && finalRes ? ' ' : ''}${finalRes}${mS}`;
             if (!skipPush) debugLogs.push(msg);
             return msg;
         },
 
         applyBuff: (skillParam) => {
-            const { prob, duration, label, originalId, maxStacks, customTag, skipTrigger, probSource, scaleProb, startRate, valKey } = skillParam;
+            const { prob, duration, label, originalId, maxStacks, customTag, skipTrigger, probSource, scaleProb, startRate, valKey, showAtkBoost } = skillParam;
             let finalProb = prob;
             if (probSource && customValues[probSource] !== undefined) finalProb = customValues[probSource] / 100;
             
@@ -168,27 +233,81 @@ export function createSimulationContext(baseData) {
             if (finalProb === undefined || Math.random() < finalProb) {
                 const timerKey = skillParam.timerKey || `${originalId?.split('_').pop()}_timer`;
                 
+                // [추가] 피격 타이밍(본인 또는 아군)에 걸리는 버프는 지속시간 +1 보정
+                let finalDuration = duration;
+                if (ctx.isHit || skillParam.triggers?.includes("ally_hit") || skillParam.triggers?.includes("being_hit")) {
+                    finalDuration += 1;
+                }
+
                 // [수정] valKey가 있으면 값을 계산하여 데이터에 포함
                 let data = {};
-                if (valKey && originalId) {
+                let finalLabel = label;
+                if (originalId) {
                     const idx = ctx.getSkillIdx(originalId);
                     if (idx !== -1) {
-                        data.val = ctx.getVal(idx, valKey);
+                        const rate = ctx.getVal(idx, valKey || 'max');
+                        data.val = rate;
+                        
+                        // [추가] 공격력 가산 수치 표시 로직
+                        if (showAtkBoost && ctx.baseStats) {
+                            let currentBaseAtkRate = 100;
+                            
+                            // 모든 스킬을 순회하며 현재 활성화된 기초공증 수치를 수집
+                            charData.skills.forEach((s, sIdx) => {
+                                const hasBaseAtkEffect = (s.buffEffects && s.buffEffects["기초공증"]) || 
+                                                         (s.stampBuffEffects && s.stampBuffEffects["기초공증"]);
+                                
+                                if (hasBaseAtkEffect) {
+                                    // 타이머 또는 스택 키 찾기
+                                    const tKey = s.id.split('_').pop() + "_timer";
+                                    const sKey = s.id.split('_').pop() + "_stacks";
+                                    const stateVal = simState[tKey] || simState[sKey] || simState[s.id + "_timer"] || simState[s.id + "_stacks"];
+                                    
+                                    if (stateVal) {
+                                        const count = Array.isArray(stateVal) ? stateVal.length : (typeof stateVal === 'number' && stateVal > 0 ? 1 : 0);
+                                        if (count > 0) {
+                                            // 현재 도장 상태와 상관없이 기초공증 수치는 존재하므로 getVal로 안전하게 가져옴
+                                            const sVal = ctx.getVal(sIdx, '기초공증');
+                                            currentBaseAtkRate += (sVal * count);
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // 패시브4(스킬6)와 같은 상시 패시브는 state에 타이머가 없으므로 별도 체크
+                            const br = Number(stats.s1) || 0;
+                            if (br >= 50 && charData.skills[5]?.buffEffects?.["기초공증"]) {
+                                // 이미 루프에서 체크되지 않았다면(타이머가 없으므로) 수동 합산
+                                if (!(simState["skill6_timer"] || simState["rutenix_skill6_timer"])) {
+                                    currentBaseAtkRate += ctx.getVal(5, '기초공증');
+                                }
+                            }
+                            
+                            const currentBaseAtk = ctx.baseStats["공격력"] * (currentBaseAtkRate / 100);
+                            const boostVal = Math.floor(currentBaseAtk * (rate / 100));
+                            finalLabel += ` (+${boostVal.toLocaleString()} 가산)`;
+                        }
                     }
                 }
 
-                if (maxStacks && maxStacks > 1) ctx.addTimer(timerKey, duration, data, maxStacks);
-                else ctx.setTimer(timerKey, duration);
+                if (maxStacks && maxStacks > 1) ctx.addTimer(timerKey, finalDuration, data, maxStacks);
+                else ctx.setTimer(timerKey, finalDuration);
                 
                 if (originalId && !skipTrigger) ctx.checkStackTriggers(originalId);
                 const displayProb = finalProb && finalProb < 1 ? finalProb * 100 : null;
-                return ctx.log(ctx.getSkillIdx(originalId), label, displayProb, duration, false, customTag);
+                // [수정] skipDurLog 옵션 지원
+                const logDur = skillParam.skipDurLog ? null : finalDuration;
+                
+                // [수정] 직접 지정된 아이콘이 있으면 객체 형태로 넘김
+                const logIdx = skillParam.icon ? { name: "", icon: skillParam.icon, label: "", originalIdx: ctx.getSkillIdx(originalId) } : ctx.getSkillIdx(originalId);
+                
+                return ctx.log(logIdx, finalLabel, displayProb, logDur, false, customTag);
             }
             return "";
         },
 
         applyHit: (skillParam, val) => {
-            const { prob, label, originalId, skipTrigger, customTag, scaleProb, startRate, icon } = skillParam;
+            const { prob, label, originalId, skipTrigger, customTag, scaleProb, startRate, icon, hitType } = skillParam;
             
             // [추가] 레벨 비례 확률 적용
             let finalProb = prob;
@@ -210,19 +329,21 @@ export function createSimulationContext(baseData) {
             if (finalProb === undefined || Math.random() < finalProb) {
                 // 확률이 1(100%)보다 작을 때만 퍼센트 수치 부여, 아니면 null
                 const chanceVal = (finalProb !== undefined && finalProb < 1) ? Math.floor(finalProb * 100) : null;
-                return { val, chance: chanceVal, name: label, skillId: originalId, skipTrigger, customTag, icon };
+                // hitType이 있으면 그것을 type으로 반환 (계산기 연동용)
+                return { val, chance: chanceVal, name: label, skillId: originalId, skipTrigger, customTag, icon, type: hitType };
             }
             return null;
         },
 
-        gainStack: (skillParam) => {
+        gainStack: (skillParam, chance) => {
             const { maxStacks, label, originalId, customTag } = skillParam;
             // [수정] 자동 접미사 제거: id를 그대로 키로 사용
             const stateKey = skillParam.stateKey || skillParam.id;
             if (!stateKey) return "";
             simState[stateKey] = Math.min(maxStacks, (simState[stateKey] || 0) + 1);
-            let skillIdx = originalId ? charData.skills.findIndex(s => s.id === originalId) : null;
-            return ctx.log(skillIdx !== -1 ? skillIdx : null, label, null, null, false, customTag);
+            
+            // [수정] 파라미터 객체 전체를 전달하여 태그/아이콘 정보 보존
+            return ctx.log(skillParam, label, chance, null, false, customTag);
         },
 
         checkStackTriggers: (triggerId) => {
@@ -251,7 +372,9 @@ export function createSimulationContext(baseData) {
                         }
                         if (Math.random() >= finalProb) return; // 확률 실패 시 중단
                     }
-                    ctx.gainStack(param);
+                    // [수정] 최종 계산된 확률을 % 단위로 gainStack에 전달
+                    const chanceVal = finalProb !== undefined && finalProb < 1 ? Math.floor(finalProb * 100) : null;
+                    ctx.gainStack(param, chanceVal);
                 }
             });
         },
@@ -288,43 +411,55 @@ export function createSimulationContext(baseData) {
         },
 
         checkCondition: (cond) => {
-            if (!cond) return true;
-            if (Array.isArray(cond)) return cond.every(c => ctx.checkCondition(c));
-            if (typeof cond === 'object') {
-                if (cond.or) return cond.or.some(c => ctx.checkCondition(c));
-                if (cond.and) return cond.and.every(c => ctx.checkCondition(c));
-                return true;
-            }
-            if (typeof cond === 'string') {
-                if (cond === "isUlt") return ctx.isUlt;
-                if (cond === "isNormal") return !ctx.isUlt && !ctx.isDefend;
-                if (cond === "isDefend") return ctx.isDefend;
-                if (cond === "!isDefend") return !ctx.isDefend;
-                if (cond === "isStamp") return stats.stamp;
-                if (cond === "enemy_hp_50") return (customValues.enemy_hp_percent || 0) >= 50; // HP 50% 이상 조건 추가
-                if (cond.startsWith("targetCount:")) {
-                    const expr = cond.split(":")[1];
-                    if (expr.startsWith(">=")) return targetCount >= parseInt(expr.substring(2));
-                    if (expr.startsWith("<=")) return targetCount <= parseInt(expr.substring(2));
-                    return targetCount === parseInt(expr);
+            const innerCheck = (c) => {
+                if (!c) return true;
+                if (Array.isArray(c)) return c.every(item => innerCheck(item));
+                if (typeof c === 'object') {
+                    if (c.or) return c.or.some(item => innerCheck(item));
+                    if (c.and) return c.and.every(item => innerCheck(item));
+                    return true;
                 }
-                if (cond.startsWith("hasBuff:")) {
-                    const key = cond.split(":")[1] + "_timer";
-                    return Array.isArray(simState[key]) ? simState[key].length > 0 : simState[key] > 0;
-                }
-                if (cond.startsWith("hasStack:")) {
-                    const parts = cond.split(":");
-                    let key = parts[1];
-                    // 제공된 키가 없으면 _stacks를 붙여서 시도 (하위 호환)
-                    if (simState[key] === undefined) {
-                        key = key.endsWith("_stacks") ? key : key + "_stacks";
+                if (typeof c === 'string') {
+                    if (c === "isUlt") return !!isUlt;
+                    if (c === "isNormal") return !isUlt && !isDefend;
+                    if (c === "isDefend") return !!isDefend;
+                    if (c === "!isDefend") return !isDefend;
+                    if (c === "isStamp") return !!stats.stamp;
+                    if (c === "enemy_hp_50") return (customValues?.enemy_hp_percent || 0) >= 50;
+                    
+                    // 커스텀 컨트롤 값 체크 (self_buff_mode 등)
+                    if (customValues && customValues[c] !== undefined) return !!customValues[c];
+
+                    if (c.startsWith("targetCount:")) {
+                        const expr = c.split(":")[1];
+                        if (expr.startsWith(">=")) return targetCount >= parseInt(expr.substring(2));
+                        if (expr.startsWith("<=")) return targetCount <= parseInt(expr.substring(2));
+                        return targetCount === parseInt(expr);
                     }
-                    const val = simState[key];
-                    const count = Array.isArray(val) ? val.length : (val || 0);
-                    return count >= (parts[2] ? parseInt(parts[2]) : 1);
+                    if (c.startsWith("hasBuff:")) {
+                        let key = c.split(":")[1];
+                        if (!key.endsWith("_timer") && !key.endsWith("_stacks")) {
+                            key = key + "_timer";
+                        }
+                        return Array.isArray(simState[key]) ? simState[key].length > 0 : simState[key] > 0;
+                    }
+                    if (c.startsWith("hasStack:")) {
+                        const parts = c.split(":");
+                        let key = parts[1];
+                        // 1. 입력된 키 그대로 먼저 찾아봄
+                        let val = simState[key];
+                        // 2. 없으면 _stacks를 붙여서 찾아봄
+                        if (val === undefined && !key.endsWith("_stacks")) {
+                            key = key + "_stacks";
+                            val = simState[key];
+                        }
+                        const count = Array.isArray(val) ? val.length : (val || 0);
+                        return count >= (parts[2] ? parseInt(parts[2]) : 1);
+                    }
                 }
-            }
-            return false;
+                return false;
+            };
+            return innerCheck(cond);
         },
 
         getWeightedVal: (skillParam, effectKey) => {
