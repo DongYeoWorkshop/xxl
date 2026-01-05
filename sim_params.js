@@ -1205,16 +1205,6 @@ export const simParams = {
       showAtkBoost: true,
       customTag: "도장",
       order: 2
-    },
-    // [테스트용] 매턴 발생하는 100% 데미지 추가타
-    test_hit: {
-      type: "hit",
-      phase: "onAttack",
-      order: 99, // 맨 뒤로 설정
-      val: 100,  // 100% 계수
-      label: "테스트 공격",
-      icon: "icon/attack.webp",
-      condition: "!isDefend" // 방어 시에는 발생 안 함
     }
   }
 };
