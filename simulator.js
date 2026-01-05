@@ -417,14 +417,67 @@ function renderSimulatorUI(charId) {
     const brVal = parseInt(stats.s1||0), brText = (brVal < 5) ? `0성 ${brVal}단계` : (brVal < 15) ? `1성 ${brVal-5}단계` : (brVal < 30) ? `2성 ${brVal-15}단계` : (brVal < 50) ? `3성 ${brVal-30}단계` : (brVal < 75) ? `4성 ${brVal-50}단계` : "5성";
     const hasMulti = data.skills.some(s => s.isMultiTarget || (s.damageDeal && s.damageDeal.some(d => d.isMultiTarget || d.stampIsMultiTarget)));
     const savedTurns = localStorage.getItem('sim_last_turns') || "10", savedIters = localStorage.getItem('sim_last_iters') || "100";
+    // [수정] 캐릭터별 서포터 설정 저장/로드
+    const supportStorageKey = `sim_last_support_${charId}`;
+    const savedSupport = localStorage.getItem(supportStorageKey) || "none";
 
     container.innerHTML = getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, savedTurns, savedIters);
+
+    // [수정] 서포터 선택 UI 로직
+    const supportToggleBtn = document.getElementById('sim-support-toggle-btn');
+    const supportPanel = document.getElementById('sim-support-selector-panel');
+    const selectedIcon = document.getElementById('sim-selected-support-icon');
+    const selectedName = document.getElementById('sim-selected-support-name');
+
+    // 초기 상태 설정 함수
+    const updateSupportDisplay = (id) => {
+        const supportInfo = constants.supportList.find(s => s.id === id) || { name: '선택 안 함', id: 'none' };
+        selectedName.textContent = supportInfo.name;
+        if (id === 'none') {
+            selectedIcon.innerHTML = '<span style="font-size:0.8em; color:#888;">-</span>';
+            selectedIcon.style.border = '1px solid #bbb';
+        } else {
+            selectedIcon.innerHTML = `<img src="images/${id}.webp" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='icon/main.png'">`;
+            selectedIcon.style.border = '2px solid #6f42c1';
+        }
+        
+        // 패널 내 선택 표시 업데이트
+        container.querySelectorAll('.sim-support-option').forEach(opt => {
+            const isSelected = opt.dataset.id === id;
+            opt.querySelector('div, img').style.borderColor = isSelected ? '#6f42c1' : '#ddd';
+            opt.querySelector('div, img').style.boxShadow = isSelected ? '0 0 5px rgba(111, 66, 193, 0.5)' : 'none';
+        });
+    };
+
+    if (supportToggleBtn && supportPanel) {
+        // 초기화
+        updateSupportDisplay(savedSupport);
+
+        // 토글 버튼 클릭
+        supportToggleBtn.onclick = () => {
+            const isHidden = supportPanel.style.display === 'none';
+            supportPanel.style.display = isHidden ? 'block' : 'none';
+            supportToggleBtn.querySelector('span:last-child').textContent = isHidden ? '▲' : '▼';
+        };
+
+        // 옵션 클릭
+        container.querySelectorAll('.sim-support-option').forEach(opt => {
+            opt.onclick = () => {
+                const newId = opt.dataset.id;
+                // [수정] 캐릭터별 키에 저장
+                localStorage.setItem(supportStorageKey, newId);
+                updateSupportDisplay(newId);
+                supportPanel.style.display = 'none'; // 선택 후 닫기
+                supportToggleBtn.querySelector('span:last-child').textContent = '▼';
+            };
+        });
+    }
 
     renderSimAttributePicker(charId);
     container.querySelector('.sim-char-profile-img').onclick = () => document.querySelector(`.main-image[data-id="${charId}"]`)?.click();
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
-        const tooltipText = sData.tooltipDesc || "아군과 적군은 매턴 보통공격을 하며 3턴의 필살기를 가지고 있고 방어를 사용하지 않음을 가정으로 합니다.";
+        const tooltipText = sData.tooltipDesc || "서포터는 시뮬탭 내부에 지정한 본인의 행동을 그대로 따라합니다.";
         infoIcon.onclick = (e) => { e.stopPropagation(); import('./ui.js').then(ui => { const control = ui.showSimpleTooltip(infoIcon, tooltipText); setTimeout(() => control.remove(), 3000); }); };
     }
 
@@ -616,7 +669,10 @@ function runSimulation(charId) {
             }
         });
 
-        const result = runSimulationCore({ charId, charData: data, sData, stats, turns, iterations, targetCount, manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [], enemyAttrIdx, customValues, defaultGrowthRate: constants.defaultGrowth });
+        // [수정] 서포터 ID 추가 (캐릭터별 저장된 값 사용)
+        const supportId = localStorage.getItem(`sim_last_support_${charId}`) || 'none';
+
+        const result = runSimulationCore({ charId, charData: data, sData, stats, turns, iterations, targetCount, manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [], enemyAttrIdx, customValues, defaultGrowthRate: constants.defaultGrowth, supportId });
         
         localStorage.setItem(`sim_last_result_${charId}`, JSON.stringify(result));
         

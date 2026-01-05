@@ -572,7 +572,7 @@ export const simParams = {
       type: "buff",
       originalId: "tamrang_skill4",
       timerKey: "skill4_timer",
-      maxStacks: 10,
+      maxStacks: 1,
       phase: "onAttack",
       prob: 0.5,
       duration: 2,
@@ -1158,6 +1158,63 @@ export const simParams = {
       duration: 2,
       label: "버프 부여",
       order: 2
+    }
+  },
+  "beernox": {
+    normalTrigger: "beernox_skill1",
+    ultTrigger: "beernox_skill2",
+
+    // [스킬1] 보통공격 시 고정공증 부여 (1턴)
+    skill1_buff: {
+      type: "buff",
+      originalId: "beernox_skill1",
+      timerKey: "skill1_timer",
+      phase: "onAttack",
+      condition: "isNormal",
+      duration: 1,
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
+      order: 1
+    },
+    // [필살기] 임박 상품 쟁탈전 (1턴)
+    skill2_buff: {
+      type: "buff",
+      originalId: "beernox_skill2",
+      timerKey: "skill2_timer",
+      phase: "onAttack",
+      condition: "isUlt",
+      duration: 1,
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
+      order: 1
+    },
+    // [도장] 필살기 확률 2배 효과 (추가 가산으로 구현)
+    skill2_stamp_buff: {
+      type: "buff",
+      originalId: "beernox_skill2", // 스탬프 패시브 대신 실제 수치가 있는 스킬2를 참조
+      timerKey: "skill2_stamp_timer",
+      phase: "onAttack",
+      condition: ["isUlt", "isStamp"],
+      prob: 0.33,
+      duration: 1,
+      label: "필살기 2배 발동!",
+      icon: "images/sigilwebp/sigil_beernox.webp", // 도장 이미지 추가
+      valKey: 0,
+      showAtkBoost: true,
+      customTag: "도장",
+      order: 2
+    },
+    // [테스트용] 매턴 발생하는 100% 데미지 추가타
+    test_hit: {
+      type: "hit",
+      phase: "onAttack",
+      order: 99, // 맨 뒤로 설정
+      val: 100,  // 100% 계수
+      label: "테스트 공격",
+      icon: "icon/attack.webp",
+      condition: "!isDefend" // 방어 시에는 발생 안 함
     }
   }
 };

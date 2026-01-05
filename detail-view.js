@@ -36,6 +36,13 @@ export function updateSkillDetailDisplay(skill, idx, dom, logic) {
 
     setupAttributeControl(state.currentId, logic);
     
+    // [추가] 커스텀 컨트롤 및 대상 수 조절 버튼 렌더링
+    const charDataObj = charData[state.currentId];
+    if (charDataObj) {
+        renderCustomControls(state.currentId, charDataObj, logic);
+        renderGlobalTargetControl(state.currentId, charDataObj, logic);
+    }
+    
     // [확실한 복구] 상세 정보 큰 아이콘 및 '+' 버튼 클릭 이벤트
     setTimeout(() => {
         const bigIcon = detailDisplay.querySelector('.skill-detail-main-icon');

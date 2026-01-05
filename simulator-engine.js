@@ -4,6 +4,7 @@ import { commonControls } from './simulator-common.js';
 import { getStatusInfo, formatStatusMessage, formatStatusAction } from './simulator-status.js';
 import { simParams } from './sim_params.js';
 import { createSimulationContext, getSkillValue } from './sim_ctx.js';
+import { initSupportState, processSupportTurn, getSupportBonuses } from './sim_support.js';
 
 export function formatBuffState(charId, state, charDataObj, sData, stats) {
     const entries = [];
@@ -59,13 +60,16 @@ export function formatBuffState(charId, state, charDataObj, sData, stats) {
 }
 
 export function runSimulationCore(context) {
-    const { charId, charData, sData, stats, turns, iterations, targetCount, manualPattern, enemyAttrIdx, customValues, defaultGrowthRate } = context;
+    const { charId, charData, sData, stats, turns, iterations, targetCount, manualPattern, enemyAttrIdx, customValues, defaultGrowthRate, supportId } = context;
     const br = parseInt(stats.s1 || 0), baseStats = calculateBaseStats(charData.base, parseInt(stats.lv || 1), br, parseInt(stats.s2 || 0), defaultGrowthRate);
     const iterationResults = [];
     const flow = sData.flow || ['onTurn', 'onCalculateDamage', 'onAttack', 'onEnemyHit', 'onAfterAction'];
 
     for (let i = 0; i < iterations; i++) {
         let simState = sData.initialState ? JSON.parse(JSON.stringify(sData.initialState)) : {};
+        // [추가] 서포터 상태 초기화
+        let supportState = initSupportState(supportId);
+        
         let total = 0, logs = [], perTurnDmg = [], stateLogs = [], detailedLogs = [], turnInfoLogs = [];
         const ultCD = (() => { const m = charData.skills[1].desc?.match(/\(쿨타임\s*:\s*(\d+)턴\)/); return m ? parseInt(m[1]) : 3; })();
         let cd = { ult: ultCD };
@@ -83,11 +87,18 @@ export function runSimulationCore(context) {
             const isAllyUltTurn = sData.isAllyUltTurn ? sData.isAllyUltTurn(t) : (t > 1 && (t - 1) % 3 === 0);
             const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs: turnDebugLogs });
 
+            // [추가] 서포터 턴 진행 (메인 캐릭터보다 먼저 행동)
+            processSupportTurn(dynCtx, supportId, supportState);
+
             const getLatestSubStats = (isMulti = true) => {
                 const subStats = { "기초공증": 0, "공증": 0, "고정공증": 0, "뎀증": 0, "평타뎀증": 0, "필살기뎀증": 0, "트리거뎀증": 0, "뎀증디버프": 0, "속성디버프": 0, "HP증가": 0, "기초HP증가": 0, "회복증가": 0, "배리어증가": 0, "지속회복증가": 0 };
                 
-                // 컨텍스트에 현재 단일/광역 상태 업데이트
+                // [수정] 서포터 보너스 계산 전, 현재 공격의 광역 여부를 컨텍스트에 먼저 동기화
                 dynCtx.isMulti = isMulti;
+
+                // 그 후 서포터 보너스 합산 (메인 캐릭터 데이터 및 업데이트된 컨텍스트 전달)
+                const sBonuses = getSupportBonuses(supportId, supportState, charData, dynCtx);
+                for (const k in sBonuses) if (subStats.hasOwnProperty(k)) subStats[k] += sBonuses[k];
 
                 charData.skills.forEach((s, idx) => {
                     if (!charData.defaultBuffSkills?.includes(s.id) || idx === 1) return;
@@ -104,36 +115,31 @@ export function runSimulationCore(context) {
             };
 
             const calculateAndLogHit = (event) => {
-                // [수정] skillId 혹은 originalId 둘 다 확인하여 스킬 정보 찾기
+                // [수정] 스킬 정보 찾기 및 광역 여부 엄밀 판정
                 const targetId = event.skillId || event.originalId;
-                const s = charData.skills.find(sk => sk.id === targetId);
+                const sIdx = targetId ? charData.skills.findIndex(sk => sk.id === targetId) : -1;
+                const s = sIdx !== -1 ? charData.skills[sIdx] : null;
+                
+                // 1. 광역 여부 결정 (이벤트 명시값 -> 스킬 데이터값 -> 기본값 false 순)
                 const isM = event.isMulti !== undefined ? event.isMulti : (s?.isMultiTarget || false);
                 
-                // 최신 스탯을 가져오되 현재 공격의 광역 여부 전달
+                // 2. 결정된 광역 여부에 맞춰 스탯(서포터 가중치 포함) 계산
                 const latest = getLatestSubStats(isM);
                 
                 const coef = event.val !== undefined ? event.val : (event.max || event.fixed || event.coef || 0);
-                // [수정] event.type이 있으면 그것을 사용 (보통공격 판정용)
                 const dmgType = event.type || "추가공격";
                 const dUnit = calculateDamage(dmgType, latest.atk, latest.subStats, coef, false, charData.info.속성, enemyAttrIdx);
                 const finalD = isM ? dUnit * targetCount : dUnit;
                 currentTDmg += finalD;
 
                 if (finalD > 0) {
-                    // [수정] ID 기반으로 스킬 인덱스를 정확히 찾아 라벨 생성
-                    const sIdx = s ? charData.skills.findIndex(sk => sk.id === s.id) : -1;
                     const label = event.customTag || (sIdx !== -1 ? ( (idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
-                    
-                    // [수정] 요약 로그에서는 확률 표시 제거
-                    logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${dmgType === '보통공격' ? '보통공격' : label}]</span> ${event.name || s?.name || "추가타"}:</span> <span class="sim-log-dmg">+${finalD.toLocaleString()}</span></div>`);
+                    logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${dmgType === '보통공격' ? '보통공격' : label}]</span> ${event.name || s?.name || "추가타"}:</span> <span class="sim-log-dmg">+${Math.floor(finalD).toLocaleString()}</span></div>`);
                 }
                 
                 const sS = latest.subStats;
-                // [수정] 공격 타입에 따라 실제 적용되는 태그만 선택
                 const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
-                let specKey = "";
-                let specLabel = "";
-                
+                let specKey = ""; let specLabel = "";
                 if (dmgType === "보통공격") { specKey = "평타뎀증"; specLabel = "N-Dmg"; }
                 else if (dmgType === "필살공격") { specKey = "필살기뎀증"; specLabel = "U-Dmg"; }
                 else { specKey = "트리거뎀증"; specLabel = "T-Dmg"; }
@@ -141,14 +147,13 @@ export function runSimulationCore(context) {
                 let dmgStr = Object.entries(baseTags)
                     .map(([key, label]) => sS[key] !== 0 ? ` / ${label}:${parseFloat(sS[key].toFixed(1))}%` : "")
                     .join("");
-                
-                if (specKey && sS[specKey] !== 0) {
-                    dmgStr += ` / ${specLabel}:${parseFloat(sS[specKey].toFixed(1))}%`;
-                }
+                if (specKey && sS[specKey] !== 0) dmgStr += ` / ${specLabel}:${parseFloat(sS[specKey].toFixed(1))}%`;
 
                 const iconPath = event.icon || s?.icon || 'icon/main.png';
                 const debugChanceText = event.chance ? ` (${event.chance}%)` : '';
-                dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${iconPath}|[${dmgType === '보통공격' ? '보통공격' : (event.customTag || "추가타")}] ${event.name || s?.name || "추가타"}: +${finalD.toLocaleString()}${debugChanceText}`, 
+                dynCtx.debugLogs.push({ 
+                    type: 'action', 
+                    msg: `ICON:${iconPath}|[${dmgType === '보통공격' ? '보통공격' : (event.customTag || "추가타")}] ${event.name || s?.name || "추가타"}: +${Math.floor(finalD).toLocaleString()}${debugChanceText}`, 
                     statMsg: `Coef:${parseFloat((isM ? coef * targetCount : coef).toFixed(1))}% / Atk:${latest.atk.toLocaleString()}${dmgStr}` 
                 });
             };
@@ -237,48 +242,55 @@ export function runSimulationCore(context) {
                         dynCtx.debugLogs.push('ICON:icon/simul.png|[방어]');
                         handleHook('onAttack');
                     } else {
-                        let mDmgSum = 0, mCoef = 0;
+                        let turnDmgTotal = 0;
                         const targetType = isUlt ? "필살공격" : "보통공격";
                         
-                        // 스킬의 광역 여부를 판단하여 스탯 계산에 반영 (로그 수치 정상화)
-                        const skillIsMulti = skill.isMultiTarget || false;
-                        const st = getLatestSubStats(skillIsMulti); 
-
                         skill.damageDeal?.forEach((e, idx) => {
                             if (e.type !== targetType && e.type !== "기초공격") return;
-                            
+
+                            // [수정] 광역 여부 판정 우선순위: 개별항목 설정 > 스킬 전체 설정
+                            let isM = false;
+                            if (e.isSingleTarget) isM = false;
+                            else if (e.isMultiTarget || (isUlt && stats.stamp && e.stampIsMultiTarget)) isM = true;
+                            else isM = skill.isMultiTarget || false;
+
+                            const tc = isM ? targetCount : 1;
+
+                            // 결정된 광역 여부에 맞춰 스탯 계산 (서포터 가중치 반영)
+                            const st = getLatestSubStats(isM); 
+
                             const param = e.val ? e.val : idx;
                             const fC = dynCtx.getVal(charData.skills.indexOf(skill), param);
-
-                            const isM = e.isMultiTarget || (isUlt && stats.stamp && e.stampIsMultiTarget) || skill.isMultiTarget;
-                            const tc = isM ? targetCount : 1;
                             
-                            mDmgSum += calculateDamage(targetType, st.atk, st.subStats, fC, isUlt && stats.stamp, charData.info.속성, enemyAttrIdx) * tc;
-                            mCoef += ((isUlt && stats.stamp && e.val.stampMax) ? e.val.stampMax : e.val.max) * tc;
+                            const hitDmg = calculateDamage(targetType, st.atk, st.subStats, fC, isUlt && stats.stamp, charData.info.속성, enemyAttrIdx) * tc;
+                            const hitCoef = ((isUlt && stats.stamp && e.val.stampMax) ? e.val.stampMax : e.val.max) * tc;
+
+                            if (hitDmg > 0) {
+                                const mainTag = `<span class="sim-log-tag">[${isUlt?'필살기':'보통공격'}]</span>`;
+                                
+                                // 요약 로그
+                                logs.push(`<div class="sim-log-line"><span>${mainTag} ${skill.name}:</span> <span class="sim-log-dmg">+${Math.floor(hitDmg).toLocaleString()}</span></div>`);
+                                
+                                // 상세 로그 (수치 정보 포함)
+                                const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
+                                const specKey = isUlt ? "필살기뎀증" : "평타뎀증";
+                                const specLabel = isUlt ? "U-Dmg" : "N-Dmg";
+                                let dmgStr = Object.entries(baseTags)
+                                    .map(([key, label]) => st.subStats[key] !== 0 ? ` / ${label}:${parseFloat(st.subStats[key].toFixed(1))}%` : "")
+                                    .join("");
+                                if (st.subStats[specKey] !== 0) dmgStr += ` / ${specLabel}:${parseFloat(st.subStats[specKey].toFixed(1))}%`;
+
+                                dynCtx.debugLogs.push({ 
+                                    type: 'action', 
+                                    msg: `ICON:${skill.icon}|${mainTag} ${skill.name}: +${Math.floor(hitDmg).toLocaleString()}`, 
+                                    statMsg: `Coef:${parseFloat((isM ? hitCoef : hitCoef / tc).toFixed(1))}% / Atk:${st.atk.toLocaleString()}${dmgStr}` 
+                                });
+
+                                turnDmgTotal += hitDmg;
+                            }
                         });
 
-                        // [수정] 공격 타입에 따라 실제 적용되는 태그만 선택
-                        const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
-                        const specKey = isUlt ? "필살기뎀증" : "평타뎀증";
-                        const specLabel = isUlt ? "U-Dmg" : "N-Dmg";
-                        
-                        let dmgStr = Object.entries(baseTags)
-                            .map(([key, label]) => st.subStats[key] !== 0 ? ` / ${label}:${parseFloat(st.subStats[key].toFixed(1))}%` : "")
-                            .join("");
-                        
-                        // 특수 뎀증 추가 (평타 또는 필살기)
-                        if (st.subStats[specKey] !== 0) {
-                            dmgStr += ` / ${specLabel}:${parseFloat(st.subStats[specKey].toFixed(1))}%`;
-                        }
-
-                        if (mDmgSum > 0) {
-                            const mainTag = `<span class="sim-log-tag">[${isUlt?'필살기':'보통공격'}]</span>`;
-                            logs.push(`<div class="sim-log-line"><span>${mainTag} ${skill.name}:</span> <span class="sim-log-dmg">+${mDmgSum.toLocaleString()}</span></div>`);
-                            dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${skill.icon}|${mainTag} ${skill.name}: +${mDmgSum.toLocaleString()}`, 
-                                statMsg: `Coef:${parseFloat(mCoef.toFixed(1))}% / Atk:${st.atk.toLocaleString()}${dmgStr}` 
-                            });
-                        }
-                        currentTDmg = mDmgSum;
+                        currentTDmg = turnDmgTotal;
                         handleHook('onAttack');
                     }
                     autoExecuteParams(step);

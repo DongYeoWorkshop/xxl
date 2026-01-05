@@ -19,7 +19,7 @@ export const state = {
 
 export const constants = {
     defaultGrowth: 1.05, // [추가] 모든 캐릭터 공통 성장률
-    disabledSimChars: ['beernox', 'kyrian', 'meng', 'leo'], // [추가] 시뮬레이터 미지원 캐릭터
+    disabledSimChars: ['kyrian', 'meng', 'leo'], // [수정] beernox 제거
     attributeList: ["불", "물", "나무", "빛", "어둠"],
     attributeImageMap: {
         "불": "icon/fire.webp",
@@ -34,5 +34,21 @@ export const constants = {
         "힐러": "icon/heal.webp",
         "방해": "icon/debuffer.webp",
         "수호": "icon/knight.webp"
-    }
+    },
+    // [추가] 시뮬레이터 서포터 목록 (사용자가 직접 편집 가능)
+    supportList: [
+        { id: 'none', name: '선택 안 함' },
+        { id: 'khafka', name: '카푸카' },
+        { id: 'anuberus', name: '아누비로스' },
+        { id: 'beernox', name: '비어녹스' },
+        { id: 'orem', name: '오렘' },
+        { id: 'tyrantino', name: '타란디오' },
+        { id: 'wang', name: '멍' },
+        { id: 'tamrang', name: '탐랑' },
+        { id: 'jetblack', name: '제트블랙' },
+        { id: 'rutenix', name: '루테닉스' },
+        { id: 'duncan', name: '던컨 찰스' },
+        { id: 'famido', name: '파미도' },
+        { id: 'rikano', name: '리카노' }
+    ]
 };

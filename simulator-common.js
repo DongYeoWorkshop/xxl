@@ -1,5 +1,7 @@
 // simulator-common.js
 
+import { charData } from './data.js';
+
 /**
  * 시뮬레이터 전역에서 재사용 가능한 공통 컨트롤 정의
  */
@@ -89,3 +91,38 @@ export const UNLOCK_REQ = {
     [SKILL_IDX.PASSIVE_4]: 50,
     [SKILL_IDX.PASSIVE_5]: 75
 };
+
+/**
+ * 캐릭터의 기본 행동(쿨타임 기반)을 반환합니다.
+ * @param {string} charId 캐릭터 ID
+ * @param {number} turn 현재 턴 (1부터 시작)
+ * @returns {'ult'|'normal'} 행동 타입
+ */
+export function getDefaultActionPattern(charId, turn) {
+    const data = charData[charId];
+    if (!data) return 'normal';
+
+    // 쿨타임 파싱 (기본값 3턴)
+    const cdMatch = data.skills[1].desc?.match(/\(쿨타임\s*:\s*(\d+)턴\)/);
+    const CD = cdMatch ? parseInt(cdMatch[1]) : 3;
+
+    // 1턴은 무조건 평타 (초기 쿨타임 고려: 대부분 1턴 궁 불가)
+    // 쿨타임 N턴 -> 1턴(평), 2턴(평)... N턴(평), N+1턴(궁)
+    // 예: CD=3 -> 1,2,3(평), 4(궁)
+    // 예: CD=4 -> 1,2,3,4(평), 5(궁)
+    
+    // [중요] 기존 시뮬레이터 로직과의 통일성 확인 필요
+    // simulator.js: (t > 1 && (t - 1) % CD === 0 ? 'ult' : 'normal')
+    // CD=3일 때: 
+    // t=1: false -> normal
+    // t=2: (1)%3!=0 -> normal
+    // t=3: (2)%3!=0 -> normal
+    // t=4: (3)%3==0 -> ult (맞음!)
+    
+    // CD=2일 때 (바드):
+    // t=1: normal
+    // t=2: (1)%2!=0 -> normal
+    // t=3: (2)%2==0 -> ult (맞음!)
+
+    return (turn > 1 && (turn - 1) % CD === 0) ? 'ult' : 'normal';
+}

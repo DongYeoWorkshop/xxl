@@ -40,6 +40,7 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
     } else {
         const effects = isStamp ? (skill.stampBuffEffects || {}) : (skill.buffEffects || {});
         if (effects[effectKey] !== undefined) e = effects[effectKey];
+        else if (skill.ratioEffects && skill.ratioEffects[effectKey] !== undefined) e = skill.ratioEffects[effectKey]; // [추가] ratioEffects 탐색
         else if (skill.damageDeal) {
             const d = skill.damageDeal.find(dmg => dmg.type === effectKey);
             if (d) e = d.val;
@@ -53,8 +54,8 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
     let val = 0;
     if (typeof e === 'object' && e !== null) {
         if (isStamp) {
-            // stampMax가 없으면 max를 차선책으로 선택 (Karat 대응)
-            val = e.stampMax !== undefined ? e.stampMax : (e.max !== undefined ? e.max : (e.stampFixed !== undefined ? e.stampFixed : (e.attributeMax || e.fixed || 0)));
+            // stampMax가 없으면 max를 차선책으로 선택
+            val = e.stampMax !== undefined ? e.stampMax : (e.max !== undefined ? e.max : (e.stampFixed !== undefined ? e.stampFixed : (e.fixed || e.attributeMax || 0)));
         } else {
             if (e.targetAttribute !== undefined) {
                 if (charData.info.속성 === e.targetAttribute) {
@@ -264,7 +265,15 @@ export function createSimulationContext(baseData) {
                                     const stateVal = simState[tKey] || simState[sKey] || simState[s.id + "_timer"] || simState[s.id + "_stacks"];
                                     
                                     if (stateVal) {
-                                        const count = Array.isArray(stateVal) ? stateVal.length : (typeof stateVal === 'number' && stateVal > 0 ? 1 : 0);
+                                        let count = 0;
+                                        if (Array.isArray(stateVal)) {
+                                            count = stateVal.length;
+                                        } else if (typeof stateVal === 'number' && stateVal > 0) {
+                                            // [수정] 스택 키(_stacks)인 경우 숫자 그대로를 개수로 인정
+                                            const isStackKey = (simState[sKey] !== undefined || (s.id + "_stacks") in simState || sKey.includes('stacks'));
+                                            count = isStackKey ? stateVal : 1;
+                                        }
+                                        
                                         if (count > 0) {
                                             // 현재 도장 상태와 상관없이 기초공증 수치는 존재하므로 getVal로 안전하게 가져옴
                                             const sVal = ctx.getVal(sIdx, '기초공증');

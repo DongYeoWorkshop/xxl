@@ -189,7 +189,7 @@ export const charData = {
         id: "khafka_skill7",
         excludeFromBuffSearch: false,
         decimalPlaces: 2,
-        BuffEffects: { "뎀증디버프": { max: 15 } }, 
+        buffEffects: { "뎀증디버프": { max: 15 } }, 
         buffDesc: "받는 데미지 {0}% 증가 디버프 부여", 
         hasToggle: true, 
         toggleType: "isAppliedStamped",

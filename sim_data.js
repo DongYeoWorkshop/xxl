@@ -806,5 +806,57 @@ export const simCharData = {
 
         return bonuses;
     }
+  },
+  "beernox": {
+    stateDisplay: {
+        "skill7_stacks": "[타임 체크]"
+    },
+    customControls: [
+        { id: "wood_party_active", type: "toggle", label: "나무속성 파티원 3인", initial: false, description: "체크 시 나무속성 아군 3인 이상 조건을 만족한 것으로 간주하여 데미지가 15% 증가합니다." }
+    ],
+    initialState: {
+        skill7_stacks: 0,
+        skill1_timer: 0,
+        skill2_timer: 0,
+        skill2_stamp_timer: 0
+    },
+    onTurn: (ctx) => {
+        // [수정] 2턴부터 타임 체크 스택 획득
+        if (ctx.t > 1 && ctx.simState.skill7_stacks < 15) {
+            ctx.gainStack({ id: "skill7_stacks", originalId: "beernox_skill7", maxStacks: 15, label: "[타임 체크] 획득", customTag: "패시브6" });
+        }
+    },
+    getLiveBonuses: (ctx) => {
+        const bonuses = { "기초공증": 0, "고정공증": 0, "뎀증": 0 };
+        
+        // 1. [패시브3] 나무속성 파티원 조건 체크
+        if (ctx.customValues.wood_party_active) {
+            bonuses["뎀증"] += ctx.getVal(3, '뎀증'); // 스킬4 뎀증 15%
+        }
+
+        // 2. 기초공증 합산 (매턴 쌓이는 타임 체크 스택)
+        const timeStacks = Number(ctx.simState.skill7_stacks) || 0;
+        bonuses["기초공증"] += timeStacks * ctx.getVal(6, '기초공증');
+
+        // 2. 현재 기초공격력 계산 (가산 수치의 기준점)
+        // 기본 100% + 스킬6(15%) + 타임체크 스택
+        const br = Number(ctx.stats.s1) || 0;
+        const totalBaseAtkRate = 100 + (br >= 50 ? 15 : 0) + bonuses["기초공증"];
+        const currentBaseAtk = ctx.baseStats["공격력"] * (totalBaseAtkRate / 100);
+
+        // 3. 고정공증 합산 (스킬 1, 2)
+        if (ctx.simState.skill1_timer > 0) {
+            bonuses["고정공증"] += currentBaseAtk * (ctx.getVal(0, 0) / 100);
+        }
+        if (ctx.simState.skill2_timer > 0) {
+            bonuses["고정공증"] += currentBaseAtk * (ctx.getVal(1, 0) / 100);
+        }
+        // [도장] 2배 효과 (추가 60% 가산)
+        if (ctx.simState.skill2_stamp_timer > 0) {
+            bonuses["고정공증"] += currentBaseAtk * (ctx.getVal(1, 0) / 100);
+        }
+
+        return bonuses;
+    }
   }
 };

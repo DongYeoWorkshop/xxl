@@ -27,7 +27,6 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
     return `
         <div style="margin-bottom:10px; display: flex; justify-content: space-between; align-items: center;">
             <button id="sim-back-to-list" style="background:#f0f0f0;border:1px solid #ddd;color:#666;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">← 캐릭터 목록</button>
-            <div id="sim-info-icon" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #999; color: #999; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; font-weight: bold; margin-right: 5px;">i</div>
         </div>
         <div class="sim-main-container">
             <div class="sim-pane-settings">
@@ -54,6 +53,40 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                 <div id="sim-custom-controls" style="display:none;background:#fff;border:1px solid #ddd;border-radius:12px;padding:15px;margin-bottom:15px;"><div id="sim-custom-list" style="display:flex;flex-wrap:wrap;gap:10px;"></div></div>
 
                 <div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:20px;margin-bottom:15px;">
+                    <!-- [수정] 서포터 선택 섹션 (이미지 그리드 방식) -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                            <label style="font-size:0.85em;font-weight:bold;color:#555;">함께할 서포터 (먼저 행동)</label>
+                            <div id="sim-info-icon" style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #999; color: #999; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; font-weight: bold;">i</div>
+                        </div>
+                        
+                        <!-- 선택된 서포터 표시 및 토글 버튼 -->
+                        <div id="sim-support-toggle-btn" style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #ccc; border-radius:8px; background:#f9f9f9; cursor:pointer; transition:all 0.2s;">
+                            <div id="sim-selected-support-icon" style="width:32px; height:32px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb;">
+                                <span style="font-size:0.8em; color:#888;">-</span>
+                            </div>
+                            <span id="sim-selected-support-name" style="font-weight:bold; color:#333; font-size:0.9em;">선택 안 함</span>
+                            <span style="margin-left:auto; color:#888;">▼</span>
+                        </div>
+
+                        <!-- 서포터 선택 패널 (초기 숨김) -->
+                        <div id="sim-support-selector-panel" style="display:none; margin-top:10px; padding:10px; border:1px solid #eee; border-radius:8px; background:#fff;">
+                            <div class="sim-support-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap:10px;">
+                                <!-- 선택 안 함 옵션 -->
+                                <div class="sim-support-option" data-id="none" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;">
+                                    <div style="width:48px; height:48px; border-radius:50%; background:#f0f0f0; border:2px solid #ddd; display:flex; align-items:center; justify-content:center; color:#888; font-weight:bold;">X</div>
+                                    <span style="font-size:0.75em; color:#666;">해제</span>
+                                </div>
+                                ${constants.supportList.filter(s => s.id !== 'none' && s.id !== charId).map(s => `
+                                    <div class="sim-support-option" data-id="${s.id}" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;">
+                                        <img src="images/${s.id}.webp" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #ddd; background:black;" onerror="this.src='icon/main.png'">
+                                        <span style="font-size:0.75em; color:#666; text-align:center; word-break:keep-all;">${s.name}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
                         <div style="display:flex; align-items: center; gap:8px;">
                             <label style="font-size:0.85em;font-weight:bold;color:#555;">진행 턴 수</label>
