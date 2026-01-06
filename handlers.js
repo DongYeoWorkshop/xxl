@@ -78,13 +78,8 @@ function setupHeaderListeners() {
     const toggleIcon = document.getElementById('header-toggle-icon');
     if (toggleIcon) {
         toggleIcon.onclick = () => {
-            if (state.currentId === 'hero') {
-                const simBtn = document.getElementById('nav-simulator-btn');
-                if (simBtn) handleImageClick(simBtn);
-            } else {
-                const heroBtn = document.querySelector('.main-image[data-id="hero"]');
-                if (heroBtn) handleImageClick(heroBtn);
-            }
+            const headerTitle = document.getElementById('sticky-header-title');
+            if (headerTitle) headerTitle.click();
         };
     }
 
@@ -95,12 +90,15 @@ function setupHeaderListeners() {
             localStorage.removeItem('lastSelectedCharId');
             window.scrollTo(0, 0);
 
+            // [수정] 클래스 교체를 명확하게 수행
+            document.body.classList.remove('hero-mode-active', 'char-page-active', 'sub-page-active');
             document.body.classList.add('landing-page-active');
-            document.body.classList.remove('sub-page-active');
             
             const contentDisplay = document.getElementById('content-display');
             if (contentDisplay) { 
                 contentDisplay.className = 'landing-mode'; 
+                // [추가] 배경 스타일 초기화 (잔여물 제거)
+                contentDisplay.style.removeProperty('--bg-url');
             }
 
             hideAllSections();
@@ -155,7 +153,9 @@ export function hideAllSections() {
 
     // [추가] 캐릭터 전용 UI 요소 초기화
     const favBtn = document.querySelector('.char-fav-btn');
+    const simShortcutBtn = document.querySelector('.sim-shortcut-btn');
     if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
+    if (simShortcutBtn) simShortcutBtn.style.setProperty('display', 'none', 'important');
 
     const contentDisplay = document.getElementById('content-display');
     if (contentDisplay) {
@@ -171,7 +171,15 @@ export function hideAllSections() {
 export function handleImageClick(img) {
     const id = img.dataset.id;
     if (!id) return;
-    window.scrollTo(0, 0);
+    
+    // [수정] 스크롤 위치 복원 로직
+    const savedScroll = localStorage.getItem(`scroll_pos_${id}`);
+    if (savedScroll) {
+        // 약간의 지연 후 스크롤 복원 (DOM 렌더링 대기)
+        setTimeout(() => window.scrollTo(0, parseInt(savedScroll)), 0);
+    } else {
+        window.scrollTo(0, 0);
+    }
     
     // [보강] 모든 페이지 상태 클래스 초기화 후 현재 상태 적용
     document.body.classList.remove('landing-page-active', 'hero-mode-active', 'char-page-active');
@@ -259,37 +267,63 @@ export function handleImageClick(img) {
         
         const applyBackground = (charId, favStatus) => {
             if (!contentDisplay) return;
+            const charBg = document.getElementById('internal-char-bg');
+            
             if (favStatus) {
                 const def = backgroundConfigs["default"], spec = backgroundConfigs[charId] || {};
-                const config = { 
-                    mobile: { ...def.mobile, ...(spec.mobile || {}) }, 
-                    tablet: { ...def.tablet, ...(spec.tablet || {}) }, 
-                    pc: { ...def.pc, ...(spec.pc || {}) } 
+                
+                // 모바일/태블릿/PC 설정 통합 (기본값 + 개별설정)
+                const config = {
+                    mobile: { ...def.mobile, ...(spec.mobile || {}) },
+                    tablet: { ...def.tablet, ...(spec.tablet || {}) },
+                    pc:     { ...def.pc,     ...(spec.pc || {}) }
                 };
-                contentDisplay.style.setProperty('--bg-url', `url('../images/background/${charId}.PNG')`);
+
+                contentDisplay.style.setProperty('--bg-url', `url('../images/background/${charId}.webp')`);
                 
-                // 모바일 변수
-                contentDisplay.style.setProperty('--bg-x-mob', config.mobile.xPos);
-                contentDisplay.style.setProperty('--bg-y-mob', config.mobile.yPos);
-                contentDisplay.style.setProperty('--bg-size-mob', config.mobile.size);
-                
-                // 태블릿 변수
-                contentDisplay.style.setProperty('--bg-x-tab', config.tablet.xPos);
-                contentDisplay.style.setProperty('--bg-y-tab', config.tablet.yPos);
-                contentDisplay.style.setProperty('--bg-size-tab', config.tablet.size);
-                
-                // PC 변수
-                contentDisplay.style.setProperty('--bg-x-pc', config.pc.xPos);
-                contentDisplay.style.setProperty('--bg-y-pc', config.pc.yPos);
-                contentDisplay.style.setProperty('--bg-size-pc', config.pc.size);
+                // 1. 모바일 (기본 550px)
+                const mobSize = 550 * config.mobile.scale;
+                contentDisplay.style.setProperty('--bg-size-mob', `auto ${mobSize}px`);
+                const mobX = config.mobile.xOffset; // 일괄 -200px 제거
+                contentDisplay.style.setProperty('--bg-x-mob', `calc(100% - ${mobX}px) 100%`);
+
+                // 2. 태블릿 (기본 750px)
+                const tabSize = 750 * config.tablet.scale;
+                contentDisplay.style.setProperty('--bg-size-tab', `auto ${tabSize}px`);
+                contentDisplay.style.setProperty('--bg-x-tab', `calc(100% - ${config.tablet.xOffset}px) 100%`);
+
+                // 3. PC (기본 900px, 기본 오프셋 200px)
+                const pcSize = 900 * config.pc.scale;
+                contentDisplay.style.setProperty('--bg-size-pc', `auto ${pcSize}px`);
+                const pcX = 200 + config.pc.xOffset;
+                contentDisplay.style.setProperty('--bg-x-pc', `calc(100% - ${pcX}px) 100%`); // y축 100% 명시
+
+                // 애니메이션 트리거
+                if (charBg) {
+                    charBg.classList.remove('animate');
+                    void charBg.offsetWidth;
+                    charBg.classList.add('animate');
+                }
             } else { 
                 contentDisplay.style.setProperty('--bg-url', 'none'); 
+                if (charBg) charBg.classList.remove('animate');
             }
         };
 
-        if (data.info && data.info.속성 !== undefined) state.currentDisplayedAttribute = constants.attributeList[data.info.속성];
-        
         const favBtn = document.querySelector('#content-display .char-fav-btn');
+        const simShortcutBtn = document.querySelector('#content-display .sim-shortcut-btn');
+
+        if (simShortcutBtn) {
+            simShortcutBtn.style.display = 'flex'; // 다시 보이기
+            simShortcutBtn.onclick = (e) => {
+                e.stopPropagation();
+                // 현재 캐릭터 ID를 시뮬레이터용 데이터로 저장하고 시뮬레이터 탭 클릭
+                localStorage.setItem('sim_last_char_id', id);
+                const simBtn = document.getElementById('nav-simulator-btn');
+                if (simBtn) handleImageClick(simBtn);
+            };
+        }
+
         if (favBtn) {
             const isFav = saved.isFavorite || false;
             favBtn.style.display = 'flex';

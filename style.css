@@ -21,13 +21,13 @@
 /* 시뮬레이터 바로가기 버튼 */
 .sim-shortcut-btn {
   position: absolute !important;
-  top: 15px !important;
-  left: 15px !important;
+  top: 22px !important; 
+  left: 20px !important; /* 18px에서 20px로 추가 이동 */
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
   padding: 5px !important; /* 별 버튼과 패딩 맞춤 */
-  font-size: 1.2em !important; /* 번개는 날카로우므로 조금 더 크게 설정 */
+  font-size: 1.5em !important; /* 번개 크기를 키움 */
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
@@ -36,13 +36,24 @@
   z-index: 10 !important;
   line-height: 1 !important;
   color: #c3a6ff !important; 
-  /* 이모지 강제 색상 변경: 노란색(기본) -> 보라색으로 회전 (약 250도) 및 채도/밝기 조절 */
-  filter: hue-rotate(250deg) saturate(1.5) brightness(1.2) drop-shadow(0 0 5px rgba(195, 166, 255, 0.6)) !important;
-  transform: rotate(10deg) !important; /* 10도 회전 */
+  /* 이미지 번짐 방지를 위해 필터 제거 */
+  filter: none !important;
+  /* 원형에서 둥근 사각형으로 변경 */
+  box-shadow: none !important; 
+  background: #6f42c1 !important; 
+  border-radius: 8px !important; /* 10px 정도로 둥근 모서리 */
+  width: 30px;
+  height: 30px;
+  transform: rotate(0deg) !important; 
+}
+
+/* 내부 번개 이미지 흰색으로 변환 */
+.sim-shortcut-btn img {
+  filter: brightness(0) invert(1);
 }
 
 .sim-shortcut-btn:hover:not(:disabled) {
-  transform: rotate(10deg) scale(1.1) !important; /* 회전 상태 유지하며 크기 조절 */
+  transform: rotate(0deg) scale(1.1) !important; /* 마우스오버 시 1.1배 확대 */
 }
 
 .sim-shortcut-btn:disabled {

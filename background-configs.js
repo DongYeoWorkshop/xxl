@@ -1,25 +1,25 @@
 // background-configs.js
-// 캐릭터별 배경 이미지의 모바일/태블릿/PC 세부 위치 및 크기 설정
+// 캐릭터별 배경 이미지의 배율 및 위치 보정 설정
 
 export const backgroundConfigs = {
-    // 기본값
+    // 기본값 (배율 1.0, 위치 보정 0)
     "default": {
-        mobile:  { align: "center", xPos: "0px", yPos: "0px", size: "950px auto" },
-        tablet:  { align: "center", xPos: "0px", yPos: "0px", size: "800px auto" },
-        pc:      { align: "center", xPos: "0px", yPos: "0px", size: "1000px auto" }
+        mobile:  { scale: 1.5, xOffset: -25, yOffset: 0 },
+        tablet:  { scale: 1.2, xOffset: 0, yOffset: 0 },
+        pc:      { scale: 1.0, xOffset: 0, yOffset: 0 }
     },
 
-    // 리카노 설정 (오른쪽 정렬)
-    "rikano": {
-        mobile:  { align: "right", xPos: "-150px", yPos: "00px" },
-        tablet:  { align: "right", xPos: "-100px", yPos: "50px", size: "900px auto" },
-        pc:      { align: "right", xPos: "-100px", yPos: "0px" }
+    // 던컨 찰스 개인 설정
+    "duncan": {
+        tablet: { xOffset: -150 }, // 태블릿: 1.2배, 오른쪽 150px 이동
+        mobile: { xOffset: -200 }  // 모바일: 1.5배, 오른쪽 200px 이동
     },
-
-    // 파미도 설정 (오른쪽 정렬)
     "famido": {
-        mobile:  { align: "right", xPos: "-350px", yPos: "00px" },
-        tablet:  { align: "right", xPos: "-300px", yPos: "150px", size: "900px auto" },
-        pc:      { align: "right", xPos: "-250px", yPos: "00px" }
-    }
+        tablet: { xOffset: -150 }, // 태블릿: 1.2배, 오른쪽 150px 이동
+        mobile: { xOffset: -300 }  // 모바일: 1.5배, 오른쪽 200px 이동
+    },
+    "rikano": {
+        tablet: { xOffset: 0 }, // 태블릿: 1.2배, 오른쪽 150px 이동
+        mobile: { xOffset: -200 }  // 모바일: 1.5배, 오른쪽 200px 이동
+    }       
 };

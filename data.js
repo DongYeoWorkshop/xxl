@@ -1392,7 +1392,7 @@ export const charData = {
         hasToggle: true,
         toggleType: "isAppliedStamped",        
         buffDesc: "수면 상태 대상 공격의 데미지 {0}% 증가",  
-        name: "반격 연환각", 
+        name: "탐랑화기인", 
         icon: "icon/passive5.webp", 
         desc: "각 아군이 수면 상태의 대상 공격 시 아군의 공격 데미지 {0}% 증가", 
         calc: [{ max: 36 }],

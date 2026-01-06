@@ -291,26 +291,26 @@ export const simParams = {
             label: "니히히~ 우리도 왔다!",
             customTag: "도장",            
             order: 3
-          },      // [패시브2] 흑구 깨우기 (행동 완료 시점)
+          },      // [패시브2] 흑구 깨우기 (공격 단계 최하단)
       black_dog: {
         type: "buff",
         originalId: "anuberus_skill4",
         timerKey: "skill4_black_timer",
-        phase: "onAfterAction",
-        order: 1,
+        phase: "onAttack",
+        order: 98,
         prob: 0.5,
         scaleProb: true,
         duration: 2,
         customTag: "흑구",
         label: "[흑구] 발동"
       },
-      // [패시브2] 백구 깨우기 (행동 완료 시점)
+      // [패시브2] 백구 깨우기 (공격 단계 최하단)
       white_dog: {
         type: "buff",
         originalId: "anuberus_skill4",
         timerKey: "skill4_white_timer",
-        phase: "onAfterAction",
-        order: 2,
+        phase: "onAttack",
+        order: 99,
         prob: 0.5,
         scaleProb: true,
         duration: 2,
@@ -411,6 +411,7 @@ export const simParams = {
       condition: ["isUlt", "isStamp", "hasStack:blood_mark_timer:2"], 
       label: "발동",
       customTag: "도장",
+      skipLog: true, // 로그 숨김 추가
       order: 1
     }
   },
@@ -597,6 +598,9 @@ export const simParams = {
       timerKey: "skill8_timer",
       phase: "onAttack",
       condition: ["isUlt", "isStamp"],
+      prob: 0.4,
+      scaleProb: true,
+      startRate: 0.73,
       duration: 2, // 1에서 2로 수정
       label: "디버프 부여",
       order: 3
@@ -608,6 +612,9 @@ export const simParams = {
       timerKey: "sleep_timer",
       phase: "onAttack",
       condition: "isUlt",
+      prob: 0.4,
+      scaleProb: true,
+      startRate: 0.73,
       duration: 2,
       label: "[수면] 부여",
       order: 4
@@ -801,13 +808,13 @@ export const simParams = {
     // [필살기 도장] 공격력 가산 (2턴)
     skill2_fixed_buff: {
       type: "buff",
-      originalId: "famido_skill2",
+      originalId: "famido_skill8", 
       timerKey: "skill2_fixed_timer",
       phase: "onAttack",
       condition: ["isUlt", "isStamp"],
       duration: 2,
-      label: "버프 부여",
-      valKey: 2, // calc[2]
+      label: "공격력 가산", 
+      valKey: 0, 
       showAtkBoost: true,
       order: 5
     },
@@ -831,7 +838,7 @@ export const simParams = {
           phase: "onAttack",
           condition: ["!isDefend", "hasStack:tactical_stacks:3"],
           duration: 2,
-          label: "버프 부여",
+          label: "공격력 가산", // '버프 부여'에서 변경
           valKey: 1, // calc[1]
           showAtkBoost: true,
           customTag: "패시브2",

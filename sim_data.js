@@ -513,14 +513,59 @@ export const simCharData = {
     }
   },
   "orem": {
-    commonControls: ["hit_prob"],
+    commonControls: ["orem_hit_count"],
+    customControls: [
+        { id: "self_extra_dmg_active", type: "toggle", label: "추가데미지 본인적용", initial: false, description: "체크 시 본인이 배리어를 보유한 상태에서 공격할 경우 도장 패시브(25% 추가타)를 파티원 기여분 포함하여 계산에 포함합니다." }
+    ],
     initialState: {
         shield_timer: 0,
         skill4_timer: 0
     },
     onAttack: (ctx) => {
-        // 모든 추가타 로직은 sim_params.js에서 자동 처리됨
-        return { extraHits: [] };
+        const extraHits = [];
+        if (!ctx.customValues.self_extra_dmg_active || !ctx.stats.stamp) return { extraHits };
+
+        // 1. 필살기 사용 시 배리어 상태 즉시 활성화
+        if (ctx.isUlt) ctx.simState.shield_timer = 2;
+
+        // 2. 배리어 상태 체크 및 추가타 생성
+        if (ctx.simState.shield_timer > 0) {
+            const oremExtraCoef = 25; // 도장 효과 25%
+            const loopCount = ctx.isUlt ? 4 : 5;
+            
+            for (let i = 0; i < loopCount; i++) {
+                extraHits.push({
+                    name: `오렘 (배리어 추가타 #${i+1})`,
+                    skillId: "orem_skill8",
+                    val: oremExtraCoef,
+                    type: "추가공격",
+                    customTag: "도장",
+                    icon: "images/sigilwebp/sigil_orem.webp"
+                });
+            }
+        }
+        return { extraHits };
+    },
+    onEnemyHit: (ctx) => {
+        const extraHits = [];
+        // 배리어가 있을 때만 반사 데미지 발생
+        if (ctx.simState.shield_timer > 0) {
+            const hitCount = parseInt(ctx.customValues.orem_hit_count || 0);
+            if (hitCount > 0) {
+                const reflectCoef = ctx.getVal(6, '추가데미지'); // 50%
+                for (let i = 0; i < hitCount; i++) {
+                    extraHits.push({
+                        name: `오렘: 충격 역류 (반사 #${i+1})`,
+                        skillId: "orem_skill7",
+                        val: reflectCoef,
+                        type: "추가공격",
+                        customTag: "패시브5",
+                        icon: "icon/passive5.webp"
+                    });
+                }
+            }
+        }
+        return { extraHits };
     },
     getLiveBonuses: (ctx) => {
         const bonuses = { "배리어증가": 0 };

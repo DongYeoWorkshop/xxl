@@ -200,10 +200,11 @@ function displaySimResult(charId, fullResult, type = 'avg') {
             bar.style.background = (idx === targetIdx) ? '#6f42c1' : '#e0e0e0';
         });
 
-        // [추가] 예측 구간 배경 렌더링
+        // [추가] 예측 구간 배경 및 라벨 렌더링
         const predictionZone = document.getElementById('sim-prediction-zone');
+        const predictionLabel = document.getElementById('sim-prediction-label');
         
-        if (predictionZone && fullResult.p05 && fullResult.p95) {
+        if (predictionZone && predictionLabel && fullResult.p05 && fullResult.p95) {
             const minVal = parseFloat(fullResult.min.replace(/,/g, ''));
             const maxVal = parseFloat(fullResult.max.replace(/,/g, ''));
             const p05Val = parseFloat(fullResult.p05.replace(/,/g, ''));
@@ -216,11 +217,15 @@ function displaySimResult(charId, fullResult, type = 'avg') {
                 
                 predictionZone.style.left = `${leftPercent}%`;
                 predictionZone.style.width = `${widthPercent}%`;
+                predictionLabel.style.left = `${leftPercent + 1}%`; // 배경 안쪽으로 살짝 이동
                 
                 // [수정] 분포도 그래프가 보일 때만 예측 구간을 노출함
-                predictionZone.style.display = (distGraph && distGraph.style.display !== 'none') ? 'block' : 'none';
+                const isDistVisible = (distGraph && distGraph.style.display !== 'none');
+                predictionZone.style.display = isDistVisible ? 'block' : 'none';
+                predictionLabel.style.display = isDistVisible ? 'block' : 'none';
             } else {
                 predictionZone.style.display = 'none';
+                predictionLabel.style.display = 'none';
             }
         }
     }
@@ -436,9 +441,20 @@ function renderSimulatorUI(charId) {
         if (id === 'none') {
             selectedIcon.innerHTML = '<span style="font-size:0.8em; color:#888;">-</span>';
             selectedIcon.style.border = '1px solid #bbb';
+            selectedIcon.style.cursor = 'default';
+            selectedIcon.onclick = null;
         } else {
-            selectedIcon.innerHTML = `<img src="images/${id}.webp" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='icon/main.png'">`;
+            selectedIcon.innerHTML = `<img src="images/${id}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">`;
             selectedIcon.style.border = '2px solid #6f42c1';
+            selectedIcon.style.cursor = 'pointer';
+            selectedIcon.title = `${supportInfo.name} 분석 화면으로 이동`;
+            // 아이콘 클릭 시 해당 캐릭터의 시뮬레이터 설정으로 전환
+            selectedIcon.onclick = (e) => {
+                e.stopPropagation(); // 토글 버튼 이벤트 전파 방지
+                window.scrollTo(0, 0);
+                localStorage.setItem('sim_last_char_id', id);
+                renderSimulatorUI(id); // 해당 캐릭터의 시뮬레이터 UI로 즉시 전환
+            };
         }
         
         // 패널 내 선택 표시 업데이트
@@ -469,19 +485,26 @@ function renderSimulatorUI(charId) {
                 updateSupportDisplay(newId);
                 supportPanel.style.display = 'none'; // 선택 후 닫기
                 supportToggleBtn.querySelector('span:last-child').textContent = '▼';
+                
+                // [추가] 서포터가 바뀌면 전용 컨트롤 갱신을 위해 UI 전체 다시 그리기
+                renderSimulatorUI(charId);
             };
         });
     }
 
     renderSimAttributePicker(charId);
-    container.querySelector('.sim-char-profile-img').onclick = () => document.querySelector(`.main-image[data-id="${charId}"]`)?.click();
+    // 네모난 이미지는 캐릭터 목록 선택 화면으로 이동
+    container.querySelector('.sim-char-profile-img').onclick = () => renderCharacterSelector();
+    
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
         const tooltipText = sData.tooltipDesc || "서포터는 시뮬탭 내부에 지정한 본인의 행동을 그대로 따라합니다.";
         infoIcon.onclick = (e) => { e.stopPropagation(); import('./ui.js').then(ui => { const control = ui.showSimpleTooltip(infoIcon, tooltipText); setTimeout(() => control.remove(), 3000); }); };
     }
 
-    // 커스텀 컨트롤 + 공통 컨트롤 통합
+    const supportId = localStorage.getItem(supportStorageKey) || 'none';
+    const sSupportData = simCharData[supportId] || {};
+    
     const combinedControls = [
         ...(sData.customControls || []),
         ...getCharacterCommonControls(sData.commonControls)
@@ -584,7 +607,10 @@ function renderSimulatorUI(charId) {
     document.getElementById('sim-turns').oninput = (e) => { document.getElementById('sim-turns-val').innerText = e.target.value; localStorage.setItem('sim_last_turns', e.target.value); updateActionEditor(charId); };
     document.getElementById('sim-iterations').onchange = (e) => localStorage.setItem('sim_last_iters', e.target.value);
     
-    document.getElementById('sim-back-to-list').onclick = () => renderCharacterSelector();
+    // 텍스트 버튼은 해당 캐릭터의 상세 정보 탭으로 이동
+    document.getElementById('sim-back-to-list').onclick = () => {
+        document.querySelector(`.main-image[data-id="${charId}"]`)?.click();
+    };
     if (hasMulti) document.getElementById('sim-target-btn').onclick = (e) => { 
         let c = (parseInt(e.target.innerText)%5)+1; 
         e.target.innerText=c; 
@@ -613,7 +639,11 @@ function renderSimulatorUI(charId) {
                 if (lastRes.axisData) renderAxisLabels(lastRes.axisData, lastRes.yMax, 'dist');
                 // 예측 구간 다시 보이기
                 const predictionZone = document.getElementById('sim-prediction-zone');
-                if (predictionZone && lastRes.p05 && lastRes.p95) predictionZone.style.display = 'block';
+                const predictionLabel = document.getElementById('sim-prediction-label');
+                if (predictionZone && predictionLabel && lastRes.p05 && lastRes.p95) {
+                    predictionZone.style.display = 'block';
+                    predictionLabel.style.display = 'block';
+                }
             }
         };
         btnDmg.onclick = () => {
@@ -622,7 +652,9 @@ function renderSimulatorUI(charId) {
             if (distGraph) distGraph.style.display = 'none';
             // [추가] 딜 그래프에서는 예측 구간 숨기기
             const predictionZone = document.getElementById('sim-prediction-zone');
+            const predictionLabel = document.getElementById('sim-prediction-label');
             if (predictionZone) predictionZone.style.display = 'none';
+            if (predictionLabel) predictionLabel.style.display = 'none';
             
             if (lineGraph) { 
                 lineGraph.style.display = 'block'; 
@@ -703,9 +735,10 @@ function runSimulation(charId) {
         // 새 분석 결과에 맞는 축 라벨 렌더링
         renderAxisLabels(result.axisData, result.yMax, 'dist');
 
-        // [추가] 예측 구간 배경 렌더링 (분석 직후)
+        // [추가] 예측 구간 배경 및 라벨 렌더링 (분석 직후)
         const predictionZone = document.getElementById('sim-prediction-zone');
-        if (predictionZone && result.p05 && result.p95) {
+        const predictionLabel = document.getElementById('sim-prediction-label');
+        if (predictionZone && predictionLabel && result.p05 && result.p95) {
             const minVal = parseFloat(result.min.replace(/,/g, ''));
             const maxVal = parseFloat(result.max.replace(/,/g, ''));
             const p05Val = parseFloat(result.p05.replace(/,/g, ''));
@@ -717,9 +750,12 @@ function runSimulation(charId) {
                 const widthPercent = ((p95Val - p05Val) / range) * 100;
                 predictionZone.style.left = `${leftPercent}%`;
                 predictionZone.style.width = `${widthPercent}%`;
+                predictionLabel.style.left = `${leftPercent + 1}%`;
                 predictionZone.style.display = 'block';
+                predictionLabel.style.display = 'block';
             } else {
                 predictionZone.style.display = 'none';
+                predictionLabel.style.display = 'none';
             }
         }
 

@@ -25,13 +25,13 @@ export function getCharacterSelectorHtml(validChars, disabledIds, charData) {
  */
 export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, savedTurns, savedIters, useHitProb = false) {
     return `
-        <div style="margin-bottom:10px; display: flex; justify-content: space-between; align-items: center;">
-            <button id="sim-back-to-list" style="background:#f0f0f0;border:1px solid #ddd;color:#666;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">← 캐릭터 목록</button>
+        <div style="margin-bottom:10px; display: flex; justify-content: flex-end; align-items: center;">
+            <button id="sim-back-to-list" style="background:#f0f7ff;border:1px solid #007bff;color:#007bff;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">캐릭터 상세 정보 →</button>
         </div>
         <div class="sim-main-container">
             <div class="sim-pane-settings">
                 <div style="position: relative; display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px;background:#fff;border:1px solid #eee0d0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;">
-                    <img src="images/${charId}.webp" class="sim-char-profile-img" style="width:55px;height:55px;border-radius:10px;object-fit:cover;border:2px solid #6f42c1;background:black;object-position:top;flex-shrink:0;cursor:pointer;" title="캐릭터 상세 정보로 이동">
+                    <img src="images/${charId}.webp" class="sim-char-profile-img" style="width:55px;height:55px;border-radius:10px;object-fit:cover;border:2px solid #6f42c1;background:black;object-position:top;flex-shrink:0;cursor:pointer;" title="캐릭터 목록으로 이동">
                     <div style="flex-grow:1;display:flex;align-items:center;justify-content:space-between;min-width:0;">
                         <div style="min-width:0;flex:1;">
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -62,7 +62,7 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                         
                         <!-- 선택된 서포터 표시 및 토글 버튼 -->
                         <div id="sim-support-toggle-btn" style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #ccc; border-radius:8px; background:#f9f9f9; cursor:pointer; transition:all 0.2s;">
-                            <div id="sim-selected-support-icon" style="width:32px; height:32px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb;">
+                            <div id="sim-selected-support-icon" style="width:32px; height:32px; border-radius:6px; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb;">
                                 <span style="font-size:0.8em; color:#888;">-</span>
                             </div>
                             <span id="sim-selected-support-name" style="font-weight:bold; color:#333; font-size:0.9em;">선택 안 함</span>
@@ -74,12 +74,12 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                             <div class="sim-support-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap:10px;">
                                 <!-- 선택 안 함 옵션 -->
                                 <div class="sim-support-option" data-id="none" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;">
-                                    <div style="width:48px; height:48px; border-radius:50%; background:#f0f0f0; border:2px solid #ddd; display:flex; align-items:center; justify-content:center; color:#888; font-weight:bold;">X</div>
+                                    <div style="width:48px; height:48px; border-radius:8px; background:#f0f0f0; border:2px solid #ddd; display:flex; align-items:center; justify-content:center; color:#888; font-weight:bold;">X</div>
                                     <span style="font-size:0.75em; color:#666;">해제</span>
                                 </div>
                                 ${constants.supportList.filter(s => s.id !== 'none' && s.id !== charId).map(s => `
                                     <div class="sim-support-option" data-id="${s.id}" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;">
-                                        <img src="images/${s.id}.webp" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #ddd; background:black;" onerror="this.src='icon/main.png'">
+                                        <img src="images/${s.id}.webp" style="width:48px; height:48px; border-radius:8px; object-fit:cover; object-position:top; border:2px solid #ddd; background:black;" onerror="this.src='icon/main.png'">
                                         <span style="font-size:0.75em; color:#666; text-align:center; word-break:keep-all;">${s.name}</span>
                                     </div>
                                 `).join('')}
@@ -130,9 +130,9 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                             <div id="sim-y-axis" style="width: 25px; position: relative; font-size: 0.7em; color: #bbb; text-align: right; border-right: 1px solid #eee; height: 100%;"></div>
                             <div style="flex: 1; display: flex; flex-direction: column; position: relative; height: 100%;">
                                 <!-- [추가] 예측 구간 표시용 배경 레이어 (그리드보다 뒤) -->
-                                <div id="sim-prediction-zone" style="position: absolute; top: 0; bottom: 0; background: rgba(111, 66, 193, 0.1); border-left: 1px dashed rgba(111, 66, 193, 0.3); border-right: 1px dashed rgba(111, 66, 193, 0.3); pointer-events: none; z-index: 0; display: none;">
-                                    <div style="position: absolute; top: 5px; left: 5px; font-size: 0.7em; color: #6f42c1; font-weight: bold; opacity: 0.7;">α = 0.1</div>
-                                </div>
+                                <div id="sim-prediction-zone" style="position: absolute; top: 0; bottom: 0; background: rgba(111, 66, 193, 0.1); border-left: 1px dashed rgba(111, 66, 193, 0.3); border-right: 1px dashed rgba(111, 66, 193, 0.3); pointer-events: none; z-index: 0; display: none;"></div>
+                                <!-- [추가] 예측 구간 라벨 (막대보다 앞) -->
+                                <div id="sim-prediction-label" style="position: absolute; top: 5px; font-size: 0.7em; color: #6f42c1; font-weight: bold; opacity: 0.8; z-index: 10; pointer-events: none; display: none;">α = 0.1</div>
                                 <div id="sim-grid-lines" style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></div>
                                 <div id="sim-dist-graph" style="flex: 1; display: flex; align-items: flex-end; gap: 1px; border-bottom: 1px solid #eee; position: relative; z-index: 2; height: 100%;"></div>
                                 <div id="sim-line-graph" style="display:none; flex: 1; position:relative; border-bottom: 1px solid #eee; z-index: 2; overflow: visible; height: 100%;"></div>

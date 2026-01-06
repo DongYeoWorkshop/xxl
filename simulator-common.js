@@ -59,6 +59,15 @@ export const commonControls = {
         label: "대상 마비 면역 여부",
         initial: true,
         description: "공격 대상이 마비 효과에 면역인지 여부입니다."
+    },
+    "orem_hit_count": {
+        id: "orem_hit_count",
+        type: "counter",
+        label: "피격 수",
+        min: 0,
+        max: 5,
+        initial: 0,
+        description: "[오렘] 배리어 상태에서 피격되어 반사 데미지가 발생하는 횟수입니다."
     }
 };
 

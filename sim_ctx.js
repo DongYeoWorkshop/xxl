@@ -171,8 +171,7 @@ export function createSimulationContext(baseData) {
                     const parentIdx = charData.skills.findIndex(ps => ps.id === s.syncLevelWith);
                     if (parentIdx !== -1) labelIdx = parentIdx;
                 }
-                sName = s?.name || ""; sIcon = s?.icon || "icon/main.png";
-                const autoLabel = isStampIcon ? "도장" : (labelIdx === 0 ? "보통공격" : labelIdx === SKILL_IDX.ULT ? "필살기" : labelIdx >= 7 ? "도장" : `패시브${labelIdx-1}`);
+                const autoLabel = isStampIcon ? "도장" : (labelIdx === 0 ? "보통공격" : labelIdx === SKILL_IDX.ULT ? "필살기" : (labelIdx >= 2 && labelIdx <= 6) ? `패시브${labelIdx-1}` : labelIdx >= 7 ? "도장" : "스킬");
                 label = customTag || autoLabel;
             } else if (typeof idx === 'string') {
                 const statusInfo = getStatusInfo(idx);
@@ -310,7 +309,7 @@ export function createSimulationContext(baseData) {
                 // [수정] 직접 지정된 아이콘이 있으면 객체 형태로 넘김
                 const logIdx = skillParam.icon ? { name: "", icon: skillParam.icon, label: "", originalIdx: ctx.getSkillIdx(originalId) } : ctx.getSkillIdx(originalId);
                 
-                return ctx.log(logIdx, finalLabel, displayProb, logDur, false, customTag);
+                return ctx.log(logIdx, finalLabel, displayProb, logDur, !!skillParam.skipLog, customTag);
             }
             return "";
         },
