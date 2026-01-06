@@ -52,23 +52,23 @@ body {
   text-size-adjust: none;
 }
 
-/* 전역 배경 설정 (공통) */
-body.landing-page-active::before,
-body.char-page-active::before,
-body.hero-mode-active::before {
+/* 전역 배경 설정 (가장 뒤쪽 레이어) */
+body::before {
   content: "";
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  /* JS에서 설정할 고정 픽셀 값을 사용, 없으면 100% */
+  height: var(--fixed-bg-height, 100%); 
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
   opacity: 0.3; /* 투명도 70% (불투명도 30%) */
-  z-index: -1;   /* 컨텐츠 뒤로 배치 */
+  z-index: -2;   /* 캐릭터 배경(-1)보다 더 뒤로 */
   pointer-events: none;
+  transition: background-image 0.3s ease-in-out;
+  will-change: transform;
 }
 
 /* 랜딩 페이지 및 캐릭터 탭 배경 */
