@@ -1,4 +1,22 @@
-/* skills.css - 스킬, 버프, 기록, Hero 탭 관련 스타일 */
+/* =========================================
+   Common Skill Description Style
+   ========================================= */
+.skill-desc-common {
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    white-space: pre-wrap;
+    word-break: keep-all;
+    font-family: inherit; /* 기본 폰트 상속 */
+    color: #eee;
+}
+
+.skill-footnote {
+    display: block;
+    font-size: 0.9em;
+    color: #aaa;
+    margin-top: 5px;
+    font-style: italic;
+}
 
 /* =========================================
    Skill Detail View (중간 섹션)

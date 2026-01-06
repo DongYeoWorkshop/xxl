@@ -19,6 +19,15 @@ export function initHandlers(domElements, logicFunctions) {
     setupSortListeners();
     setupHeaderListeners();
 
+    // [고정] 모바일 배경 덜컥거림 방지: 실행 시점의 높이를 픽셀로 고정
+    const setFixedBgHeight = () => {
+        const height = Math.max(window.screen.height, window.innerHeight) + 100;
+        document.documentElement.style.setProperty('--fixed-bg-height', `${height}px`);
+    };
+    setFixedBgHeight();
+    // 화면 회전 시에만 높이 재설정 (주소창 resize는 무시)
+    window.addEventListener('orientationchange', () => setTimeout(setFixedBgHeight, 200));
+
     window.addEventListener('scroll', () => {
         if (state.currentId) {
             localStorage.setItem(`scroll_pos_${state.currentId}`, window.scrollY);
@@ -275,46 +284,77 @@ export function handleImageClick(img) {
         show('skill-container', 'grid'); show('calc-and-stats-row', 'flex');
         
         const applyBackground = (charId, favStatus) => {
-            if (!contentDisplay) return;
             const charBg = document.getElementById('internal-char-bg');
+            const bgImg = document.getElementById('char-bg-img'); // [신규] 이미지 태그
             
-            if (favStatus) {
+            if (favStatus && bgImg) {
                 const def = backgroundConfigs["default"], spec = backgroundConfigs[charId] || {};
                 
-                // 모바일/태블릿/PC 설정 통합 (기본값 + 개별설정)
+                // 모바일/태블릿/PC 설정 통합
                 const config = {
                     mobile: { ...def.mobile, ...(spec.mobile || {}) },
                     tablet: { ...def.tablet, ...(spec.tablet || {}) },
                     pc:     { ...def.pc,     ...(spec.pc || {}) }
                 };
 
-                contentDisplay.style.setProperty('--bg-url', `url('../images/background/${charId}.webp')`);
+                bgImg.src = `images/background/${charId}.webp`;
+                bgImg.style.display = 'block';
+
+                // 화면 너비에 따라 설정 적용
+                const width = window.innerWidth;
+                let currentConfig, baseSize;
+
+                if (width <= 600) {
+                    currentConfig = config.mobile;
+                    baseSize = 550;
+                } else if (width <= 1100) {
+                    currentConfig = config.tablet;
+                    baseSize = 750;
+                } else {
+                    currentConfig = config.pc;
+                    baseSize = 900;
+                }
+
+                // 1. 크기 설정 (높이 기준)
+                const finalSize = baseSize * currentConfig.scale;
+                bgImg.style.height = `${finalSize}px`;
+
+                // [수정] 모바일에서만 주소창 밀림 방지를 위해 top 고정 방식 사용
+                if (width <= 600) {
+                    const fixedHeight = window.outerHeight; 
+                    const topPos = fixedHeight - finalSize + 60; // 60px 더 아래로 보정
+                    bgImg.style.top = `${topPos}px`;
+                    bgImg.style.bottom = 'auto';
+                } else {
+                    // 태블릿 및 PC는 기존처럼 바닥에 고정
+                    bgImg.style.top = 'auto';
+                    bgImg.style.bottom = '0';
+                }
+
+                // 2. 위치 설정 (오른쪽 기준 오프셋)
+                // xOffset이 음수이면 오른쪽으로 더 이동(숨겨짐), 양수이면 왼쪽으로 이동(보임)
+                // 기존 로직: calc(100% - mobX) -> mobX가 -200이면 100% + 200px
+                // transform을 사용하여 이동 (right: 0 기준)
                 
-                // 1. 모바일 (기본 550px)
-                const mobSize = 550 * config.mobile.scale;
-                contentDisplay.style.setProperty('--bg-size-mob', `auto ${mobSize}px`);
-                const mobX = config.mobile.xOffset; // 일괄 -200px 제거
-                contentDisplay.style.setProperty('--bg-x-mob', `calc(100% - ${mobX}px) 100%`);
+                let xOffset = currentConfig.xOffset;
+                // PC일 때는 기본 오프셋 200px 추가 보정 (기존 로직 유지)
+                if (width > 1100) xOffset += 200;
 
-                // 2. 태블릿 (기본 750px)
-                const tabSize = 750 * config.tablet.scale;
-                contentDisplay.style.setProperty('--bg-size-tab', `auto ${tabSize}px`);
-                contentDisplay.style.setProperty('--bg-x-tab', `calc(100% - ${config.tablet.xOffset}px) 100%`);
-
-                // 3. PC (기본 900px, 기본 오프셋 200px)
-                const pcSize = 900 * config.pc.scale;
-                contentDisplay.style.setProperty('--bg-size-pc', `auto ${pcSize}px`);
-                const pcX = 200 + config.pc.xOffset;
-                contentDisplay.style.setProperty('--bg-x-pc', `calc(100% - ${pcX}px) 100%`); // y축 100% 명시
-
+                // 음수일수록 오른쪽으로 이동 -> translateX(양수)
+                // 기존 mobX가 -200일 때 오른쪽으로 200px 갔었음.
+                // CSS right: 0 상태에서 translateX(-xOffset)을 하면 부호 반대로 동작
+                // xOffset이 -200이면 translateX(200px) -> 오른쪽으로 이동. 맞음.
+                bgImg.style.transform = `translateX(${-xOffset}px)`;
+                
                 // 애니메이션 트리거
                 if (charBg) {
                     charBg.classList.remove('animate');
                     void charBg.offsetWidth;
                     charBg.classList.add('animate');
                 }
-            } else { 
-                contentDisplay.style.setProperty('--bg-url', 'none'); 
+            } else if (bgImg) { 
+                bgImg.style.display = 'none';
+                bgImg.src = '';
                 if (charBg) charBg.classList.remove('animate');
             }
         };

@@ -6,12 +6,15 @@
   <title>동여성 공방</title>
   <link rel="icon" type="image/png" sizes="32x32" href="icon/main32x32.PNG">
   <link rel="icon" type="image/png" sizes="16x16" href="icon/main16x16.PNG">
-  <link rel="stylesheet" href="style.css?v=2.0.0">
+  <link rel="stylesheet" href="style.css?v=2.2.1">
   <link rel="stylesheet" href="skills.css?v=1.0.0">
   <link rel="stylesheet" href="components.css?v=1.0.0">
 </head>
 
 <body>
+
+    <header class="header">
+        <div class="header-left">
 
 <!-- 상단 고정 헤더 + 캐릭터 목록 통합 래퍼 -->
 <div id="sticky-wrapper">
@@ -74,7 +77,9 @@
 <div id="content-display">
   <button class="sim-shortcut-btn" title="이 캐릭터로 시뮬레이터 시작" style="display: none;"><img src="icon/bolt.png" style="width: 24px;"></button>
   <button class="char-fav-btn">☆</button>
-  <div id="internal-char-bg"></div>
+  <div id="internal-char-bg">
+      <img id="char-bg-img" src="" alt="" style="display: none;">
+  </div>
   <!-- 상단 캐릭터 핵심 정보 (1열 고정) -->
   <div class="char-header-row" style="margin-top: 10px !important;">
     <h2 id="display-title"></h2>

@@ -61,7 +61,7 @@ export function renderSkills(charId, charData, savedStats, currentSkillLevels, c
                 <input type="range" id="skill-slider-${charId}-${idx + 1}" min="1" max="10" value="${savedLv}" class="skill-slider" data-skill-index="${idx}">
             </div>
             <div class="skill-embedded-description" style="display: block;"> <!-- 상세 설명 항상 노출 -->
-                <p class="embedded-skill-desc" style="font-size:0.85em; color:#eee; margin-top:10px;"></p>
+                <p class="embedded-skill-desc skill-desc-common" style="font-size:0.85em; margin-top:10px;"></p>
                 <!-- [추가] 커스텀 입력 요소 (전의 스택 등) -->
                 <div class="skill-custom-controls" style="margin-top: 10px;">
                     ${skill.customSlider ? `
