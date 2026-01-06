@@ -1,10 +1,10 @@
-/* css/responsive.css (Restored to Best State) */
+/* css/responsive.css (완벽 복구 및 선택적 축소) */
 
 /* 모바일 전용 (600px 이하) */
 @media screen and (max-width: 600px) {
   #content-display { 
     margin-top: 45px !important; 
-    width: 96% !important; /* 92% -> 96%로 확대 */
+    width: 96% !important;
     margin-left: auto !important;
     margin-right: auto !important;
     display: block !important;
@@ -15,12 +15,7 @@
     padding-top: 20px !important;
   }
 
-  /* 시뮬레이터 겉 감싸는 칸 여백 축소 */
-  #simulator-page .hero-graph-container {
-    padding: 15px 8px !important;
-  }
-
-  /* 헤더 모바일 최적화 */
+  /* 헤더 모바일 최적화 (원래대로 복구) */
   .sticky-content {
     padding: 0 5px !important;
     gap: 2px !important;
@@ -35,30 +30,25 @@
     width: auto !important;
     max-width: 85px !important;
     margin-left: 5px !important;
-    margin-right: 8px !important; /* 이름과 돌파 사이 간격 */
+    margin-right: 8px !important;
     font-size: 0.9em !important;
   }
 
   #sticky-attr {
     width: 24px !important;
     margin-left: 2px !important;
-    margin-right: 5px !important; /* 속성 아이콘 뒤 간격 */
+    margin-right: 5px !important;
   }
 
   #sticky-lv, #sticky-br, #sticky-fit {
     font-size: 0.75em !important;
     width: auto !important;
     padding: 0 2px !important;
-    margin-right: 6px !important; /* 각 수치 사이 간격 */
+    margin-right: 6px !important;
   }
 
   #sticky-fit {
-    margin-right: 15px !important; /* 목록 버튼과의 간격 유지 */
-  }
-
-  /* 캐릭터 정보가 있을 때 여백 조정 */
-  #sticky-lv:not([style*="display: none"]) ~ .header-btn {
-    margin-left: 5px !important;
+    margin-right: 15px !important;
   }
 
   .header-btn {
@@ -66,6 +56,33 @@
     font-size: 1.3em !important;
   }
 
+  /* 캐릭터 정보가 있을 때 여백 조정 */
+  #sticky-lv:not([style*="display: none"]) ~ .header-btn {
+    margin-left: 5px !important;
+  }
+
+  /* [요청사항] 너무 작아진 글씨 크기 적정 수준으로 상향 */
+  .slider-label {
+    font-size: 0.8em !important;
+    margin-bottom: 2px !important;
+  }
+  .slider-label span {
+    font-size: 1.15em !important;
+  }
+
+  /* 스탯 목록 글씨 적정 수준 상향 */
+  .stat-list {
+    font-size: 0.85em !important;
+    margin: 5px 0 !important;
+  }
+  .stat-list li {
+    padding: 6px 0 !important; /* 위아래 간격을 넓힘 */
+    min-height: 26px !important;
+  }
+  .stat-label { font-size: 0.95em !important; }
+  .stat-val { font-size: 1.15em !important; }
+
+  /* 나머지 모바일 최적화 유지 */
   .skill-grid { 
     grid-template-columns: 1fr !important; 
     width: 100% !important;
@@ -73,65 +90,40 @@
   .buff-name-label {
     display: none !important;
   }
-  
-  /* 시뮬레이터 로그 모바일 최적화 (적절한 여백 복구) */
   #sim-log {
     font-size: 0.72em !important;
-    padding: 10px 8px !important; 
-    line-height: 1.4 !important;
+    padding: 10px 8px !important;
     width: 100% !important;
-    margin: 0 !important;
-    border-radius: 8px !important; /* 다시 둥글게 */
-    box-sizing: border-box !important;
+    border-radius: 8px !important;
   }
 
-  /* 로그와 리포트를 감싸는 카드 컨테이너 여백 약간 복구 */
-  #simulation-result-area > div {
-    padding: 15px 10px !important; /* 좌우 10px 여백 */
-    border-radius: 12px !important; /* 카드 형태 복구 */
-    border: 1px solid #eee !important;
+  /* 부가 스탯 목록 2열 유지 및 내부 가로 배치 */
+  #sub-stats-list {
+    grid-template-columns: repeat(2, 1fr) !important; /* 다시 2열로 */
+    gap: 5px !important;
+    padding: 5px !important;
+  }
+  #sub-stats-list li {
+    flex-direction: row !important; /* 내부만 가로 배치 */
+    justify-content: space-between !important;
+    padding: 4px 8px !important;
+    min-height: 28px !important;
+    background: rgba(48, 54, 61, 0.5) !important;
+  }
+  #sub-stats-list li .stat-label {
+    font-size: 0.75em !important;
+    color: #ccc !important;
+    white-space: nowrap; /* 글자 잘림 방지 */
+  }
+  #sub-stats-list li span:last-child {
+    font-size: 0.85em !important;
+    font-weight: bold;
+    color: #fff;
   }
 
-  /* 시뮬레이터 상위 컨테이너 여백 미세 복구 */
-  .sim-pane-display {
-    padding: 0 5px !important;
-  }
-
-  /* 시뮬레이터 그래프 높이 조절 */
-  #sim-graph-area {
-    height: 150px !important;
-    margin-bottom: 40px !important;
-    --sim-grid-height: 150px;
-  }
-
-  /* 선택 상자 터치 이슈 해결 */
-  #sim-iterations {
-    position: relative !important;
-    z-index: 10 !important;
-    pointer-events: auto !important;
-    -webkit-appearance: menulist !important;
-  }
-
-  /* 상세 로그 모달 모바일 최적화 */
-  .sim-detail-stat-info {
-    display: none !important; /* 계수, 공격력 등 상세 정보 숨김 */
-  }
-
-  div[style*="position: fixed"][style*="z-index: 10000"] {
-    font-size: 0.85em !important; /* 모달 전체 글씨 크기 축소 */
-  }
-
-  div[style*="position: fixed"][style*="z-index: 10000"] h4,
-  div[style*="position: fixed"][style*="z-index: 10000"] span {
-    font-size: 0.9em !important;
-  }
-
-  /* 제보 버튼 모바일에서 숨김 */
   #report-open-btn {
     display: none !important;
   }
-
-  .comparison-slot { width: 100%; }
 }
 
 /* 태블릿 및 PC (601px 이상) */
@@ -139,11 +131,22 @@
   #content-display {
     margin-top: 270px;
   }
+  /* 부가 스탯 내부 줄바꿈 제거 */
+  #sub-stats-list li {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    padding: 6px 15px !important;
+  }
+  #sub-stats-list li .stat-label {
+    font-size: 0.85em !important;
+  }
+  #sub-stats-list li span:last-child {
+    font-size: 1.0em !important;
+  }
 }
 
 /* PC 전용 (1100px 이상) */
 @media screen and (min-width: 1100px) {
-  /* 랜딩 페이지가 아닐 때는 항상 그리드 2열 적용 */
   body:not(.landing-page-active) #content-display {
     max-width: 1200px !important;
     display: grid !important;
@@ -151,28 +154,20 @@
     gap: 0 30px !important;
     align-items: start !important;
   }
-
-  /* 랜딩 페이지 전용 스타일 (단일 열) */
   body.landing-page-active #content-display {
     display: block !important;
     max-width: 650px !important;
     margin-top: 60px !important;
   }
-
-  /* 이름 영역은 상단 전체 1열 차지 */
   .char-header-row {
     grid-column: 1 / -1;
     width: 100%;
     margin-bottom: 20px;
   }
-
-  /* 메인 컨텐츠 (스킬, 버프 등) */
   .main-content-column {
     grid-column: 1;
     grid-row: 2;
   }
-
-  /* 사이드 컨텐츠 (슬라이더, 스탯 등) */
   .side-content-column {
     grid-column: 2;
     grid-row: 2;
@@ -180,7 +175,22 @@
     top: 60px; /* 스크롤 시 스탯창 고정 효과 */
   }
 
-  #internal-char-bg::before {
-    max-width: 1200px;
+  /* PC에서는 부가 스탯 다시 세로 배치 (줄바꿈) 및 상단 간격 확대 */
+  #sub-stats-list {
+    margin-top: 30px !important; /* 위쪽 스탯과의 간격 확대 */
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  #sub-stats-list li {
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 8px 4px !important;
+    min-height: 60px !important;
+  }
+  #sub-stats-list li .stat-label {
+    font-size: 0.85em !important;
+    margin-bottom: 4px !important;
+  }
+  #sub-stats-list li span:last-child {
+    font-size: 1.2em !important;
   }
 }

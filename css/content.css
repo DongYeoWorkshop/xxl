@@ -1,12 +1,11 @@
 /* =========================================
-   Main Content Area (Restored to Best State)
+   메인 컨텐츠 영역
    ========================================= */
 #content-display {
-  transition: margin-top 0.3s ease; /* 부드러운 이동 효과만 여기서 관리 */
+  transition: margin-top 0.3s ease;
   padding: 20px 15px 15px; 
-  background-color: rgba(38, 44, 54, 0.7); 
+  background-color: transparent; 
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
   max-width: 650px;
   margin-left: auto;
   margin-right: auto;
@@ -14,51 +13,72 @@
   position: relative;
   overflow: visible; 
   display: flow-root;
+  /* 박스 영역 밖으로 나가는 배경을 잘라주는 핵심 설정 */
+  clip-path: inset(0 round 8px); 
 }
 
-/* 배경 레이어 */
+/* 배경 레이어 (이미지 전용 박스) */
 #internal-char-bg {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  position: fixed; /* 화면 하단에 완전 고정 */
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
   z-index: -1;
   overflow: hidden; 
   pointer-events: none;
-  border-radius: inherit;
-  border: none !important; /* 혹시 모를 테두리 제거 */
-  box-shadow: none !important; /* 그림자 간섭 제거 */
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 이미지 가림막 (연한 검은색으로 복구) */
+#internal-char-bg::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(38, 44, 54, 0.5); /* 0.7 -> 0.5로 낮춤 */
+  z-index: 1; 
+}
+
+/* 등장 애니메이션 (최종 투명도 0.6에 맞춤) */
+@keyframes bgFadeIn {
+  from { opacity: 0; filter: blur(5px); transform: translateY(30px); }
+  to { opacity: 0.6; filter: blur(0); transform: translateY(0); }
+}
+
+#internal-char-bg.animate::before {
+  animation: bgFadeIn 0.5s ease-out forwards;
 }
 
 #internal-char-bg::before {
   content: "";
   position: absolute; 
-  top: 0; left: 0; right: 0;
+  bottom: 0; left: 0; right: 0; bottom: 0;
   width: 100%; 
-  height: 1200px;
+  height: 100%;
   background-image: var(--bg-url, none);
   background-repeat: no-repeat;
   z-index: -1;
+  opacity: 0.6; /* 0.8에서 0.6으로 하향 */
   
-  /* 애니메이션 모두 제거 (즉시 전환) */
-  transition: none !important;
-  
-  /* 기본값 (모바일) */
-  background-size: var(--bg-size-mob, cover);
-  background-position: var(--bg-x-mob, center) var(--bg-y-mob, center);
+  /* 기본 정렬: 가로 오른쪽, 세로 바닥 (변수로 제어됨) */
+  background-position: var(--bg-x-mob, right 100%) !important;
+  background-size: var(--bg-size-mob, auto 550px);
 }
 
-/* 태블릿 (601px ~ 1099px) */
+/* 태블릿 배경 설정 (601px 이상) */
 @media screen and (min-width: 601px) {
   #internal-char-bg::before {
-    background-size: var(--bg-size-tab, cover);
-    background-position: var(--bg-x-tab, center) var(--bg-y-tab, center);
+    background-size: var(--bg-size-tab, auto 750px);
+    background-position: var(--bg-x-tab, right 100%) !important;
   }
 }
 
-/* PC (1100px 이상) */
+/* PC 배경 설정 (1100px 이상) */
 @media screen and (min-width: 1100px) {
   #internal-char-bg::before {
-    background-size: var(--bg-size-pc, cover);
-    background-position: var(--bg-x-pc, center) var(--bg-y-pc, center);
+    background-size: var(--bg-size-pc, auto 900px);
+    background-position: var(--bg-x-pc, right 200px 100%) !important;
   }
 }
 
@@ -69,7 +89,7 @@
 }
 
 #content-display.hero-mode {
-  padding-top: 50px !important; /* 상단 공백 추가 */
+  padding-top: 50px !important;
 }
 
 #content-display.landing-mode,
@@ -96,16 +116,16 @@
   border: none;
   cursor: pointer;
   font-size: 1.5em;
-  color: #444;
+  color: #ffcb05; /* 노란색 별 */
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8); /* 검은색 외곽선 효과로 가독성 확보 */
   z-index: 10;
 }
 
 .char-fav-btn.active { 
   color: #ffcb05; 
-  filter: drop-shadow(0 0 8px rgba(255, 203, 5, 0.8)); /* 노란색 글로우 추가 */
+  filter: drop-shadow(0 0 8px rgba(255, 203, 5, 0.8));
 }
 
-/* 랜딩 페이지 전용 스타일 */
 .landing-title {
   font-family: 'Chungdo', sans-serif;
   font-size: 1.8em;

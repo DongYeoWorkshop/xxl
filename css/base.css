@@ -74,11 +74,11 @@ body.hero-mode-active::before {
 /* 랜딩 페이지 및 캐릭터 탭 배경 */
 body.landing-page-active::before,
 body.char-page-active::before {
-  background-image: url('../images/background/main.jpg');
+  background-image: url('../images/background/main.webp');
 }
 
 /* 시뮬레이터 및 비교 탭 전용 배경 */
 body.hero-mode-active::before {
-  background-image: url('../images/background/simul.jpg');
+  background-image: url('../images/background/simul.webp');
 }
 
