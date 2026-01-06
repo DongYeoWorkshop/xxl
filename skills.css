@@ -210,13 +210,13 @@
 
 /* Attribute Control */
 .attr-control-others { display: flex; justify-content: center; margin-bottom: 0px; min-width: 60px; }
-.attr-control-item { position: relative; width: 30px; height: 30px; margin: 2px; display: flex; align-items: center; justify-content: center; }
-.attr-control-glow { position: absolute; width: 18px; height: 18px; transform: rotate(45deg); pointer-events: none; }
-.attr-control-img { width: 24px; height: 24px; cursor: pointer; opacity: 0.7; z-index: 1; position: relative; -webkit-user-drag: none; user-drag: none; }
+.attr-control-item { position: relative; width: 30px; height: 30px; margin: 2px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.attr-control-glow { position: absolute; width: 18px; height: 18px; transform: rotate(45deg); pointer-events: none; z-index: 0 !important; } /* 글로우 z-index 낮춤 */
+.attr-control-img { width: 24px; height: 24px; cursor: pointer; opacity: 0.9; z-index: 10 !important; position: relative; -webkit-user-drag: none; user-drag: none; } /* 아이콘 z-index 높임 */
 .attr-control-current-wrapper { display: flex; justify-content: center; margin-top: -4px; }
-.attr-control-current-box { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
-.attr-control-current-glow { position: absolute; width: 30px; height: 30px; transform: rotate(45deg); pointer-events: none; }
-.attr-control-current-img { width: 38px; height: 38px; cursor: pointer; z-index: 1; position: relative; -webkit-user-drag: none; user-drag: none; }
+.attr-control-current-box { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.attr-control-current-glow { position: absolute; width: 30px; height: 30px; transform: rotate(45deg); pointer-events: none; z-index: -1; } /* 글로우를 뒤로 */
+.attr-control-current-img { width: 38px; height: 38px; cursor: pointer; z-index: 2; position: relative; -webkit-user-drag: none; user-drag: none; } /* 이미지를 앞으로 */
 
 /* =========================================
    Buff Display

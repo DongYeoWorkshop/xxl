@@ -222,6 +222,15 @@ export function handleImageClick(img) {
         
         const data = charData[id], saved = state.savedStats[id] || {};
 
+        // [수정] 속성 초기화: 저장된 값이 없으면 캐릭터 본래 속성으로 설정
+        if (saved.currentDisplayedAttribute) {
+            state.currentDisplayedAttribute = saved.currentDisplayedAttribute;
+        } else if (data.info && data.info.속성 !== undefined) {
+            // 속성 인덱스(0~4)를 문자열("불", "물" 등)로 변환
+            const attrList = ["불", "물", "나무", "빛", "어둠"];
+            state.currentDisplayedAttribute = attrList[data.info.속성] || '불';
+        }
+
         // 상세 정보 영역 기본 뼈대 주입
         if (dom.newSectionArea) {
             const initialIdx = saved.lastSelectedSkillIndex;

@@ -58,26 +58,87 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('sub-page-active');
     }
 
-    initHandlers(dom, { updateStats, saveCurrentStats });
-    initSecretModule(); // 비밀 모듈 초기화
-    initCloudSharing(); // [추가] 클라우드 공유 모듈 초기화
+            initHandlers(dom, { updateStats, saveCurrentStats });
 
-    // [추가] 랜딩 페이지 바로가기 버튼 이벤트
-    const landingRandomCharBtn = document.getElementById('landing-random-char-btn');
-    const landingHeroBtn = document.getElementById('landing-hero-btn');
-    const landingSimBtn = document.getElementById('landing-sim-btn');
+            initSecretModule(); // 비밀 모듈 초기화
 
-    if (landingRandomCharBtn) {
-        landingRandomCharBtn.onclick = () => {
-            const validChars = Object.keys(charData).filter(id => id !== 'hero' && id !== 'simulator' && id !== 'test_dummy');
-            if (validChars.length > 0) {
-                const randomId = validChars[Math.floor(Math.random() * validChars.length)];
-                const charImg = document.querySelector(`.main-image[data-id="${randomId}"]`);
-                if (charImg) handleImageClick(charImg);
-            }
-        };
-    }
-    if (landingHeroBtn) {
+            initCloudSharing(); // [추가] 클라우드 공유 모듈 초기화
+
+        
+
+            // [추가] 랜딩 페이지 바로가기 버튼 이벤트
+
+        
+
+    
+        // 기존 버튼 ID는 유지하되, 기능만 변경 (랜덤 이동 -> 리스트 표시)
+        const landingRandomCharBtn = document.getElementById('landing-char-list-btn') || document.getElementById('landing-random-char-btn');
+        const landingHeroBtn = document.getElementById('landing-hero-btn');
+        const landingSimBtn = document.getElementById('landing-sim-btn');
+        
+        // 신규 추가된 랜딩 페이지 요소
+        const landingMenuGroup = document.getElementById('landing-menu-group');
+        const landingCharListArea = document.getElementById('landing-char-list-area');
+        const landingCharGrid = document.getElementById('landing-char-grid');
+        const landingCharBackBtn = document.getElementById('landing-char-back-btn');
+    
+        if (landingRandomCharBtn && landingMenuGroup && landingCharListArea) {
+            landingRandomCharBtn.onclick = () => {
+                // 1. 메뉴 숨기고 리스트 영역 보이기
+                landingMenuGroup.style.display = 'none';
+                landingCharListArea.style.display = 'block';
+    
+                // 2. 캐릭터 그리드 렌더링 (이미 렌더링된 경우 스킵 가능하지만, 즐겨찾기 상태 반영을 위해 매번 렌더링 추천)
+                landingCharGrid.innerHTML = '';
+                
+                // 모든 캐릭터 ID 추출 (특수 ID 제외)
+                const validChars = Object.keys(charData).filter(id => id !== 'hero' && id !== 'simulator' && id !== 'test_dummy');
+                
+                // 정렬: 즐겨찾기 우선, 그 다음 이름순(혹은 데이터 순서)
+                validChars.sort((a, b) => {
+                    const aFav = state.savedStats[a]?.isFavorite ? 1 : 0;
+                    const bFav = state.savedStats[b]?.isFavorite ? 1 : 0;
+                    if (aFav !== bFav) return bFav - aFav; // 즐겨찾기 내림차순
+                    return 0; // 원래 순서 유지
+                });
+    
+                validChars.forEach(id => {
+                    const data = charData[id];
+                                    const img = document.createElement('img');
+                                    img.src = `images/${id}.webp`;
+                                    img.style.width = '100%';
+                                    img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 대폭 상향 */
+                                    img.style.objectFit = 'cover';
+                                    img.style.borderRadius = '8px';
+                    
+                    img.style.cursor = 'pointer';
+                    img.style.border = '1px solid #444';
+                    img.style.backgroundColor = 'black';
+                    
+                    // 즐겨찾기 표시 (테두리 등)
+                    if (state.savedStats[id]?.isFavorite) {
+                        img.style.borderColor = '#ffcb05';
+                        img.style.boxShadow = '0 0 5px rgba(255, 203, 5, 0.5)';
+                    }
+    
+                    img.onclick = () => {
+                        const originalImg = document.querySelector(`.main-image[data-id="${id}"]`);
+                        if (originalImg) handleImageClick(originalImg);
+                    };
+                    landingCharGrid.appendChild(img);
+                });
+            };
+        }
+    
+        if (landingCharBackBtn) {
+            landingCharBackBtn.onclick = () => {
+                landingCharListArea.style.display = 'none';
+                landingMenuGroup.style.display = 'flex'; // flex로 복구
+            };
+        }
+    
+        if (landingHeroBtn) {
+    
         landingHeroBtn.onclick = () => {
             const heroImg = document.querySelector('.main-image[data-id="hero"]');
             if (heroImg) handleImageClick(heroImg);
