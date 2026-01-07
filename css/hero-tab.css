@@ -131,3 +131,10 @@
   padding: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
+
+/* [추가] 태블릿/PC 환경에서 탭 태그 위치 조정 (20px 내림) */
+@media screen and (min-width: 601px) {
+  .hero-tab-tag {
+    margin-top: -32px !important; /* 강제 적용 */
+  }
+}

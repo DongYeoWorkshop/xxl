@@ -58,10 +58,10 @@
   transform: translateX(0); /* x축 이동을 transform으로 제어 */
 }
 
-/* 등장 애니메이션 */
+/* 등장 애니메이션 (transform 충돌 방지를 위해 이동 효과 제거) */
 @keyframes bgFadeIn {
-  from { opacity: 0; filter: blur(5px); transform: translateY(30px); }
-  to { opacity: 0.6; filter: blur(0); transform: translateY(0); }
+  from { opacity: 0; filter: blur(5px); }
+  to { opacity: 0.6; filter: blur(0); }
 }
 
 #internal-char-bg.animate #char-bg-img {
@@ -93,6 +93,14 @@
 #content-display.landing-mode {
   background-color: transparent !important;
   box-shadow: none !important;
+  margin-top: 90px !important; /* 헤더 아래로 확실하게 밀어냄 */
+}
+
+/* [추가] 모바일 랜딩 페이지 여백 제거 */
+@media screen and (max-width: 600px) {
+  #content-display.landing-mode {
+    margin-top: 50px !important;
+  }
 }
 
 #content-display.hero-mode {
@@ -116,21 +124,33 @@
 }
 
 .char-fav-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px; /* right에서 left로 변경 */
-  background: none;
-  border: none;
+  position: absolute !important;
+  top: 22px !important;
+  right: 15px !important; 
+  left: auto !important;
+  background: none !important; /* 배경 제거 */
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  width: 30px;
+  height: 30px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 1.5em;
-  color: #ffcb05; /* 노란색 별 */
-  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8); /* 검은색 외곽선 효과로 가독성 확보 */
-  z-index: 10;
+  font-size: 1.2em !important;
+  color: #888; /* 비활성 상태 색상 */
+  text-shadow: none !important;
+  z-index: 10 !important;
+  line-height: 1 !important;
+  transition: all 0.2s !important;
 }
 
 .char-fav-btn.active { 
-  color: #ffcb05; 
-  filter: drop-shadow(0 0 8px rgba(255, 203, 5, 0.8));
+  color: #ffcb05 !important; 
+  background: none !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 5px rgba(255, 203, 5, 0.8)) !important; /* 노란색 글로우 부활 */
 }
 
 .landing-title {
