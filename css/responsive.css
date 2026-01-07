@@ -309,6 +309,76 @@
   .skill-slider-container input {
     width: 45% !important;
   }
+
+  /* [추가] Hero 탭 비교표 모바일 2열 강제화 */
+  .unified-turn-content {
+    display: flex !important;
+    flex-direction: row !important; /* 가로 배치 강제 */
+    gap: 5px !important;
+    width: 100% !important;
+  }
+  .comparison-slot {
+    min-width: 0 !important; /* 최소 너비 해제 */
+    flex: 1 1 0 !important; /* 반씩 나눠 가짐 */
+    padding: 6px 4px !important; /* 패딩 축소 */
+  }
+  .comp-char-img {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .comp-text-wrapper {
+    max-width: none !important; /* 너비 제한 해제 */
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .comp-name {
+    font-size: 0.75em !important;
+    line-height: 1.2 !important;
+  }
+  .comp-spec {
+    display: block !important;
+    font-size: 0.55em !important;
+    color: #888 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important; /* 한 줄 유지 */
+  }
+  .comp-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+  .comp-total-dmg {
+    font-size: 0.85em !important;
+    margin-top: 4px !important;
+    text-align: center !important; /* 가운데 정렬로 변경 */
+    width: 100% !important;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 4px;
+  }
+  .comp-record-name {
+    display: flex !important;
+    font-size: 0.65em !important; /* 작은 폰트 복구 */
+    gap: 2px;
+    align-items: center;
+  }
+  .comp-skill-name {
+    display: none !important;
+  }
+  .comp-record-type {
+    margin-right: 2px !important;
+    white-space: nowrap;
+  }
+  .comp-record-val {
+    font-size: 0.75em !important; /* 작은 폰트 복구 */
+    text-align: right !important;
+    flex-shrink: 0;
+  }
+  .comp-record-row {
+    padding: 2px 0 !important;
+    justify-content: space-between !important;
+  }
 }
 
 /* 태블릿 및 PC (601px 이상) */
