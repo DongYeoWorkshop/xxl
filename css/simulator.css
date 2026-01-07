@@ -99,17 +99,23 @@
 
   /* 분석 로그 턴 구분선 */
   .sim-log-turn-header {
-    color: #888;
+    color: #888; /* 다시 회색으로 복구 */
     text-align: center;
     font-size: 0.85em;
     font-weight: bold;
     margin: 12px 0 6px;
     letter-spacing: 1px;
-    border-bottom: 1px dashed #333;
     padding-bottom: 4px;
   }
   
   .sim-log-line {
     margin-bottom: 2px;
+  }
+
+  /* 턴 수 버튼 PC 기본 위치 */
+  .sim-edit-btn {
+    position: absolute;
+    top: -13px;
+    right: 0;
   }
   

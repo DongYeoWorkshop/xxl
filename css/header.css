@@ -96,6 +96,33 @@
   transition: transform 0.2s;
 }
 
+.header-shortcuts-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 5px;
+}
+
+.header-shortcut-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid #444;
+}
+
+.header-shortcut-icon:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.header-shortcut-icon:active {
+  transform: scale(0.9);
+}
+
 .header-main-icon-btn:active {
   transform: scale(0.9);
 }
