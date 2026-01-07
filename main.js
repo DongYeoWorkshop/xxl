@@ -146,8 +146,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (landingSimBtn) {
         landingSimBtn.onclick = () => {
-            const simImg = document.querySelector('.main-image[data-id="simulator"]');
-            if (simImg) handleImageClick(simImg);
+            // [수정] 시뮬레이터 버튼 클릭 시 캐릭터 선택창으로 바로 이동
+            localStorage.removeItem('sim_last_char_id'); // 이전 선택 기록 제거하여 목록부터 시작
+            
+            // 기존 handleImageClick('simulator')와 유사한 화면 전환 로직 수행
+            const contentDisplay = document.getElementById('content-display');
+            if (contentDisplay) {
+                contentDisplay.className = 'hero-mode';
+                contentDisplay.setAttribute('data-char-id', 'simulator');
+            }
+            
+            document.body.classList.remove('landing-page-active', 'char-page-active', 'sub-page-active');
+            document.body.classList.add('hero-mode-active');
+            
+            hideAllSections();
+            const mainCol = document.querySelector('.main-content-column');
+            if (mainCol) mainCol.style.setProperty('display', 'block', 'important');
+            const simPage = document.getElementById('simulator-page');
+            if (simPage) simPage.style.setProperty('display', 'block', 'important');
+            
+            forceMainHeader();
+            
+            // 시뮬레이터 초기화 (목록 화면 렌더링)
+            import('./simulator.js').then(mod => mod.initSimulator());
         };
     }
 

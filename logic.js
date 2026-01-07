@@ -172,8 +172,10 @@ function updateStickyHeader(level) {
     const headerTitle = document.getElementById('sticky-header-title');
     const toggleIcon = document.getElementById('header-toggle-icon');
     
+    // [수정] 홈 버튼(main.png)은 어떤 상황에서도 항상 표시
+    if (toggleIcon) toggleIcon.style.setProperty('display', 'block', 'important');
+
     if (!state.currentId || state.currentId === 'hero' || state.currentId === 'simulator') {
-        if (toggleIcon) toggleIcon.style.setProperty('display', 'block', 'important');
         if (headerTitle) {
             headerTitle.style.setProperty('display', 'flex', 'important');
             headerTitle.innerHTML = `동여성 공방`;
@@ -186,19 +188,25 @@ function updateStickyHeader(level) {
             }
         });
     } else {
-        if (toggleIcon) toggleIcon.style.setProperty('display', 'none', 'important');
         const data = charData[state.currentId];
         if (data) {
             if (headerTitle) headerTitle.style.setProperty('display', 'none', 'important');
             infoSpans.forEach(id => { 
                 const el = document.getElementById(id); 
-                if (el) el.style.setProperty('display', 'flex', 'important');
+                // [수정] 속성 아이콘(sticky-attr)은 이제 숨김
+                if (el) {
+                    if (id === 'sticky-attr') el.style.setProperty('display', 'none', 'important');
+                    else el.style.setProperty('display', 'flex', 'important');
+                }
             });
             const nameEl = document.getElementById('sticky-name');
             if (nameEl) nameEl.innerText = data.title;
-            const attrName = constants.attributeList[data.info?.속성];
-            const attrEl = document.getElementById('sticky-attr');
-            if (attrEl) attrEl.innerHTML = `<img src="${constants.attributeImageMap[attrName]}" class="sticky-attr-icon">`;
+            
+            // [제거] 속성 아이콘 렌더링 로직 (더 이상 필요 없음)
+            // const attrName = constants.attributeList[data.info?.속성];
+            // const attrEl = document.getElementById('sticky-attr');
+            // if (attrEl) attrEl.innerHTML = `<img src="${constants.attributeImageMap[attrName]}" class="sticky-attr-icon">`;
+            
             const brVal = parseInt(dom.extraSlider1.value) || 0;
             const brText = (brVal < 5) ? `0성 ${brVal}단` : (brVal < 15) ? `1성 ${brVal - 5}단` : (brVal < 30) ? `2성 ${brVal - 15}단` : (brVal < 50) ? `3성 ${brVal - 30}단` : (brVal < 75) ? `4성 ${brVal - 50}단` : "5성";
             if (document.getElementById('sticky-lv')) document.getElementById('sticky-lv').innerText = `Lv.${level}`;

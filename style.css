@@ -21,7 +21,7 @@
 /* 시뮬레이터 바로가기 버튼 */
 .sim-shortcut-btn {
   position: absolute !important;
-  top: 22px !important; 
+  top: 60px !important; 
   right: 15px !important; /* left에서 right로 변경 */
   background: transparent !important;
   border: none !important;

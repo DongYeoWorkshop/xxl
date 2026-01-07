@@ -12,7 +12,7 @@ export const commonControls = {
         label: "HP 100% 유지율(%)",
         min: 0,
         max: 100,
-        initial: 100,
+        initial: 40,
         description: "매 턴 HP가 100%로 유지될 확률입니다."
     },
     "hit_prob": {
@@ -21,7 +21,7 @@ export const commonControls = {
         label: "턴당 피격 확률(%)",
         min: 0,
         max: 100,
-        initial: 30,
+        initial: 50,
         description: "캐릭터가 적에게 공격받을 확률입니다."
     },
     "normal_hit_prob": {
@@ -39,7 +39,7 @@ export const commonControls = {
         label: "아군 필살 횟수",
         min: 0,
         max: 3,
-        initial: 0,
+        initial: 3,
         description: "아군이 필살기를 사용하는 횟수입니다.",
         // 이 설정이 작동하는 기본 주기 (1+3n, 1턴 제외)
         isTurn: (t) => t > 1 && (t - 1) % 3 === 0
@@ -66,7 +66,7 @@ export const commonControls = {
         label: "피격 수",
         min: 0,
         max: 5,
-        initial: 0,
+        initial: 1,
         description: "[오렘] 배리어 상태에서 피격되어 반사 데미지가 발생하는 횟수입니다."
     }
 };

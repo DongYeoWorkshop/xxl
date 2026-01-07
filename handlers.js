@@ -13,6 +13,69 @@ import { backgroundConfigs } from './background-configs.js';
 let dom = {};
 let logic = {};
 
+// [신규] 배경 적용 함수 분리 (외부 호출 가능하도록)
+function applyBackground(charId, favStatus) {
+    const charBg = document.getElementById('internal-char-bg');
+    const bgImg = document.getElementById('char-bg-img'); 
+    
+    if (favStatus && bgImg) {
+        const def = backgroundConfigs["default"], spec = backgroundConfigs[charId] || {};
+        
+        const config = {
+            mobile: { ...def.mobile, ...(spec.mobile || {}) },
+            tablet: { ...def.tablet, ...(spec.tablet || {}) },
+            pc:     { ...def.pc,     ...(spec.pc || {}) }
+        };
+
+        bgImg.src = `images/background/${charId}.webp`;
+        bgImg.style.display = 'block';
+
+        const width = window.innerWidth;
+        let currentConfig, baseSize;
+
+        if (width <= 600) {
+            currentConfig = config.mobile;
+            baseSize = 550;
+        } else if (width <= 1100) {
+            currentConfig = config.tablet;
+            baseSize = 750;
+        } else {
+            currentConfig = config.pc;
+            baseSize = 900;
+        }
+
+        const finalSize = baseSize * currentConfig.scale;
+        bgImg.style.height = `${finalSize}px`;
+
+        if (width <= 600) {
+            const fixedHeight = window.outerHeight; 
+            const topPos = fixedHeight - finalSize + 60; 
+            bgImg.style.top = `${topPos}px`;
+            bgImg.style.bottom = 'auto';
+        } else {
+            bgImg.style.top = 'auto';
+            bgImg.style.bottom = '0';
+        }
+
+        let finalXOffset = currentConfig.xOffset || 0;
+        if (width > 1100) finalXOffset += 200;
+
+        // console.log('applyBackground Debug:', { charId, width, config: currentConfig, finalXOffset });
+
+        bgImg.style.transform = `translateX(${finalXOffset}px)`;
+        
+        if (charBg) {
+            charBg.classList.remove('animate');
+            void charBg.offsetWidth;
+            charBg.classList.add('animate');
+        }
+    } else if (bgImg) { 
+        bgImg.style.display = 'none';
+        bgImg.src = '';
+        if (charBg) charBg.classList.remove('animate');
+    }
+}
+
 export function initHandlers(domElements, logicFunctions) {
     dom = domElements;
     logic = logicFunctions;
@@ -53,6 +116,20 @@ export function initHandlers(domElements, logicFunctions) {
         icon.onclick = (e) => {
             e.stopPropagation();
             const targetId = icon.dataset.id;
+            
+            if (targetId === 'char-list') {
+                // 1. 메인 타이틀 클릭과 동일하게 랜딩 페이지로 이동
+                const headerTitle = document.getElementById('sticky-header-title');
+                if (headerTitle) headerTitle.click();
+                
+                // 2. 즉시 캐릭터 목록 버튼 클릭 효과 유도
+                setTimeout(() => {
+                    const landingCharBtn = document.getElementById('landing-char-list-btn');
+                    if (landingCharBtn) landingCharBtn.click();
+                }, 50); // DOM 전환 대기를 위해 짧은 지연
+                return;
+            }
+
             const targetBtn = document.querySelector(`.main-image[data-id="${targetId}"]`);
             if (targetBtn) handleImageClick(targetBtn);
         };
@@ -97,18 +174,20 @@ export function initHandlers(domElements, logicFunctions) {
             }
         }
         
+        // [추가] 리사이즈 시 배경 이미지 설정 즉시 갱신 (캐릭터 탭일 때)
+        // 단, 모바일(600px 이하)에서는 주소창 resize로 인한 덜컥거림 방지를 위해 호출하지 않음
+        if (currentWidth > 600 && state.currentId && !['hero', 'simulator'].includes(state.currentId)) {
+            const isFav = state.savedStats[state.currentId]?.isFavorite;
+            if (isFav) {
+                applyBackground(state.currentId, true);
+            }
+        }
+        
         lastWidth = currentWidth;
 
         // 캐릭터 탭인 경우 스탯 및 배경 위치 즉시 갱신
         if (state.currentId && !['hero', 'simulator'].includes(state.currentId)) {
             logic.updateStats();
-            // 캐릭터 배경 이미지 위치도 리사이즈에 맞춰 재배치되도록 handleImageClick의 일부 로직 호출이 필요할 수 있음
-            const activeImg = document.querySelector(`.main-image[data-id="${state.currentId}"]`);
-            if (activeImg) {
-                // handleImageClick을 전체 호출하면 스크롤 튀므로 배경만 다시 적용하도록 유도
-                // (현재 handleImageClick 내부에 applyBackground가 있으므로 이를 분리해서 호출하거나 
-                // 해당 스코프의 함수를 재사용하는 방식 고려)
-            }
         }
     });
 }
@@ -156,7 +235,15 @@ function setupHeaderListeners() {
 
             hideAllSections();
             const landingPage = document.getElementById('landing-page');
-            if (landingPage) landingPage.style.setProperty('display', 'block', 'important');
+            if (landingPage) {
+                landingPage.style.setProperty('display', 'block', 'important');
+                
+                // [추가] 랜딩 페이지 상태 초기화 (캐릭터 선택창 대신 메뉴 그룹 표시)
+                const menuGroup = document.getElementById('landing-menu-group');
+                const charListArea = document.getElementById('landing-char-list-area');
+                if (menuGroup) menuGroup.style.display = 'flex';
+                if (charListArea) charListArea.style.display = 'none';
+            }
             const mainCol = document.querySelector('.main-content-column');
             if (mainCol) mainCol.style.setProperty('display', 'block', 'important');
             
@@ -201,6 +288,13 @@ export function forceMainHeader() {
 export function hideAllSections() {
     const ids = ['landing-page', 'simulator-page', 'new-section-area', 'buff-application-area', 'skill-container', 'calc-and-stats-row', 'sub-stats-wrapper', 'info-display'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.setProperty('display', 'none', 'important'); });
+    
+    // [추가] 랜딩 페이지 모드 초기화
+    const menuGroup = document.getElementById('landing-menu-group');
+    const charListArea = document.getElementById('landing-char-list-area');
+    if (menuGroup) menuGroup.style.display = 'flex';
+    if (charListArea) charListArea.style.display = 'none';
+
     const mainCol = document.querySelector('.main-content-column');
     const sideCol = document.querySelector('.side-content-column');
     if (mainCol) mainCol.style.setProperty('display', 'none', 'important');
@@ -343,94 +437,23 @@ export function handleImageClick(img) {
 
         show('skill-container', 'grid'); show('calc-and-stats-row', 'flex');
         
-        const applyBackground = (charId, favStatus) => {
-            const charBg = document.getElementById('internal-char-bg');
-            const bgImg = document.getElementById('char-bg-img'); // [신규] 이미지 태그
-            
-            if (favStatus && bgImg) {
-                const def = backgroundConfigs["default"], spec = backgroundConfigs[charId] || {};
-                
-                // 모바일/태블릿/PC 설정 통합
-                const config = {
-                    mobile: { ...def.mobile, ...(spec.mobile || {}) },
-                    tablet: { ...def.tablet, ...(spec.tablet || {}) },
-                    pc:     { ...def.pc,     ...(spec.pc || {}) }
-                };
-
-                bgImg.src = `images/background/${charId}.webp`;
-                bgImg.style.display = 'block';
-
-                // 화면 너비에 따라 설정 적용
-                const width = window.innerWidth;
-                let currentConfig, baseSize;
-
-                if (width <= 600) {
-                    currentConfig = config.mobile;
-                    baseSize = 550;
-                } else if (width <= 1100) {
-                    currentConfig = config.tablet;
-                    baseSize = 750;
-                } else {
-                    currentConfig = config.pc;
-                    baseSize = 900;
-                }
-
-                // 1. 크기 설정 (높이 기준)
-                const finalSize = baseSize * currentConfig.scale;
-                bgImg.style.height = `${finalSize}px`;
-
-                // [수정] 모바일에서만 주소창 밀림 방지를 위해 top 고정 방식 사용
-                if (width <= 600) {
-                    const fixedHeight = window.outerHeight; 
-                    const topPos = fixedHeight - finalSize + 60; // 60px 더 아래로 보정
-                    bgImg.style.top = `${topPos}px`;
-                    bgImg.style.bottom = 'auto';
-                } else {
-                    // 태블릿 및 PC는 기존처럼 바닥에 고정
-                    bgImg.style.top = 'auto';
-                    bgImg.style.bottom = '0';
-                }
-
-                // 2. 위치 설정 (오른쪽 기준 오프셋)
-                // xOffset이 음수이면 오른쪽으로 더 이동(숨겨짐), 양수이면 왼쪽으로 이동(보임)
-                // 기존 로직: calc(100% - mobX) -> mobX가 -200이면 100% + 200px
-                // transform을 사용하여 이동 (right: 0 기준)
-                
-                let xOffset = currentConfig.xOffset;
-                // PC일 때는 기본 오프셋 200px 추가 보정 (기존 로직 유지)
-                if (width > 1100) xOffset += 200;
-
-                // 음수일수록 오른쪽으로 이동 -> translateX(양수)
-                // 기존 mobX가 -200일 때 오른쪽으로 200px 갔었음.
-                // CSS right: 0 상태에서 translateX(-xOffset)을 하면 부호 반대로 동작
-                // xOffset이 -200이면 translateX(200px) -> 오른쪽으로 이동. 맞음.
-                bgImg.style.transform = `translateX(${-xOffset}px)`;
-                
-                // 애니메이션 트리거
-                if (charBg) {
-                    charBg.classList.remove('animate');
-                    void charBg.offsetWidth;
-                    charBg.classList.add('animate');
-                }
-            } else if (bgImg) { 
-                bgImg.style.display = 'none';
-                bgImg.src = '';
-                if (charBg) charBg.classList.remove('animate');
-            }
-        };
-
         const favBtn = document.querySelector('#content-display .char-fav-btn');
         const simShortcutBtn = document.querySelector('#content-display .sim-shortcut-btn');
 
         if (simShortcutBtn) {
-            simShortcutBtn.style.display = 'flex'; // 다시 보이기
-            simShortcutBtn.onclick = (e) => {
-                e.stopPropagation();
-                // 현재 캐릭터 ID를 시뮬레이터용 데이터로 저장하고 시뮬레이터 탭 클릭
-                localStorage.setItem('sim_last_char_id', id);
-                const simBtn = document.getElementById('nav-simulator-btn');
-                if (simBtn) handleImageClick(simBtn);
-            };
+            // [수정] 비활성화 목록에 있는 캐릭터는 버튼 숨김
+            if (constants.disabledSimChars.includes(id)) {
+                simShortcutBtn.style.setProperty('display', 'none', 'important');
+            } else {
+                simShortcutBtn.style.display = 'flex'; // 다시 보이기
+                simShortcutBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    // 현재 캐릭터 ID를 시뮬레이터용 데이터로 저장하고 시뮬레이터 탭 클릭
+                    localStorage.setItem('sim_last_char_id', id);
+                    const simBtn = document.getElementById('nav-simulator-btn');
+                    if (simBtn) handleImageClick(simBtn);
+                };
+            }
         }
 
         if (favBtn) {

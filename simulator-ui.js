@@ -25,13 +25,13 @@ export function getCharacterSelectorHtml(validChars, disabledIds, charData) {
  */
 export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, savedTurns, savedIters, useHitProb = false) {
     return `
-        <div style="margin-bottom:10px; display: flex; justify-content: flex-start; align-items: center;">
-            <button id="sim-back-to-list" style="background:#fffcf5;border:1px solid #ffa500;color:#ffa500;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">캐릭터 상세 정보 →</button>
+        <div style="margin-bottom:10px; display: flex; justify-content: flex-end; align-items: center;">
+            <button id="sim-back-to-list" style="background:#fffcf5;border:1px solid #ffa500;color:#ffa500;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">← 캐릭터 선택창</button>
         </div>
         <div class="sim-main-container">
             <div class="sim-pane-settings">
                 <div style="position: relative; display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px;background:#fff;border:1px solid #eee0d0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;">
-                    <img src="images/${charId}.webp" class="sim-char-profile-img" style="width:55px;height:55px;border-radius:10px;object-fit:cover;border:2px solid #6f42c1;background:black;object-position:top;flex-shrink:0;cursor:pointer;" title="캐릭터 목록으로 이동">
+                    <img src="images/${charId}.webp" class="sim-char-profile-img" style="width:55px;height:55px;border-radius:10px;object-fit:cover;border:2px solid #6f42c1;background:black;object-position:top;flex-shrink:0;cursor:pointer;" title="상세 정보로 이동">
                     <div style="flex-grow:1;display:flex;align-items:center;justify-content:space-between;min-width:0;">
                         <div style="min-width:0;flex:1;">
                             <div style="display:flex;align-items:center;gap:8px;">

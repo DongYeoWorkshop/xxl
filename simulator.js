@@ -499,8 +499,10 @@ function renderSimulatorUI(charId) {
     }
 
     renderSimAttributePicker(charId);
-    // 네모난 이미지는 캐릭터 목록 선택 화면으로 이동
-    container.querySelector('.sim-char-profile-img').onclick = () => renderCharacterSelector();
+    // 캐릭터 아이콘은 상세 정보 탭으로 이동
+    container.querySelector('.sim-char-profile-img').onclick = () => {
+        document.querySelector(`.main-image[data-id="${charId}"]`)?.click();
+    };
     
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
@@ -625,10 +627,8 @@ function renderSimulatorUI(charId) {
         localStorage.setItem('sim_last_iters', closest); 
     };
     
-    // 텍스트 버튼은 해당 캐릭터의 상세 정보 탭으로 이동
-    document.getElementById('sim-back-to-list').onclick = () => {
-        document.querySelector(`.main-image[data-id="${charId}"]`)?.click();
-    };
+    // 상단 버튼은 캐릭터 선택창으로 이동
+    document.getElementById('sim-back-to-list').onclick = () => renderCharacterSelector();
     if (hasMulti) document.getElementById('sim-target-btn').onclick = (e) => { 
         let c = (parseInt(e.target.innerText)%5)+1; 
         e.target.innerText=c; 
