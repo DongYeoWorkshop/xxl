@@ -401,7 +401,7 @@ function renderCharacterSelector() {
     const container = document.getElementById('simulator-content'), 
           validChars = Object.keys(charData).filter(id => charData[id].base && id !== 'hero' && id !== 'test_dummy');
     const disabledIds = constants.disabledSimChars;
-    container.innerHTML = getCharacterSelectorHtml(validChars, disabledIds, charData);
+    container.innerHTML = getCharacterSelectorHtml(validChars, disabledIds, charData, state.savedStats);
     container.querySelectorAll('.sim-char-pick-item').forEach(item => { if (item.style.pointerEvents !== 'none') item.onclick = () => { localStorage.setItem('sim_last_char_id', item.dataset.id); renderSimulatorUI(item.dataset.id); }; });
 }
 
@@ -533,12 +533,16 @@ function renderSimulatorUI(charId) {
                 input.type = 'number'; 
                 input.value = (savedVal !== null) ? parseInt(savedVal) : ctrl.initial; 
                 input.style.cssText = `width:45px; padding:3px; border:1px solid #6f42c1; border-radius:4px; text-align:center; font-weight:bold; outline:none; font-size:0.8em;`; 
-                input.onchange = () => localStorage.setItem(storageKey, input.value); 
+                // [수정] onchange -> oninput 변경 (실시간 저장)
+                input.oninput = () => localStorage.setItem(storageKey, input.value); 
                 ctrlEl.appendChild(input); 
 
                 if (ctrl.hasAuto) {
+                    const isMobile = window.innerWidth <= 600;
                     const autoLabel = document.createElement('label');
-                    autoLabel.style.cssText = 'font-size:0.55em; color:#666; margin-left:4px; display:flex; align-items:center; gap:2px; cursor:pointer; font-weight:bold;';
+                    // 모바일일 때만 zoom 0.7 적용
+                    const zoomStyle = isMobile ? 'zoom: 0.7;' : 'zoom: 1;';
+                    autoLabel.style.cssText = `font-size:12px; color:#666; margin-left:4px; display:flex; align-items:center; gap:0px; cursor:pointer; font-weight:bold; white-space:nowrap; letter-spacing:-0.5px; ${zoomStyle}`;
                     const autoCheck = document.createElement('input');
                     autoCheck.type = 'checkbox';
                     autoCheck.style.margin = '0';
@@ -565,6 +569,7 @@ function renderSimulatorUI(charId) {
                     ctrlEl.appendChild(autoLabel);
                     ctrlEl.style.display = 'flex';
                     ctrlEl.style.alignItems = 'center';
+                    ctrlEl.style.justifyContent = 'center';
                 }
             }
             else if (ctrl.type === 'toggle') { 
@@ -600,6 +605,22 @@ function renderSimulatorUI(charId) {
             document.getElementById('sim-avg-dmg').innerText = res.avg; 
             document.getElementById('sim-max-dmg').innerText = res.p95 || res.max; 
             
+            // [수정] 오차 수치 복구
+            const avgNum = parseFloat(res.avg.replace(/,/g, ''));
+            const p05Num = parseFloat((res.p05 || res.min).replace(/,/g, ''));
+            const p95Num = parseFloat((res.p95 || res.max).replace(/,/g, ''));
+            const minDiffEl = document.getElementById('sim-min-diff');
+            const maxDiffEl = document.getElementById('sim-max-diff');
+
+            if (avgNum > 0) {
+                const minPercent = (((p05Num / avgNum) - 1) * 100).toFixed(1);
+                const maxPercent = (((p95Num / avgNum) - 1) * 100).toFixed(1);
+                minDiffEl.innerText = `${minPercent}%`;
+                maxDiffEl.innerText = `+${maxPercent}%`;
+                minDiffEl.style.visibility = 'visible';
+                maxDiffEl.style.visibility = 'visible';
+            }
+
             // [수정] 새로운 표시 함수 호출
             displaySimResult(charId, res, 'avg');
             
@@ -710,6 +731,7 @@ function runSimulation(charId) {
         const customValues = {}; 
         combinedControls.forEach(c => { 
             const v = localStorage.getItem(`sim_ctrl_${charId}_${c.id}`); 
+            
             if (c.type === 'toggle') {
                 customValues[c.id] = (v !== null) ? (v === 'true') : (c.initial === true);
             } else {
@@ -742,11 +764,31 @@ function runSimulation(charId) {
         if (lineGraph) lineGraph.style.display = 'none';
 
         document.getElementById('simulation-result-area').style.display = 'block';
-        document.getElementById('sim-min-dmg').innerText = result.p05; // P05 표시
+        document.getElementById('sim-min-dmg').innerText = result.p05; 
         document.getElementById('sim-avg-dmg').innerText = result.avg; 
-        document.getElementById('sim-max-dmg').innerText = result.p95; // P95 표시
+        document.getElementById('sim-max-dmg').innerText = result.p95; 
         
-        // [수정] 새로운 표시 함수 호출 (결과 객체는 p05, p95 데이터를 포함하고 있음)
+        // [수정] 카드별 오차 퍼센트 계산 및 표시
+        const avgNum = parseFloat(result.avg.replace(/,/g, ''));
+        const p05Num = parseFloat(result.p05.replace(/,/g, ''));
+        const p95Num = parseFloat(result.p95.replace(/,/g, ''));
+        
+        const minDiffEl = document.getElementById('sim-min-diff');
+        const maxDiffEl = document.getElementById('sim-max-diff');
+        
+        if (avgNum > 0) {
+            const minPercent = (((p05Num / avgNum) - 1) * 100).toFixed(1);
+            const maxPercent = (((p95Num / avgNum) - 1) * 100).toFixed(1);
+            
+            minDiffEl.innerText = `${minPercent}%`;
+            maxDiffEl.innerText = `+${maxPercent}%`;
+            minDiffEl.style.visibility = 'visible';
+            maxDiffEl.style.visibility = 'visible';
+        } else {
+            minDiffEl.style.visibility = 'hidden';
+            maxDiffEl.style.visibility = 'hidden';
+        }
+        
         displaySimResult(charId, result, 'avg');
         
         document.getElementById('sim-empty-msg').style.display = 'none';

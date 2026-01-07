@@ -42,16 +42,33 @@ function supportAddTimer(sState, key, dur, maxStacks = 1) {
 function getSupportVal(charId, skillIdx, effectKey, targetCharData = null, isStamp = false) {
     const data = charData[charId];
     if (!data) return 0;
-    const stats = state.savedStats[charId] || { lv: 1, s1: 0, s2: 0, skills: {} };
-    if (targetCharData && targetCharData.info) {
-        const originalInfo = data.info;
-        const tempInfo = { ...data.info, 속성: targetCharData.info.속성 };
-        data.info = tempInfo;
-        const val = getSkillValue(data, stats, skillIdx, effectKey, isStamp);
-        data.info = originalInfo;
-        return val;
+    const stats = state.savedStats[charId] || { lv: 1, s1: 0, s2: 0, skills: {}, stamp: false };
+    
+    const skill = data.skills[skillIdx];
+    const finalIsStamp = isStamp || (!!(stats.stamp) && (skillIdx === 1 || skill?.hasStampEffect || skill?.isUltExtra));
+
+    // 수치 계산용 내부 헬퍼
+    const getRawVal = (isS) => {
+        if (targetCharData && targetCharData.info) {
+            const originalInfo = data.info;
+            const tempInfo = { ...data.info, 속성: targetCharData.info.속성 };
+            data.info = tempInfo;
+            const res = getSkillValue(data, stats, skillIdx, effectKey, isS);
+            data.info = originalInfo;
+            return res;
+        }
+        return getSkillValue(data, stats, skillIdx, effectKey, isS);
+    };
+
+    let val = getRawVal(finalIsStamp);
+
+    // [특수 처리] 리카노 필살기: 도장 활성화 시 기본 효과 + 추가 효과 합산
+    if (charId === 'rikano' && skillIdx === 1 && finalIsStamp && (effectKey === '뎀증디버프' || effectKey === '뎀증')) {
+        const baseVal = getRawVal(false); // 도장 없는 기본 수치
+        val = baseVal + val; // 기본(15%) + 도장분(3.75%)
     }
-    return getSkillValue(data, stats, skillIdx, effectKey, isStamp);
+
+    return val;
 }
 
 /**
@@ -93,7 +110,9 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
     }
     if (Math.random() < finalProb) {
         const timerKey = stateKey;
+        // [수정] 내부 계산용(finalDur)과 로그 표시용(logDur) 분리
         let finalDur = param.duration || 1;
+        const logDur = param.duration || 1;
         const maxStacks = param.maxStacks || 1;
         
         // [추가] 피격 타이밍(본인 또는 아군)에 걸리는 버프는 지속시간 +1 보정
@@ -104,10 +123,12 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
         supportAddTimer(sState, timerKey, finalDur, maxStacks);
 
         if (sIdx !== -1) {
-            let skill = supportData.skills[sIdx], isStamp = (param.customTag === "도장"), targetSIdx = sIdx;
+            let skill = supportData.skills[sIdx], targetSIdx = sIdx;
+            // [수정] 도장 판정 로직 강화: 캐릭터 설정의 도장 상태와 스킬 특성을 함께 고려
+            let isStamp = (param.customTag === "도장") || (!!(supportStats.stamp) && (sIdx === 1 || skill.hasStampEffect || skill.isUltExtra));
+            
             if (ctx.supportId === 'beernox' && isStamp) { targetSIdx = 1; skill = supportData.skills[1]; isStamp = false; }
 
-            // [수정] param.valKey가 있으면 우선 사용, 없으면 자동 탐색
             const effectKey = (param.valKey !== undefined) ? param.valKey : (() => {
                 const effects = isStamp ? (skill.stampBuffEffects || {}) : (skill.buffEffects || {});
                 let key = Object.keys(effects)[0];
@@ -117,22 +138,18 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
 
             const val = getSupportVal(ctx.supportId, targetSIdx, effectKey, ctx.charData, isStamp);
             
-            // [수정] 가산 수치(+XXXX) 계산 로직: 현재 서포터의 모든 기초공증 효과를 합산
             let boostText = "";
             if (param.showAtkBoost || skill.ratioEffects) {
                 const sLv = parseInt(supportStats.lv || 1), sBr = parseInt(supportStats.s1 || 0), sFit = parseInt(supportStats.s2 || 0);
                 const baseAtkRaw = supportData.base["공격력"] * Math.pow(1.05, sLv - 1);
                 const brBonus = 1 + (sBr * 0.02), fitBonus = 1 + (sFit * 0.04);
                 
-                // 실시간 모든 기초공증 효과 수집
                 let baseAtkBoostRate = 0;
                 supportData.skills.forEach((s, idx) => {
                     if (s.buffEffects && s.buffEffects["기초공증"]) {
-                        // 해금 조건 체크
                         const thresholds = [0, 0, 0, 0, 30, 50, 75]; 
                         if (idx >= 4 && idx <= 6 && sBr < thresholds[idx]) return;
 
-                        // 타이머 또는 스택 키 찾기
                         const shortId = s.id.split('_').pop();
                         const keysToCheck = [
                             s.id + "_stacks", shortId + "_stacks", 
@@ -144,19 +161,14 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
                         const foundKey = keysToCheck.find(k => sState[k] !== undefined);
                         const stateVal = foundKey ? sState[foundKey] : undefined;
                         
-                        if (stateVal || (idx >= 2 && idx <= 6 && !s.hasCounter && !s.hasToggle)) { // 상시 패시브 혹은 활성화된 버프
+                        if (stateVal || (idx >= 2 && idx <= 6 && !s.hasCounter && !s.hasToggle)) {
                             const sVal = getSupportVal(ctx.supportId, idx, '기초공증');
                             let count = 0;
-                            if (Array.isArray(stateVal)) {
-                                count = stateVal.length;
-                            } else if (typeof stateVal === 'number' && stateVal > 0) {
-                                // 스택형이거나 카운터형인 경우만 중첩수 적용, 타이머는 1로 고정
+                            if (Array.isArray(stateVal)) count = stateVal.length;
+                            else if (typeof stateVal === 'number' && stateVal > 0) {
                                 const isStackType = (foundKey && foundKey.includes('stacks')) || s.hasCounter;
                                 count = isStackType ? stateVal : 1;
-                            } else if (!stateVal && idx >= 2 && idx <= 6) {
-                                // 상시 패시브 (Skill 6 등)
-                                count = 1;
-                            }
+                            } else if (!stateVal && idx >= 2 && idx <= 6) count = 1;
                             
                             if (count > 0) baseAtkBoostRate += (sVal * count);
                         }
@@ -167,20 +179,13 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
                 const boostVal = Math.floor(currentBaseAtk * (val / 100));
                 boostText = ` (+${boostVal.toLocaleString()} 가산)`;
             }
-            // [수정] 확률 로그 및 변수 정의
             const displayProb = (finalProb < 1.0) ? Math.floor(finalProb * 100) : null;
-            
-            // [수정] 상세 로그 형식을 서포터 전용으로 최적화
-            const logIdx = { 
-                name: "", // ctx.log의 두번째 인자를 전체 메시지로 사용
-                icon: `images/${ctx.supportId}.webp`
-            };
-            
-            // "파미도: [패시브2] 공격력 가산" 형식으로 메시지 구성
+            const logIdx = { name: "", icon: `images/${ctx.supportId}.webp` };
             const skillTag = param.customTag ? `[${param.customTag}] ` : "";
             const supportMsg = `${supportData.title}: ${skillTag}${param.label || skill.name}${boostText}`;
             
-            ctx.log(logIdx, supportMsg, displayProb, finalDur, !!param.skipLog, "서포터");
+            // [수정] 로그에는 보정 전 지속시간(logDur) 표시
+            ctx.log(logIdx, supportMsg, displayProb, logDur, !!param.skipLog, "서포터");
         }
         return true;
     }
@@ -261,34 +266,51 @@ export const supportLogic = {
         }
     },
     "rikano": {
-        getInitialState: () => ({ passive1_timer: 0, passive2_timer: 0, passive8_timer: 0 }),
+        getInitialState: () => ({ passive1_timer: 0, passive2_timer: 0, passive8_timer: 0, taunt_timer: 0 }),
         onTurn: (ctx, sState) => {
             const p = simParams.rikano; ctx.supportId = 'rikano';
             if (sState.passive1_timer > 0) sState.passive1_timer--;
             if (sState.passive2_timer > 0) sState.passive2_timer--;
             if (sState.passive8_timer > 0) sState.passive8_timer--;
+            if (sState.taunt_timer > 0) sState.taunt_timer--;
+
             let actionType = getSupportAction('rikano', ctx.t);
             const logIdx = { name: "", icon: "images/rikano.webp" };
             if (actionType === 'ult') {
                 ctx.log(logIdx, "리카노: [필살기] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill2_debuff, 'passive2_timer');
-                tryApplySupportParam(ctx, sState, p.skill8_debuff, 'passive8_timer');
+                const pUlt = { ...p.skill2_debuff, customTag: "필살기", label: "부여" };
+                const pP2 = { ...p.skill8_debuff, customTag: "패시브2", label: "부여" };
+                tryApplySupportParam(ctx, sState, pUlt, 'passive2_timer');
+                tryApplySupportParam(ctx, sState, pP2, 'passive8_timer');
+
+                // [수정] 도장 활성화 시 조롱 부여 (로그 유지, 가중치 계산은 제거될 예정)
+                if (!!(state.savedStats['rikano']?.stamp)) {
+                    sState.taunt_timer = 1;
+                    ctx.log(logIdx, "리카노: [도장] 조롱 효과 부여", null, 1, false, "서포터");
+                }
             } else if (actionType === 'defend') ctx.log(logIdx, "리카노: [방어]", null, null, false, "서포터");
             else {
                 ctx.log(logIdx, "리카노: [보통공격] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill1_debuff, 'passive1_timer');
+                const p1 = { ...p.skill1_debuff, customTag: "보통공격", label: "부여" };
+                tryApplySupportParam(ctx, sState, p1, 'passive1_timer');
             }
         },
         getBonuses: (sState, targetCharData, ctx) => {
-            let bonuses = { "뎀증디버프": 0, "공증": 0, "필살기뎀증": 0 };
+            let bonuses = { "공증": 0, "뎀증디버프": 0, "필살기뎀증": 0, "뎀증": 0 };
             bonuses["공증"] += getSupportVal('rikano', 2, '공증', targetCharData);
             bonuses["필살기뎀증"] += getSupportVal('rikano', 3, '필살기뎀증', targetCharData);
             if (sState.passive1_timer > 0) bonuses["뎀증디버프"] += getWeightedSupportVal(ctx, 'rikano', 0, '뎀증디버프', targetCharData);
             if (sState.passive2_timer > 0) bonuses["뎀증디버프"] += getWeightedSupportVal(ctx, 'rikano', 1, '뎀증디버프', targetCharData);
             if (sState.passive8_timer > 0) bonuses["뎀증디버프"] += getWeightedSupportVal(ctx, 'rikano', 7, '뎀증디버프', targetCharData);
+            
+            // [수정] 조롱 상태일 때 뎀증 보너스 적용 (가중치 제거)
+            if (sState.taunt_timer > 0) {
+                bonuses["뎀증"] += getSupportVal('rikano', 6, '뎀증', targetCharData);
+            }
             return bonuses;
         }
     },
+
     "orem": {
         getInitialState: () => ({ shield_timer: 0 }),
         onTurn: (ctx, sState) => {
@@ -297,12 +319,7 @@ export const supportLogic = {
             let actionType = getSupportAction('orem', ctx.t);
             if (actionType === 'ult') {
                 sState.shield_timer = 2;
-                ctx.log({ name: "아군 전체 [배리어]", icon: "images/orem.webp", label: "서포터", customTag: "오렘" }, "부여 (2턴)");
-            }
-            if (sState.shield_timer > 0) {
-                if (!!(state.savedStats['orem']?.stamp)) {
-                    ctx.log({ name: "현측 방어 전개", icon: "images/orem.webp", label: "도장", customTag: "서포터" }, "배리어 추가타 활성");
-                }
+                ctx.log({ name: "", icon: "images/orem.webp" }, "오렘: [필살기] 아군 전체 [배리어] 부여 (2턴)", null, null, false, "서포터");
             }
         },
         onEnemyHit: (ctx, sState) => {
@@ -311,9 +328,10 @@ export const supportLogic = {
                 if (hitCount > 0) {
                     const reflectCoef = getSupportVal('orem', 6, '추가데미지');
                     for (let k = 0; k < hitCount; k++) {
-                        ctx.log({ name: "충격 역류 (반사)", icon: "icon/passive5.webp", customTag: "서포터", coef: reflectCoef, type: "추가공격" }, "activate");
+                        // [수정] 아이콘을 캐릭터 본인 아이콘으로 변경
+                        ctx.log({ name: "충격 역류 (반사)", icon: "images/orem.webp", customTag: "서포터", coef: reflectCoef, type: "추가공격" }, "activate");
                         if (!ctx.extraHits) ctx.extraHits = [];
-                        ctx.extraHits.push({ name: "오렘: 충격 역류", skillId: "orem_skill7", val: reflectCoef, type: "추가공격", customTag: "서포터", icon: "icon/passive5.webp" });
+                        ctx.extraHits.push({ name: "오렘: 충격 역류", skillId: "orem_skill7", val: reflectCoef, type: "추가공격", customTag: "서포터", icon: "images/orem.webp" });
                     }
                 }
             }
@@ -325,7 +343,15 @@ export const supportLogic = {
                 if (isOremStamped) {
                     const oremExtraCoef = 25;
                     if (!ctx.extraHits) ctx.extraHits = [];
-                    ctx.extraHits.push({ name: "오렘 (배리어 추가타)", skillId: "orem_skill8", val: oremExtraCoef, type: "추가공격", customTag: "서포터", icon: "images/sigilwebp/sigil_orem.webp" });
+                    // [수정] 아이콘을 캐릭터 본인 아이콘으로 변경
+                    ctx.extraHits.push({ 
+                        name: "오렘: [도장] 현측 방어 전개", 
+                        skillId: "orem_skill8", 
+                        val: oremExtraCoef, 
+                        type: "추가공격", 
+                        customTag: "서포터", 
+                        icon: "images/orem.webp" 
+                    });
                 }
             }
         },
@@ -343,9 +369,11 @@ export const supportLogic = {
             if (sState.skill5_timer > 0) { sState.skill5_timer--; if (sState.skill5_timer === 0) sState.skill5_stacks = 0; }
             let actionType = getSupportAction('wang', ctx.t);
             if (actionType === 'ult') {
-                ctx.log({ name: "패란의 영감", icon: "images/wang.webp" }, "멍: [필살기] 사용", null, null, false, "서포터");
+                const logIdx = { name: "", icon: "images/wang.webp" };
+                // [수정] 스킬 이름 제거: 멍: [필살기] 사용
+                ctx.log(logIdx, "멍: [필살기] 사용", null, null, false, "서포터");
                 sState.skill2_timer = 3;
-                ctx.log({ name: "아군 전체 [영감]", icon: "images/wang.webp" }, "멍: 부여 (3턴)", null, null, false, "서포터");
+                ctx.log(logIdx, "멍: 아군 전체 [패란의 영감] 부여 (3턴)", null, null, false, "서포터");
             } else if (actionType === 'defend') ctx.log({ name: "", icon: "images/wang.webp" }, "멍: [방어]", null, null, false, "서포터");
             else ctx.log({ name: "", icon: "images/wang.webp" }, "멍: [보통공격] 사용", null, null, false, "서포터");
         },
@@ -356,9 +384,10 @@ export const supportLogic = {
                 sState.skill5_stacks = Math.min(2, sState.skill5_stacks + 1);
                 sState.skill5_timer = 3; // 피격 보정 적용 (2+1)
                 
-                // [수정] 지속시간 정보를 포함한 표준 로그 출력
-                const logIdx = { name: `영감 공명 (${sState.skill5_stacks}중첩)`, icon: "images/wang.webp", customTag: "멍" };
-                ctx.log(logIdx, `피격 발생 (뎀증 부여)`, null, 3);
+                // [수정] 로그 형식 변경: [서포터] 멍: [패시브3] 부여 (N중첩) (2턴)
+                const logIdx = { name: "", icon: "images/wang.webp" };
+                const msg = `멍: [패시브3] 부여 (${sState.skill5_stacks}중첩)`;
+                ctx.log(logIdx, msg, null, 2, false, "서포터");
             }
         },
         onAttack: (ctx, sState) => {
@@ -367,9 +396,25 @@ export const supportLogic = {
                 const isWangStamped = !!(wangStats.stamp);
                 const hitCoef = getSupportVal('wang', 1, '추가공격', ctx.charData, isWangStamped);
                 if (!ctx.extraHits) ctx.extraHits = [];
-                ctx.extraHits.push({ name: "멍: 패란의 영감 (협공)", skillId: "wang_skill2", val: hitCoef, type: "추가공격", customTag: "서포터", icon: "icon/attack(strong).webp" });
+                // [수정] 아이콘을 캐릭터 본인 아이콘으로 변경
+                ctx.extraHits.push({ 
+                    name: "멍: 패란의 영감", 
+                    skillId: "wang_skill2", 
+                    val: hitCoef, 
+                    type: "추가공격", 
+                    customTag: "서포터", 
+                    icon: "images/wang.webp" 
+                });
                 if (isWangStamped && Math.random() < 0.5) {
-                    ctx.extraHits.push({ name: "멍: 패란의 영감 (도장 협공)", skillId: "wang_skill2", val: hitCoef, type: "추가공격", customTag: "도장", icon: "images/sigilwebp/sigil_wang.webp" });
+                    // [수정] 아이콘을 캐릭터 본인 아이콘으로 변경
+                    ctx.extraHits.push({ 
+                        name: "멍: [도장] 패란의 영감", 
+                        skillId: "wang_skill2", 
+                        val: hitCoef, 
+                        type: "추가공격", 
+                        customTag: "서포터", 
+                        icon: "images/wang.webp" 
+                    });
                 }
             }
         },
@@ -409,12 +454,17 @@ export const supportLogic = {
             const logIdx = { name: "", icon: "images/duncan.webp" };
             if (actionType === 'ult') {
                 ctx.log(logIdx, "던컨 찰스: [필살기] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill2_buff, 'ult_timer');
+                // [수정] 필살기 태그 추가
+                const pUlt = { ...p.skill2_buff, customTag: "필살기" };
+                tryApplySupportParam(ctx, sState, pUlt, 'ult_timer');
             } else if (actionType === 'defend') ctx.log(logIdx, "던컨 찰스: [방어]", null, null, false, "서포터");
             else {
                 ctx.log(logIdx, "던컨 찰스: [보통공격] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill4_buff, 'normal_timer');
-                tryApplySupportParam(ctx, sState, p.skill9_buff, 'prob_timer');
+                // [수정] 패시브2 태그 추가
+                const p2_fixed = { ...p.skill4_buff, customTag: "패시브2" };
+                const p2_prob = { ...p.skill9_buff, customTag: "패시브2" };
+                tryApplySupportParam(ctx, sState, p2_fixed, 'normal_timer');
+                tryApplySupportParam(ctx, sState, p2_prob, 'prob_timer');
             }
         },
         getBonuses: (sState, targetCharData, ctx) => {
@@ -475,29 +525,36 @@ export const supportLogic = {
             
             if (sState.skill5_timers) {
                 sState.skill5_timers = sState.skill5_timers.map(t => t - 1).filter(t => t > 0);
+                // [수정] 루테닉스 스타일 템플릿 적용: 파미도: [패시브3] 발동 (N중첩) (2턴)
                 if (sState.skill5_timers.length > 0) {
-                    ctx.log({ name: "쿼터백 지휘선", icon: "images/famido.webp", customTag: "패시브3" }, `(현재 ${sState.skill5_timers.length}중첩)`);
+                    ctx.log({ name: "", icon: "images/famido.webp" }, `파미도: [패시브3] 발동 (${sState.skill5_timers.length}중첩)`, null, 2, false, "서포터");
                 }
             }
 
             if (sState.tactical_stacks < 3) {
                 sState.tactical_stacks++;
-                ctx.log({ name: "전술 판독", icon: "images/famido.webp", label: "패시브2", customTag: "서포터" }, `스택 획득 (${sState.tactical_stacks}/3)`);
+                // [수정] 템플릿 적용 및 아이콘 명시
+                ctx.log({ name: "", icon: "images/famido.webp" }, `파미도: [패시브2] 전술 판독 스택 획득 (${sState.tactical_stacks}/3)`, null, null, false, "서포터");
             }
             let actionType = getSupportAction('famido', ctx.t);
+            const logIdx = { name: "", icon: "images/famido.webp" };
             if (actionType === 'ult') {
-                ctx.log({ name: "절대 에이스의 포효", icon: "images/famido.webp", label: "필살기", customTag: "서포터" }, "사용");
+                // [수정] 템플릿 적용
+                ctx.log(logIdx, "파미도: [필살기] 사용", null, null, false, "서포터");
                 sState.skill2_timer = 2;
                 const isStamped = !!(state.savedStats['famido']?.stamp);
                 if (isStamped) tryApplySupportParam(ctx, sState, p.skill2_fixed_buff, 'skill2_fixed_timer');
                 
-                // [추가] 필살기도 공격이므로 3스택 시 버프 발동
                 if (sState.tactical_stacks >= 3) { 
                     if (tryApplySupportParam(ctx, sState, p.skill4_fixed_buff, 'skill4_boost_timer')) sState.tactical_stacks = 0; 
                 }
-            } else if (actionType === 'defend') { ctx.log(`[서포터] 파미도: [방어] 실행`); sState.skill4_timer = 2; }
-            else {
-                ctx.log(`[서포터] 파미도: [보통공격] 사용`);
+            } else if (actionType === 'defend') { 
+                // [수정] 템플릿 적용 및 아이콘 복구
+                ctx.log(logIdx, "파미도: [방어]", null, null, false, "서포터");
+                sState.skill4_timer = 2; 
+            } else {
+                // [수정] 템플릿 적용 및 아이콘 복구
+                ctx.log(logIdx, "파미도: [보통공격] 사용", null, null, false, "서포터");
                 if (sState.tactical_stacks >= 3) { if (tryApplySupportParam(ctx, sState, p.skill4_fixed_buff, 'skill4_boost_timer')) sState.tactical_stacks = 0; }
             }
         },
@@ -549,24 +606,33 @@ export const supportLogic = {
                 for (let i = 0; i < allyCount; i++) {
                     if (Math.random() < 0.5) supportAddTimer(sState, 'skill7_timer', 2, 4);
                 }
-                if (sState.skill7_timer.length > 0) ctx.log({ name: "분해 분석", icon: "images/rutenix.webp" }, `루테닉스: (현재 ${sState.skill7_timer.length}중첩)`, null, null, false, "서포터");
+                // [수정] 용어 변경: 부여 -> 발동
+                if (sState.skill7_timer.length > 0) {
+                    ctx.log({ name: "", icon: "images/rutenix.webp" }, `루테닉스: [패시브5] 발동 (${sState.skill7_timer.length}중첩)`, null, 2, false, "서포터");
+                }
             }
 
             let actionType = getSupportAction('rutenix', ctx.t);
             const logIdx = { name: "", icon: "images/rutenix.webp" };
             if (actionType === 'ult') {
                 ctx.log(logIdx, "루테닉스: [필살기] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill2_buff, 'skill2_timer');
+                // [수정] 템플릿 적용: 루테닉스: [필살기] 발동
+                const pUlt = { ...p.skill2_buff, customTag: "필살기", label: "발동" };
+                tryApplySupportParam(ctx, sState, pUlt, 'skill2_timer');
             } else if (actionType === 'defend') ctx.log(logIdx, "루테닉스: [방어]", null, null, false, "서포터");
             else {
                 ctx.log(logIdx, "루테닉스: [보통공격] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill4_buff, 'skill4_timer');
+                // [수정] 템플릿 적용: 루테닉스: [패시브2] 발동
+                const p2 = { ...p.skill4_buff, customTag: "패시브2", label: "발동" };
+                tryApplySupportParam(ctx, sState, p2, 'skill4_timer');
             }
         },
         onEnemyHit: (ctx, sState) => {
             const savedProb = localStorage.getItem('sim_ctrl_rutenix_hit_prob');
             const hitProb = (savedProb !== null ? parseInt(savedProb) : 30) / 100;
-            if (Math.random() < hitProb) tryApplySupportParam(ctx, sState, simParams.rutenix.skill5_buff, 'skill5_timer');
+            // [수정] 템플릿 적용: 루테닉스: [패시브3] 발동
+            const p3 = { ...simParams.rutenix.skill5_buff, customTag: "패시브3", label: "발동" };
+            if (Math.random() < hitProb) tryApplySupportParam(ctx, sState, p3, 'skill5_timer');
         },
         getBonuses: (sState, targetCharData, ctx) => {
             let bonuses = { "공증": 0, "고정공증": 0 };
@@ -602,7 +668,9 @@ export const supportLogic = {
             else {
                 ctx.log(logIdx, "제트블랙: [보통공격] 사용", null, null, false, "서포터");
                 tryApplySupportParam(ctx, sState, p.skill1_buff, 'skill1_timer');
-                tryApplySupportParam(ctx, sState, p.skill5_buff, 'skill5_timer');
+                // [수정] 패시브3 태그 추가
+                const p3 = { ...p.skill5_buff, customTag: "패시브3" };
+                tryApplySupportParam(ctx, sState, p3, 'skill5_timer');
             }
         },
         getBonuses: (sState, targetCharData, ctx) => {
@@ -635,20 +703,42 @@ export const supportLogic = {
             const logIdx = { name: "", icon: "images/tamrang.webp" };
             if (actionType === 'ult') {
                 ctx.log(logIdx, "탐랑: [필살기] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill7_vuln, 'skill7_timer');
+                const p5 = { ...p.skill7_vuln, customTag: "패시브5" };
+                tryApplySupportParam(ctx, sState, p5, 'skill7_timer');
                 
-                // [수정] 도장 디버프와 수면을 하나의 주사위로 통합 처리
-                if (tryApplySupportParam(ctx, sState, p.skill8_vuln, 'skill8_timer')) {
-                    // 도장 디버프 확률(40%)에 당첨되면 수면 타이머도 동일하게 설정
+                // [수정] 도장 디버프와 수면 로직 통합 처리 (순서 및 확률 표시 개선)
+                const s8 = p.skill8_vuln;
+                const supportStats = state.savedStats['tamrang'] || { skills: {} };
+                const sLv = parseInt(supportStats.skills?.s2 || 1); // skill8은 skill2와 레벨 연동
+                const rate = getSkillMultiplier(sLv, s8.startRate || 0.73);
+                const finalProb = (s8.prob || 0.4) * rate;
+                const displayProb = Math.floor(finalProb * 100);
+
+                if (Math.random() < finalProb) {
                     sState.sleep_timer = 2; 
-                    // 수면 로그는 엔진에서 p.sleep_status를 따로 안 거치므로 수동으로 남김
-                    ctx.log({ name: "[수면]", icon: "images/tamrang.webp" }, "탐랑: 부여 (2턴)", null, null, false, "서포터");
+                    sState.skill8_timer = 2;
+                    // 1. 수면 부여 로그 (확률 포함)
+                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면] 부여", displayProb, 2, false, "서포터");
+                    // 2. 도장 디버프 부여 로그 (확률 포함)
+                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: 디버프 부여", displayProb, 2, false, "서포터");
                 }
             } else if (actionType === 'defend') {
                 ctx.log(logIdx, "탐랑: [방어]", null, null, false, "서포터");
             } else {
                 ctx.log(logIdx, "탐랑: [보통공격] 사용", null, null, false, "서포터");
-                tryApplySupportParam(ctx, sState, p.skill4_vuln, 'skill4_timer');
+                // [수정] 패시브2 태그 명시
+                const p2 = { ...p.skill4_vuln, customTag: "패시브2" };
+                tryApplySupportParam(ctx, sState, p2, 'skill4_timer');
+            }
+        },
+        onAttack: (ctx, sState) => {
+            // [추가] 보통공격이나 필살기 사용 시 수면 및 도장 디버프 해제
+            if (!ctx.isDefend) {
+                if (sState.sleep_timer > 0 || sState.skill8_timer > 0) {
+                    sState.sleep_timer = 0;
+                    sState.skill8_timer = 0;
+                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면/도장디버프] 해제 (피격)", null, null, false, "서포터");
+                }
             }
         },
         getBonuses: (sState, targetCharData, ctx) => {

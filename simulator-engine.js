@@ -240,16 +240,18 @@ export function runSimulationCore(context) {
                     }
                     processSupportEnemyHit(dynCtx, supportId, supportState);
                     handleHook('onEnemyHit');
-                    if (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
-                        dynCtx.extraHits.forEach(e => { calculateAndLogHit(e); });
-                        dynCtx.extraHits = [];
-                    }
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 } else if (step === 'onAfterAction') {
                     handleHook('onAfterAction'); autoExecuteParams(step);
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
+                }
+
+                // [공통] 각 단계(Step)가 끝날 때마다 쌓인 추가타(extraHits)를 즉시 처리 (멍 협공, 오렘 반사 등)
+                if (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
+                    dynCtx.extraHits.forEach(e => { calculateAndLogHit(e); });
+                    dynCtx.extraHits = [];
                 }
             });
             total += currentTDmg; perTurnDmg.push({ dmg: currentTDmg, cumulative: total });

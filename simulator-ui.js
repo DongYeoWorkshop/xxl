@@ -4,7 +4,7 @@ import { constants } from './state.js';
 /**
  * 캐릭터 선택 화면 HTML 생성
  */
-export function getCharacterSelectorHtml(validChars, disabledIds, charData) {
+export function getCharacterSelectorHtml(validChars, disabledIds, charData, savedStats = {}) {
     return `
         <div style="text-align: center; padding: 20px 0;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 30px;">
@@ -13,8 +13,18 @@ export function getCharacterSelectorHtml(validChars, disabledIds, charData) {
             <div class="sim-char-grid">
                 ${validChars.map(id => {
                     const isDisabled = disabledIds.includes(id);
-                    const style = isDisabled ? 'filter: grayscale(100%); opacity: 0.5; pointer-events: none; cursor: default;' : '';
-                    return `<div class="sim-char-pick-item" data-id="${id}" style="${style}"><img src="images/${id}.webp"><div class="sim-char-name">${charData[id].title}</div></div>`;
+                    const saved = savedStats[id];
+                    const isFav = saved?.isFavorite;
+
+                    const filterStyle = isDisabled ? 'filter: grayscale(100%); opacity: 0.5; pointer-events: none; cursor: default;' : '';
+                    const imgBorderStyle = isFav ? 'border-color: #6f42c1; border-width: 2.5px;' : '';
+                    
+                    return `
+                    <div class="sim-char-pick-item" data-id="${id}" style="${filterStyle} position: relative;">
+                        <img src="images/${id}.webp" style="${imgBorderStyle}">
+                        ${isFav ? '<div style="position:absolute; bottom:20px; left:15px; color:#ffcb05; font-size:14px; text-shadow:0 0 3px rgba(0,0,0,0.9); z-index:2; pointer-events:none;">★</div>' : ''}
+                        <div class="sim-char-name">${charData[id].title}</div>
+                    </div>`;
                 }).join('')}
             </div>
         </div>`;
@@ -147,6 +157,12 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                                 <div id="sim-line-graph" style="display:none; flex: 1; position:relative; border-bottom: 1px solid #eee; z-index: 2; overflow: visible; height: 100%;"></div>
                                 <div id="sim-x-axis" style="height: 0px; position: relative; width: 100%; z-index: 1;"></div>
                             </div>
+                        </div>
+                        <!-- 오차 비율 표시 영역 (카드 상단 정렬) -->
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; box-sizing: border-box; margin-bottom: 2px;">
+                            <div id="sim-min-diff" style="text-align:center; font-size:0.65em; font-weight:bold; color:#dc3545; visibility: hidden;">-0.0%</div>
+                            <div></div> <!-- 평균 위는 비워둠 -->
+                            <div id="sim-max-diff" style="text-align:center; font-size:0.65em; font-weight:bold; color:#28a745; visibility: hidden;">+0.0%</div>
                         </div>
                         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; box-sizing: border-box;">
                             <div style="background:#f8f9fa; padding: 10px 5px; border-radius:10px; text-align:center;">

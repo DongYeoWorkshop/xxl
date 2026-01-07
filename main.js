@@ -1,6 +1,6 @@
 // main.js
 
-import { renderBuffSearchResults, displayBuffSkills, renderAppliedBuffsDisplay, setFormattedDesc } from './ui.js';
+import { renderBuffSearchResults, displayBuffSkills, renderAppliedBuffsDisplay, setFormattedDesc, showSimpleTooltip } from './ui.js';
 import { getDynamicDesc } from './formatter.js';
 import { addAppliedBuff, removeAppliedBuff } from './buffs.js';
 import { state, constants } from './state.js';
@@ -103,30 +103,118 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
     
                 validChars.forEach(id => {
-                    const data = charData[id];
-                                    const img = document.createElement('img');
-                                    img.src = `images/${id}.webp`;
-                                    img.style.width = '100%';
-                                    img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 대폭 상향 */
-                                    img.style.objectFit = 'cover';
-                                    img.style.borderRadius = '8px';
+                const data = charData[id];
+
+                // [수정] 이미지와 별을 감싸는 래퍼 생성
+                const wrapper = document.createElement('div');
+                wrapper.style.display = 'flex';
+                wrapper.style.flexDirection = 'column';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.cursor = 'pointer';
+                wrapper.style.position = 'relative';
+
+                const img = document.createElement('img');
+                img.src = `images/${id}.webp`;
+                img.style.width = '100%';
+                img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 대폭 상향 */
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '8px';
+                
+                img.style.border = '1px solid #444';
+                img.style.backgroundColor = 'black';
+                
+                // 클릭 이벤트는 래퍼에 연결
+                wrapper.onclick = () => {
+                    const originalImg = document.querySelector(`.main-image[data-id="${id}"]`);
+                    if (originalImg) handleImageClick(originalImg);
+                };
+
+                wrapper.appendChild(img);
+
+                // [추가] 즐겨찾기 별 표시 (이미지 왼쪽 하단 내부)
+                if (state.savedStats[id]?.isFavorite) {
+                    const star = document.createElement('div');
+                    star.textContent = '★';
+                    star.style.position = 'absolute';
+                    star.style.bottom = '4px';
+                    star.style.left = '6px';
+                    star.style.color = '#ffcb05';
+                    star.style.fontSize = '16px';
+                    star.style.textShadow = '0 0 3px rgba(0,0,0,0.9)'; // 이미지 위에서 잘 보이도록 그림자 강화
+                    wrapper.appendChild(star);
+                }
+
+                // [추가] 변경 사항(수정됨) 확인 및 테두리 적용
+                const saved = state.savedStats[id];
+                let isModified = false;
+                if (saved) {
+                    const isLvDefault = (parseInt(saved.lv || 1) === 1);
+                    const isS1Default = (parseInt(saved.s1 || 0) === 0);
+                    const isS2Default = (parseInt(saved.s2 || 0) === 0);
+                    let areSkillsDefault = true;
+                    if (saved.skills) areSkillsDefault = Object.values(saved.skills).every(val => parseInt(val) === 1);
+                    const isStampDefault = (saved.stamp === false); // stamp가 undefined면 false 취급
                     
-                    img.style.cursor = 'pointer';
-                    img.style.border = '1px solid #444';
-                    img.style.backgroundColor = 'black';
-                    
-                    // 즐겨찾기 표시 (테두리 등)
-                    if (state.savedStats[id]?.isFavorite) {
-                        img.style.borderColor = '#ffcb05';
-                        img.style.boxShadow = '0 0 5px rgba(255, 203, 5, 0.5)';
+                    if (!isLvDefault || !isS1Default || !isS2Default || !areSkillsDefault || !isStampDefault) {
+                        isModified = true;
                     }
-    
-                    img.onclick = () => {
-                        const originalImg = document.querySelector(`.main-image[data-id="${id}"]`);
-                        if (originalImg) handleImageClick(originalImg);
-                    };
-                    landingCharGrid.appendChild(img);
+                }
+
+                if (isModified) {
+                    img.style.border = '2px solid #ffa500'; // 주황색 테두리
+                }
+
+                // [추가] 마우스 오버 시 중앙 오버레이 툴팁 표시
+                wrapper.addEventListener('mouseenter', () => {
+                    if (!('ontouchstart' in window) && (navigator.maxTouchPoints <= 0)) {
+                        const sLv = saved?.lv || 1;
+                        const sBr = parseInt(saved?.s1 || 0);
+                        const sFit = parseInt(saved?.s2 || 0);
+                        
+                        const brText = (sBr < 5) ? `0성 ${sBr}단` : 
+                                     (sBr < 15) ? `1성 ${sBr - 5}단` : 
+                                     (sBr < 30) ? `2성 ${sBr - 15}단` : 
+                                     (sBr < 50) ? `3성 ${sBr - 30}단` : 
+                                     (sBr < 75) ? `4성 ${sBr - 50}단` : "5성";
+
+                        // 오버레이 툴팁 생성
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'landing-char-tooltip'; // 나중에 스타일 제어 용이하게 클래스 부여
+                        tooltip.style.position = 'absolute';
+                        tooltip.style.top = '50%';
+                        tooltip.style.left = '50%';
+                        tooltip.style.transform = 'translate(-50%, -50%)';
+                        tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+                        tooltip.style.color = '#fff';
+                        tooltip.style.padding = '6px 10px';
+                        tooltip.style.borderRadius = '6px';
+                        tooltip.style.fontSize = '0.85em';
+                        tooltip.style.textAlign = 'center';
+                        tooltip.style.whiteSpace = 'nowrap';
+                        tooltip.style.pointerEvents = 'none'; // 마우스 이벤트 투과
+                        tooltip.style.zIndex = '10';
+                        tooltip.style.backdropFilter = 'blur(2px)';
+                        tooltip.style.border = '1px solid rgba(255,255,255,0.2)';
+                        
+                        tooltip.innerHTML = `
+                            <div style="margin-bottom:2px;">Lv.${sLv}</div>
+                            <div style="font-size:0.9em;">${brText}</div>
+                            <div style="font-size:0.9em;">적합도: ${sFit}</div>
+                        `;
+                        
+                        wrapper.appendChild(tooltip);
+
+                        // 마우스가 나가면 제거
+                        wrapper.addEventListener('mouseleave', () => {
+                            tooltip.remove();
+                        }, { once: true });
+                    }
                 });
+
+                landingCharGrid.appendChild(wrapper);
+
+                landingCharGrid.appendChild(wrapper);
+            });
             };
         }
     

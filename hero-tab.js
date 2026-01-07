@@ -433,8 +433,9 @@ function createRecordColumn(records, isLeft) {
         row.className = 'comp-record-row';
         const damageVal = (rec.damage || "0").replace(/,/g, '');
         const totalRowDmg = (parseInt(damageVal) || 0) * (rec.count || 1);
-        const typeTag = rec.type ? `<span style="color:#999; margin-right:4px;">[${rec.type}]</span>` : '';
-        row.innerHTML = `<div class="comp-record-name">${typeTag}${rec.name} ${rec.count > 1 ? `<span class="comp-record-count">x${rec.count}</span>` : ''}</div><div class="comp-record-val">${totalRowDmg.toLocaleString()}</div>`;
+        const typeTag = rec.type ? `<span class="comp-record-type" style="color:#999; margin-right:4px;">[${rec.type}]</span>` : '';
+        // [수정] 스킬 이름을 span.comp-skill-name으로 감쌈
+        row.innerHTML = `<div class="comp-record-name">${typeTag}<span class="comp-skill-name">${rec.name}</span> ${rec.count > 1 ? `<span class="comp-record-count">x${rec.count}</span>` : ''}</div><div class="comp-record-val">${totalRowDmg.toLocaleString()}</div>`;
         list.appendChild(row);
     });
     slot.appendChild(list);

@@ -817,20 +817,10 @@ export const simCharData = {
         }
         return { extraHits: [] };
     },
-    // 2. 피격 (반격 처리)
+    // 2. 피격
     onEnemyHit: (ctx) => {
-        const extraHits = [];
-        const p = simParams.kumoyama;
-
-        // 조롱 상태일 때만 반격 발생
-        if (ctx.simState.skill2_taunt_timer > 0) {
-            // 도장 활성화 시 반격이 광역으로 변함 (isMulti 설정 주입)
-            extraHits.push({ 
-                ...p.skill2_counter, 
-                isMulti: ctx.stats.stamp 
-            });
-        }
-        return { extraHits };
+        // [자동화] 반격 로직은 sim_params 설정을 통해 엔진이 자동으로 처리합니다.
+        return { extraHits: [] };
     },
     // 3. 실시간 보너스
     getLiveBonuses: (ctx) => {

@@ -214,7 +214,6 @@ export function createSimulationContext(baseData) {
             let finalProb = prob;
             if (probSource && customValues[probSource] !== undefined) finalProb = customValues[probSource] / 100;
             
-            // [추가] 레벨 비례 확률 적용 (옵션이 켜져 있을 때만)
             if ((scaleProb || startRate !== undefined) && originalId) {
                 const idx = ctx.getSkillIdx(originalId);
                 if (idx !== -1) {
@@ -233,13 +232,14 @@ export function createSimulationContext(baseData) {
             if (finalProb === undefined || Math.random() < finalProb) {
                 const timerKey = skillParam.timerKey || `${originalId?.split('_').pop()}_timer`;
                 
-                // [추가] 피격 타이밍(본인 또는 아군)에 걸리는 버프는 지속시간 +1 보정
+                // [수정] 내부 계산용(finalDuration)과 로그 표시용(logDuration) 분리
                 let finalDuration = duration;
+                const logDuration = duration; 
+                
                 if (ctx.isHit || skillParam.triggers?.includes("ally_hit") || skillParam.triggers?.includes("being_hit")) {
                     finalDuration += 1;
                 }
 
-                // [수정] valKey가 있으면 값을 계산하여 데이터에 포함
                 let data = {};
                 let finalLabel = label;
                 if (originalId) {
@@ -248,49 +248,35 @@ export function createSimulationContext(baseData) {
                         const rate = ctx.getVal(idx, valKey || 'max');
                         data.val = rate;
                         
-                        // [추가] 공격력 가산 수치 표시 로직
                         if (showAtkBoost && ctx.baseStats) {
                             let currentBaseAtkRate = 100;
-                            
-                            // 모든 스킬을 순회하며 현재 활성화된 기초공증 수치를 수집
                             charData.skills.forEach((s, sIdx) => {
                                 const hasBaseAtkEffect = (s.buffEffects && s.buffEffects["기초공증"]) || 
                                                          (s.stampBuffEffects && s.stampBuffEffects["기초공증"]);
-                                
                                 if (hasBaseAtkEffect) {
-                                    // 타이머 또는 스택 키 찾기
                                     const tKey = s.id.split('_').pop() + "_timer";
                                     const sKey = s.id.split('_').pop() + "_stacks";
                                     const stateVal = simState[tKey] || simState[sKey] || simState[s.id + "_timer"] || simState[s.id + "_stacks"];
-                                    
                                     if (stateVal) {
                                         let count = 0;
-                                        if (Array.isArray(stateVal)) {
-                                            count = stateVal.length;
-                                        } else if (typeof stateVal === 'number' && stateVal > 0) {
-                                            // [수정] 스택 키(_stacks)인 경우 숫자 그대로를 개수로 인정
+                                        if (Array.isArray(stateVal)) count = stateVal.length;
+                                        else if (typeof stateVal === 'number' && stateVal > 0) {
                                             const isStackKey = (simState[sKey] !== undefined || (s.id + "_stacks") in simState || sKey.includes('stacks'));
                                             count = isStackKey ? stateVal : 1;
                                         }
-                                        
                                         if (count > 0) {
-                                            // 현재 도장 상태와 상관없이 기초공증 수치는 존재하므로 getVal로 안전하게 가져옴
                                             const sVal = ctx.getVal(sIdx, '기초공증');
                                             currentBaseAtkRate += (sVal * count);
                                         }
                                     }
                                 }
                             });
-                            
-                            // 패시브4(스킬6)와 같은 상시 패시브는 state에 타이머가 없으므로 별도 체크
                             const br = Number(stats.s1) || 0;
                             if (br >= 50 && charData.skills[5]?.buffEffects?.["기초공증"]) {
-                                // 이미 루프에서 체크되지 않았다면(타이머가 없으므로) 수동 합산
                                 if (!(simState["skill6_timer"] || simState["rutenix_skill6_timer"])) {
                                     currentBaseAtkRate += ctx.getVal(5, '기초공증');
                                 }
                             }
-                            
                             const currentBaseAtk = ctx.baseStats["공격력"] * (currentBaseAtkRate / 100);
                             const boostVal = Math.floor(currentBaseAtk * (rate / 100));
                             finalLabel += ` (+${boostVal.toLocaleString()} 가산)`;
@@ -303,10 +289,9 @@ export function createSimulationContext(baseData) {
                 
                 if (originalId && !skipTrigger) ctx.checkStackTriggers(originalId);
                 const displayProb = finalProb && finalProb < 1 ? finalProb * 100 : null;
-                // [수정] skipDurLog 옵션 지원
-                const logDur = skillParam.skipDurLog ? null : finalDuration;
                 
-                // [수정] 직접 지정된 아이콘이 있으면 객체 형태로 넘김
+                // 로그에는 보정 전(logDuration) 지속시간 표시
+                const logDur = skillParam.skipDurLog ? null : logDuration;
                 const logIdx = skillParam.icon ? { name: "", icon: skillParam.icon, label: "", originalIdx: ctx.getSkillIdx(originalId) } : ctx.getSkillIdx(originalId);
                 
                 return ctx.log(logIdx, finalLabel, displayProb, logDur, !!skillParam.skipLog, customTag);

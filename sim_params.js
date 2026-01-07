@@ -357,11 +357,15 @@ export const simParams = {
             },
             // [필살기] 조롱 반격 데미지
                 skill2_counter: {
-                  type: "hit",
+                  triggers: ["being_hit"],
+                  condition: "hasBuff:skill2_taunt",
                   originalId: "kumoyama_skill2",
-                  valKey: "추가공격",
-                  customTag: "필살기",                        
-                  label: "열풍요란"
+                  step1: (ctx) => {
+                    const isM = !!ctx.stats.stamp;
+                    const coef = ctx.getVal(1, '추가공격', isM);
+                    return { val: coef, isMulti: isM, name: "열풍요란", customTag: "필살기" };
+                  },
+                  order: 10
                 }
               },
   "locke": {

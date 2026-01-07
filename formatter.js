@@ -49,10 +49,11 @@ export function getDynamicDesc(skill, level, isStamped, descriptionToFormat = nu
     }
 
     // 설명문 치환
-    if (desc.includes('{2}')) {
+    if (desc.includes('{2}') && desc.includes('속성')) {
         // 속성 보너스 구문 제거 (이미 합산했으므로)
         // 예: "공격력 {0}% (불속성 시 {2}%) 증가" -> "공격력 {0}% 증가"
-        desc = desc.replace(/\s*\(.*?\{2\}.*?\)/, '');
+        // 괄호 안에 '속성'이라는 단어가 포함되어 있고 {2}가 있는 경우만 타겟팅
+        desc = desc.replace(/\s*\([^)]*?속성[^)]*?\{2\}[^)]*?\)/, '');
     }
 
     calculatedValues.forEach((val, idx) => {
