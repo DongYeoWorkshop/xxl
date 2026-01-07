@@ -25,8 +25,8 @@ export function getCharacterSelectorHtml(validChars, disabledIds, charData) {
  */
 export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, savedTurns, savedIters, useHitProb = false) {
     return `
-        <div style="margin-bottom:10px; display: flex; justify-content: flex-end; align-items: center;">
-            <button id="sim-back-to-list" style="background:#f0f7ff;border:1px solid #007bff;color:#007bff;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">캐릭터 상세 정보 →</button>
+        <div style="margin-bottom:10px; display: flex; justify-content: flex-start; align-items: center;">
+            <button id="sim-back-to-list" style="background:#fffcf5;border:1px solid #ffa500;color:#ffa500;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">캐릭터 상세 정보 →</button>
         </div>
         <div class="sim-main-container">
             <div class="sim-pane-settings">
@@ -54,9 +54,9 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
 
                 <div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:20px;margin-bottom:15px;">
                     <!-- [수정] 서포터 선택 섹션 (이미지 그리드 방식) -->
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 30px;">
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-                            <label style="font-size:0.85em;font-weight:bold;color:#555;">함께할 서포터 (먼저 행동)</label>
+                            <label style="font-size:0.8em;font-weight:bold;color:#555;">서포터 추가</label>
                             <div id="sim-info-icon" style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #999; color: #999; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; font-weight: bold;">i</div>
                         </div>
                         
@@ -65,7 +65,7 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                             <div id="sim-selected-support-icon" style="width:32px; height:32px; border-radius:6px; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb;">
                                 <span style="font-size:0.8em; color:#888;">-</span>
                             </div>
-                            <span id="sim-selected-support-name" style="font-weight:bold; color:#333; font-size:0.9em;">선택 안 함</span>
+                            <span id="sim-selected-support-name" style="font-weight:bold; color:#333; font-size:0.85em;">선택 안 함</span>
                             <span style="margin-left:auto; color:#888;">▼</span>
                         </div>
 
@@ -87,16 +87,18 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                         </div>
                     </div>
 
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-                        <div style="display:flex; align-items: center; gap:8px;">
-                            <label style="font-size:0.85em;font-weight:bold;color:#555;">진행 턴 수</label>
-                            <div style="font-size:1.1em; font-weight:900; color:#6f42c1;"><span id="sim-turns-val">${savedTurns}</span>턴</div>
+                    <div class="sim-turns-wrapper" style="position: relative; margin-top: 10px;">
+                        <div style="display:flex; align-items: center; gap:8px; margin-bottom: 0;">
+                            <label class="sim-turns-label" style="font-size:0.8em;font-weight:bold;color:#555;">턴 수</label>
+                            <div class="sim-turns-val-text" style="font-size:1.1em; font-weight:900; color:#6f42c1;"><span id="sim-turns-val">${savedTurns}</span>턴</div>
                         </div>
-                        <button id="sim-edit-actions-btn" style="background:#f0f0f0;border:1px solid #ccc;border-radius:4px;font-size:0.75em;padding:4px 10px;cursor:pointer;">⚙️ 행동 수정</button>
-                    </div>
-                    <div id="sim-turns-slider-container" style="margin: 10px 0 25px 0; padding: 5px 0;">
-                        <input type="range" id="sim-turns" min="1" max="30" value="${savedTurns}" step="1" list="sim-turns-ticks" style="width:100%; cursor:pointer; accent-color: #6f42c1;">
-                        <datalist id="sim-turns-ticks"><option value="1"></option><option value="5"></option><option value="10"></option><option value="15"></option><option value="20"></option><option value="25"></option><option value="30"></option></datalist>
+                        <div class="sim-slider-button-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; margin-top: -5px;">
+                            <div id="sim-turns-slider-container" style="flex: 1; padding: 0;">
+                                <input type="range" id="sim-turns" min="1" max="30" value="${savedTurns}" step="1" list="sim-turns-ticks" style="width:100%; cursor:pointer; accent-color: #6f42c1;">
+                                <datalist id="sim-turns-ticks"><option value="1"></option><option value="5"></option><option value="10"></option><option value="15"></option><option value="20"></option><option value="25"></option><option value="30"></option></datalist>
+                            </div>
+                            <button id="sim-edit-actions-btn" class="sim-edit-btn" style="background:#f0f0f0; border:1px solid #ccc; border-radius:4px; font-size:0.75em; padding:4px 10px; cursor:pointer; white-space: nowrap;">⚙️ 행동 수정</button>
+                        </div>
                     </div>
 
                     <div id="sim-action-editor" style="display:none;background:#f9f9f9;border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:15px;max-height:280px;overflow-y:auto;">
@@ -106,27 +108,34 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                         </div>
                         <div id="sim-action-list" style="display:flex;flex-direction:column;gap:5px;"></div>
                     </div>
-                    <label style="display:block;font-size:0.85em;font-weight:bold;color:#555;margin-bottom:8px;">시뮬레이션 횟수</label>
-                    <select id="sim-iterations" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;background:#f9f9f9;font-weight:bold;position:relative;z-index:10;">
-                        <option value="30" ${savedIters==="30"?'selected':''}>30회</option>
-                        <option value="100" ${savedIters==="100"?'selected':''}>100회</option>
-                        <option value="500" ${savedIters==="500"?'selected':''}>500회</option>
-                        <option value="1000" ${savedIters==="1000"?'selected':''}>1000회</option>
-                    </select>
+                    <div style="display:flex; justify-content:flex-start; align-items:center; margin-bottom:4px;">
+                        <div class="sim-iters-val-text" style="font-size:1.1em; font-weight:900; color:#6f42c1;">n=<span id="sim-iterations-val">${savedIters}</span></div>
+                    </div>
+                    <div style="padding: 0; margin-top: -10px;">
+                        <input type="range" id="sim-iterations" min="30" max="1000" value="${savedIters}" step="1" list="sim-iterations-ticks" style="width:100%; cursor:pointer; accent-color: #6f42c1;">
+                        <datalist id="sim-iterations-ticks">
+                            <option value="30"></option>
+                            <option value="100"></option>
+                            <option value="300"></option>
+                            <option value="500"></option>
+                            <option value="750"></option>
+                            <option value="1000"></option>
+                        </datalist>
+                    </div>
                 </div>
-                <button id="run-simulation-btn" style="width:100%;padding:16px;background:#6f42c1;color:white;border:none;border-radius:12px;font-weight:bold;cursor:pointer;font-size:1.1em;">분석 시작 <span style="display:inline-block; filter: grayscale(100%) brightness(5);">⚡</span></button>
+                <button id="run-simulation-btn" style="width:100%;padding:16px;background:#6f42c1;color:white;border:none;border-radius:12px;font-weight:bold;cursor:pointer;font-size:1.1em;display:flex;align-items:center;justify-content:center;gap:8px;">분석 시작 <img src="icon/bolt.png" style="width:20px; height:20px; filter: brightness(0) invert(1);"></button>
             </div>
             <div class="sim-pane-display">
                 <div id="simulation-result-area" style="display:none;">
-                    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                            <h4 style="margin:0;color:#333;">분석 리포트</h4>
+                            <h4 style="margin:0;color:#333;padding-left:10px;">분석 리포트</h4>
                             <div style="display:flex; gap:5px;">
                                 <button id="btn-show-dist" style="background:#6f42c1; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.75em; cursor:pointer;">분포도</button>
                                 <button id="btn-show-dmg" style="background:#f0f0f0; color:#666; border:1px solid #ccc; padding:4px 10px; border-radius:4px; font-size:0.75em; cursor:pointer;">딜 그래프</button>
                             </div>
                         </div>
-                        <div id="sim-graph-area" style="display:flex; height:220px; margin-bottom:60px; padding-right:15px; padding-left:0px; position:relative;">
+                        <div id="sim-graph-area" class="sim-graph-container-fixed" style="display:flex; margin-bottom:60px; padding-right:15px; padding-left:0px; position:relative;">
                             <div id="sim-y-axis" style="width: 25px; position: relative; font-size: 0.7em; color: #bbb; text-align: right; border-right: 1px solid #eee; height: 100%;"></div>
                             <div style="flex: 1; display: flex; flex-direction: column; position: relative; height: 100%;">
                                 <!-- [추가] 예측 구간 표시용 배경 레이어 (그리드보다 뒤) -->
@@ -155,7 +164,7 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                         </div>
                     </div>
                     <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
-                        <h4 style="margin:0 0 15px 0; color:#333;">분석 로그 <span id="sim-total-dmg-header" style="font-size:0.8em; color:#6f42c1; margin-left:10px; font-weight:bold;"></span></h4>
+                        <h4 style="margin:0 0 15px 0; color:#333; padding-left:10px;">분석 로그 <span id="sim-total-dmg-header" style="font-size:0.8em; color:#6f42c1; margin-left:10px; font-weight:bold;"></span></h4>
                         <div id="sim-log" style="max-height:400px; overflow-y:auto; font-family:'Cascadia Code', 'Courier New', monospace; font-size:0.85em; line-height:1.6; color:#4af626; padding:15px; background:#1a1a1a; border-radius:8px; border:1px solid #333; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);"></div>
                         <div id="sim-result-actions"></div>
                     </div>
@@ -176,6 +185,7 @@ export function showDetailedLogModal(resultToSave) {
     modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
     
     const content = document.createElement('div');
+    content.className = 'sim-detailed-log-content';
     content.style.cssText = 'width: 95%; max-width: 800px; max-height: 85%; background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;';
     
     let combinedLogsHtml = '';
@@ -237,34 +247,56 @@ export function showDetailedLogModal(resultToSave) {
                             else if (lowerMsg.includes('방어')) { actionColor = '#1565c0'; actionBorder = '#90caf9'; }
                             else if (lowerMsg.includes('피격 발생')) { actionColor = '#6f42c1'; actionBorder = '#c3a6ff'; } // 보라색 추가
                             
-                            return `<div style="display: flex; align-items: center; font-size: 0.85em; color: ${actionColor}; padding: 4px 12px; border-left: 4px solid ${actionBorder}; margin: 6px 0; font-weight: bold; background: transparent;">
+                            return `<div class="sim-log-row" data-stat="${d.statMsg || ''}" style="display: flex; align-items: center; font-size: 0.85em; color: ${actionColor}; padding: 4px 12px; border-left: 4px solid ${actionBorder}; margin: 6px 0; font-weight: bold; background: transparent; cursor: pointer;">
                                 ${iconHtml}<span style="flex-shrink: 0;">${msg}</span>${statsInfo}
                             </div>`;
                         }
-                        return `<div style="display: flex; align-items: center; font-size: 0.85em; color: ${color}; padding: 3px 8px; border-radius: 4px; line-height: 1.4;">${iconHtml}<span>${msg}</span>${statsInfo}</div>`;
+                        return `<div class="sim-log-row" data-stat="${d.statMsg || ''}" style="display: flex; align-items: center; font-size: 0.85em; color: ${color}; padding: 3px 8px; border-radius: 4px; line-height: 1.6; cursor: pointer;">${iconHtml}<span>${msg}</span>${statsInfo}</div>`;
                     }).join('')}
                 </div>
             </div>`;
     }
 
+    let hintText = "이 로그는 평균치에 가장 가까운 실행 데이터입니다.";
+    if (resultToSave.selectedType === 'min') {
+        hintText = "이 로그는 90% 범위 최솟값에 가장 가까운 실행 데이터입니다.";
+    } else if (resultToSave.selectedType === 'max') {
+        hintText = "이 로그는 90% 범위 최댓값에 가장 가까운 실행 데이터입니다.";
+    }
+
     const helpText = "Coef: 총 계수 / Atk: 최종공격력 / Dmg: 공통뎀증 / N-Dmg: 평타뎀증 / U-Dmg: 필살뎀증 / T-Dmg: 발동뎀증 / Vul: 받뎀증 / A-Vul: 속성받뎀증";
     content.innerHTML = `
-        <div style="padding: 15px; background: #6f42c1; color: #fff; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-            <span>시뮬레이션 상세 데이터 분석</span>
+        <div class="sim-modal-header" style="padding: 15px; background: #6f42c1; color: #fff; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span>시뮬레이션 상세 로그</span>
             <div style="display:flex; align-items:center; gap:12px;">
                 <div id="modal-info-icon" style="width:20px; height:20px; border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:12px;">i</div>
-                <button id="modal-close" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+                <button id="modal-close" class="sim-modal-close-btn" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
             </div>
         </div>
         <div style="flex: 1; overflow-y: auto; background: #fff;">${combinedLogsHtml}</div>
         <div class="sim-modal-footer-hint" style="padding: 12px; text-align: center; font-size: 0.8em; color: #999; border-top: 1px solid #eee; background: #f9f9f9;">
-            이 로그는 평균값에 가장 가까운 실행 회차의 상세 데이터입니다.
+            ${hintText}
         </div>`;
 
     modal.appendChild(content);
     document.body.appendChild(modal);
     modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
     content.querySelector('#modal-close').onclick = () => modal.remove();
+
+    // [추가] 모바일 환경에서 로그 클릭 시 툴팁으로 수치 표시
+    if (window.innerWidth <= 600) {
+        content.querySelectorAll('.sim-log-row').forEach(row => {
+            const stat = row.dataset.stat;
+            if (stat) {
+                row.onclick = (e) => {
+                    e.stopPropagation();
+                    import('./ui.js').then(ui => {
+                        ui.showSimpleTooltip(row, stat);
+                    });
+                };
+            }
+        });
+    }
     
     // [추가] 모달 내부 정보 아이콘 클릭 이벤트
     const infoIcon = content.querySelector('#modal-info-icon');

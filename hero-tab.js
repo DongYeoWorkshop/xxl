@@ -93,10 +93,10 @@ export function renderHeroTab(dom, updateStatsCallback) {
             };
             wrapper.appendChild(deleteBtn);
 
-            const img = document.createElement('img');
-            img.src = `images/${snapshot.charId}.webp`;
-            img.className = 'snapshot-img';
-            img.onclick = (e) => {
+            // [수정] 캐릭터 이미지와 서포터를 묶는 컨테이너 추가
+            const imgContainer = document.createElement('div');
+            imgContainer.style.cssText = 'position: relative; width: 70px; height: 180px; margin-bottom: 8px; cursor: pointer;';
+            imgContainer.onclick = (e) => {
                 e.stopPropagation();
                 if (!state.heroComparisonState) state.heroComparisonState = { nextTarget: 1 };
                 if (state.heroComparisonState.nextTarget === 1) {
@@ -108,7 +108,35 @@ export function renderHeroTab(dom, updateStatsCallback) {
                 }
                 updateStatsCallback(); 
             };
+
+            const img = document.createElement('img');
+            img.src = `images/${snapshot.charId}.webp`;
+            img.className = 'snapshot-img';
+            img.style.marginBottom = '0'; // 컨테이너에서 마진 관리
+            imgContainer.appendChild(img);
+
+            // [추가] 서포터 아이콘 표시 (이미지 컨테이너 기준 우측 하단)
+            if (snapshot.supportId && snapshot.supportId !== 'none') {
+                const supportIconArea = document.createElement('div');
+                supportIconArea.style.cssText = `
+                    position: absolute;
+                    bottom: 2px;
+                    right: 2px;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    border: 2px solid #6f42c1;
+                    background: black;
+                    overflow: hidden;
+                    z-index: 5;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                `;
+                supportIconArea.innerHTML = `<img src="images/${snapshot.supportId}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;">`;
+                imgContainer.appendChild(supportIconArea);
+            }
             
+            wrapper.appendChild(imgContainer);
+
             const dmgLabel = document.createElement('div');
             dmgLabel.className = 'snapshot-dmg-label';
             const shortDmg = totalDmg >= 1000 ? (totalDmg / 1000).toFixed(0) + 'K' : totalDmg;
@@ -121,7 +149,9 @@ export function renderHeroTab(dom, updateStatsCallback) {
             bar.style.height = `${barHeight}px`;
             
             barContainer.appendChild(bar);
-            wrapper.appendChild(img); wrapper.appendChild(dmgLabel); wrapper.appendChild(barContainer); imgGrid.appendChild(wrapper);
+            wrapper.appendChild(dmgLabel); 
+            wrapper.appendChild(barContainer); 
+            imgGrid.appendChild(wrapper);
         });
         contentPadding.appendChild(imgGrid);
     } else {
@@ -217,9 +247,11 @@ function createComparisonGraph(snapshots, container) {
     const maxTurn = Math.max(...allPoints.map(p => p.t), 1);
     const maxDmg = Math.max(...allPoints.map(p => p.d), 100); // 최소값 보정
 
-    // SVG 생성
-    const width = container.clientWidth || 600; // 컨테이너 너비 참조 (없으면 기본값)
-    const height = 250;
+    // [수정] 화면 너비에 따라 내부 그리기 높이 동기화 (늘려짐 방지)
+    const screenWidth = window.innerWidth;
+    const height = screenWidth >= 1100 ? 350 : 250;
+    
+    const width = container.clientWidth || 600; 
     const padding = { top: 20, right: 40, bottom: 30, left: 50 };
     const chartW = width - padding.left - padding.right;
     const chartH = height - padding.top - padding.bottom;

@@ -48,6 +48,16 @@ export function initHandlers(domElements, logicFunctions) {
     const simulatorBtn = document.getElementById('nav-simulator-btn');
     if (simulatorBtn) simulatorBtn.onclick = () => handleImageClick(simulatorBtn);
 
+    // [신규] 헤더 바로가기 아이콘 이벤트 연결
+    document.querySelectorAll('.header-shortcut-icon').forEach(icon => {
+        icon.onclick = (e) => {
+            e.stopPropagation();
+            const targetId = icon.dataset.id;
+            const targetBtn = document.querySelector(`.main-image[data-id="${targetId}"]`);
+            if (targetBtn) handleImageClick(targetBtn);
+        };
+    });
+
     window.triggerDetailUpdate = (idx) => {
         if (state.selectedSkillIndex === idx) {
             const data = charData[state.currentId];
@@ -62,9 +72,43 @@ export function initHandlers(domElements, logicFunctions) {
         }
     };
 
+    // [신규] 리사이즈 임계점 감지용 변수
+    let lastWidth = window.innerWidth;
+
     window.addEventListener('resize', () => {
+        const currentWidth = window.innerWidth;
+        setFixedBgHeight(); // 배경 높이 즉시 갱신
+
+        // 임계점(600px, 1100px)을 넘나들 때 레이아웃 및 그래프 즉시 재렌더링
+        const crossedMobile = (lastWidth <= 600 && currentWidth > 600) || (lastWidth > 600 && currentWidth <= 600);
+        const crossedPC = (lastWidth <= 1100 && currentWidth > 1100) || (lastWidth > 1100 && currentWidth <= 1100);
+
+        if (crossedMobile || crossedPC) {
+            if (state.currentId === 'hero') {
+                import('./hero-tab.js').then(mod => {
+                    mod.clearHeroTabRemnants();
+                    mod.renderHeroTab(dom, logic.updateStats);
+                });
+            } else if (state.currentId === 'simulator') {
+                import('./simulator.js').then(mod => {
+                    // 시뮬레이터는 가로세로 비율 왜곡 방지를 위해 전체 UI 다시 그리기 권장
+                    mod.initSimulator(); 
+                });
+            }
+        }
+        
+        lastWidth = currentWidth;
+
+        // 캐릭터 탭인 경우 스탯 및 배경 위치 즉시 갱신
         if (state.currentId && !['hero', 'simulator'].includes(state.currentId)) {
             logic.updateStats();
+            // 캐릭터 배경 이미지 위치도 리사이즈에 맞춰 재배치되도록 handleImageClick의 일부 로직 호출이 필요할 수 있음
+            const activeImg = document.querySelector(`.main-image[data-id="${state.currentId}"]`);
+            if (activeImg) {
+                // handleImageClick을 전체 호출하면 스크롤 튀므로 배경만 다시 적용하도록 유도
+                // (현재 handleImageClick 내부에 applyBackground가 있으므로 이를 분리해서 호출하거나 
+                // 해당 스코프의 함수를 재사용하는 방식 고려)
+            }
         }
     });
 }
@@ -145,8 +189,12 @@ function setupHeaderListeners() {
 export function forceMainHeader() {
     const headerTitle = document.getElementById('sticky-header-title');
     const toggleIcon = document.getElementById('header-toggle-icon');
+    const shortcuts = document.getElementById('header-shortcuts'); // [추가]
+
     if (toggleIcon) { toggleIcon.style.setProperty('display', 'block', 'important'); }
     if (headerTitle) { headerTitle.style.setProperty('display', 'flex', 'important'); headerTitle.innerHTML = `동여성 공방`; }
+    if (shortcuts) { shortcuts.style.setProperty('display', 'flex', 'important'); } // [추가]
+
     ['sticky-name', 'sticky-attr', 'sticky-lv', 'sticky-br', 'sticky-fit'].forEach(id => { const el = document.getElementById(id); if (el) { el.style.setProperty('display', 'none', 'important'); el.innerText = ''; } });
 }
 
@@ -163,8 +211,16 @@ export function hideAllSections() {
     // [추가] 캐릭터 전용 UI 요소 초기화
     const favBtn = document.querySelector('.char-fav-btn');
     const simShortcutBtn = document.querySelector('.sim-shortcut-btn');
+    const charBgImg = document.getElementById('char-bg-img');
+    const charBgContainer = document.getElementById('internal-char-bg');
+    
     if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
     if (simShortcutBtn) simShortcutBtn.style.setProperty('display', 'none', 'important');
+    if (charBgImg) {
+        charBgImg.style.display = 'none';
+        charBgImg.src = '';
+    }
+    if (charBgContainer) charBgContainer.classList.remove('animate');
 
     const contentDisplay = document.getElementById('content-display');
     if (contentDisplay) {
@@ -221,6 +277,10 @@ export function handleImageClick(img) {
         const charHeader = document.querySelector('.char-header-row');
         if (charHeader) charHeader.style.setProperty('display', 'block', 'important');
         
+        // [추가] 캐릭터 상세 진입 시 헤더 바로가기 아이콘 숨김
+        const shortcuts = document.getElementById('header-shortcuts');
+        if (shortcuts) shortcuts.style.setProperty('display', 'none', 'important');
+
         const mainCol = document.querySelector('.main-content-column');
         const sideCol = document.querySelector('.side-content-column');
         if (mainCol) mainCol.style.setProperty('display', 'block', 'important');

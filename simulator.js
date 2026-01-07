@@ -79,14 +79,14 @@ function updateActionEditor(charId) {
 /**
  * 시각화 로직 (유지)
  */
-function renderAxisLabels(axisData, yMax, type = 'dist') {
+function renderAxisLabels(axisData, yMax, type = 'dist', drawHeight = 220) {
     const yAxis = document.getElementById('sim-y-axis'), xAxis = document.getElementById('sim-x-axis'), grid = document.getElementById('sim-grid-lines');
     if (yAxis && yMax) {
         yAxis.innerHTML = type === 'dist' ? axisData.y.map(val => { const label = val >= 10000 ? (val/1000).toFixed(0)+'K' : val.toLocaleString(); const bp = (val / yMax) * 100; return `<div style="position:absolute;bottom:${bp}%;right:8px;transform:translateY(50%);white-space:nowrap;">${label}</div>`; }).join('') : '';
         if (grid) grid.innerHTML = axisData.y.map(val => val === 0 ? '' : `<div style="position:absolute;bottom:${(val/yMax)*100}%;width:100%;border-top:1px dashed #e0e0e0;"></div>`).join('');
     }
     if (xAxis) {
-        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:var(--sim-grid-height, 220px);border-left:1px dashed #ccc;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
+        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:${drawHeight}px;border-left:1px dashed #ccc;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
     }
 }
 
@@ -173,6 +173,7 @@ function displaySimResult(charId, fullResult, type = 'avg') {
     // simulator-engine.js에서 반환한 최상위 메타데이터와 현재 선택된 세부 데이터를 병합하여 전달
     const mergedResult = {
         ...fullResult,
+        selectedType: type, // 현재 선택된 타입(min, avg, max) 추가
         closestTotal: res.total,
         closestLogs: res.logs,
         closestDetailedLogs: res.detailedLogs,
@@ -237,7 +238,7 @@ function displaySimResult(charId, fullResult, type = 'avg') {
 }
 
 // 기존 renderDamageLineChart 함수 수정 (결과 데이터를 인자로 받도록)
-function renderDamageLineChart(charId, specificResult = null) {
+export function renderDamageLineChart(charId, specificResult = null) {
     const container = document.getElementById('sim-line-graph');
     let res = specificResult;
     
@@ -260,42 +261,47 @@ function renderDamageLineChart(charId, specificResult = null) {
         }
     });
 
-    let html = `<svg width="100%" height="100%" viewBox="0 0 400 220" preserveAspectRatio="none" style="overflow:visible;"><defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6f42c1" stop-opacity="0.3"/><stop offset="100%" stop-color="#6f42c1" stop-opacity="0"/></linearGradient></defs>`;
+    // [수정] 화면 너비에 따라 내부 그리기 높이 및 너비 동기화 (글자 왜곡 방지)
+    const screenWidth = window.innerWidth;
+    const drawWidth = container.clientWidth || 400; 
+    const drawHeight = screenWidth >= 1100 ? 320 : (screenWidth <= 600 ? 150 : 220);
+
+    let html = `<svg width="100%" height="100%" viewBox="0 0 ${drawWidth} ${drawHeight}" preserveAspectRatio="none" style="overflow:visible;"><defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6f42c1" stop-opacity="0.3"/><stop offset="100%" stop-color="#6f42c1" stop-opacity="0"/></linearGradient></defs>`;
     
-    // [수정] 1. 배경 영역과 선을 먼저 그림 (뒤에 깔리도록)
-    let areaPath = `M 0,220 `; 
+    // [수정] 모든 좌표 계산에 drawWidth, drawHeight 적용
+    let areaPath = `M 0,${drawHeight} `; 
     turnData.forEach((d, i) => { 
-        const x = turnCount > 1 ? (i / (turnCount - 1)) * 400 : 0; 
-        const y = maxCum > 0 ? 220 - (d.cumulative / maxCum) * 220 : 220; 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * drawWidth : 0; 
+        const y = maxCum > 0 ? drawHeight - (d.cumulative / maxCum) * drawHeight : drawHeight; 
         areaPath += `L ${x},${y} `; 
     }); 
-    areaPath += `L ${turnCount > 1 ? 400 : 0},220 Z`; 
+    areaPath += `L ${turnCount > 1 ? drawWidth : 0},${drawHeight} Z`; 
     html += `<path class="svg-bar-grow" d="${areaPath}" fill="url(#areaGrad)" style="pointer-events:none;" />`;
     
     let pts = ""; 
     turnData.forEach((d, i) => { 
-        const x = turnCount > 1 ? (i / (turnCount - 1)) * 400 : 0; 
-        const y = maxCum > 0 ? 220 - (d.cumulative / maxCum) * 220 : 220; 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * drawWidth : 0; 
+        const y = maxCum > 0 ? drawHeight - (d.cumulative / maxCum) * drawHeight : drawHeight; 
         pts += (i === 0 ? "M " : "L ") + `${x},${y} `; 
     }); 
     html += `<path class="svg-bar-grow" d="${pts}" fill="none" stroke="#6f42c1" stroke-width="3" stroke-opacity="0.5" style="pointer-events:none;" />`;
 
-    // [수정] 2. 막대를 마지막에 그림 (시각용 얇은 막대 + 클릭용 투명 넓은 막대)
+    // [수정] 막대 높이 계산도 drawHeight 기준
     turnData.forEach((d, i) => { 
-        const x = turnCount > 1 ? (i / (turnCount - 1)) * 400 : 0; 
-        const h = maxTrn > 0 ? (d.dmg / maxTrn) * 110 : 0; 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * drawWidth : 0; 
+        const h = maxTrn > 0 ? (d.dmg / maxTrn) * (drawHeight * 0.5) : 0; 
         const isMax = (i === maxDmgIdx);
         const color = isMax ? '#6f42c1' : '#e0e0e0';
         
-        // 1) 시각용 얇은 막대 (width: 6)
-        html += `<rect x="${x-3}" y="${220-h}" width="6" height="${h}" fill="${color}" rx="2" style="pointer-events:none;" />`;
+        // 1) 시각용 얇은 막대
+        html += `<rect x="${x-3}" y="${drawHeight-h}" width="6" height="${h}" fill="${color}" rx="2" style="pointer-events:none;" />`;
         
-        // 2) 클릭용 투명 넓은 막대 (width: 10) -> 이벤트 리스너 연결용 클래스(sim-dmg-bar) 적용
-        html += `<rect class="svg-bar-grow sim-dmg-bar" x="${x-5}" y="${220-h}" width="10" height="${h}" fill="transparent" data-dmg="${d.dmg}" data-turn="${i+1}" style="pointer-events:all;" />`; 
+        // 2) 클릭용 투명 넓은 막대
+        html += `<rect class="svg-bar-grow sim-dmg-bar" x="${x-5}" y="${drawHeight-h}" width="10" height="${h}" fill="transparent" data-dmg="${d.dmg}" data-turn="${i+1}" style="pointer-events:all;" />`; 
         
         if (isMax) {
             const labelVal = d.dmg >= 1000 ? (d.dmg/1000).toFixed(0)+'K' : d.dmg;
-            html += `<text x="${x}" y="${220-h-5}" text-anchor="middle" font-size="10" font-weight="bold" fill="#6f42c1" style="pointer-events:none;">${labelVal}</text>`;
+            html += `<text x="${x}" y="${drawHeight-h-5}" text-anchor="middle" font-size="10" font-weight="bold" fill="#6f42c1" style="pointer-events:none;">${labelVal}</text>`;
         }
     });
     
@@ -379,7 +385,7 @@ function renderDamageLineChart(charId, specificResult = null) {
             turnLabels.push({ pos, label: turnNum + '턴' }); 
         }
     }
-    renderAxisLabels({ y: [maxCum, Math.floor(maxCum / 2), 0], x: turnLabels }, maxCum, 'line');
+    renderAxisLabels({ y: [maxCum, Math.floor(maxCum / 2), 0], x: turnLabels }, maxCum, 'line', drawHeight);
 }
 
 export function initSimulator() {
@@ -517,20 +523,20 @@ function renderSimulatorUI(charId) {
             const storageKey = `sim_ctrl_${charId}_${ctrl.id}`;
             const savedVal = localStorage.getItem(storageKey);
             const item = document.createElement('div'); item.style.cssText = `display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f8f9fa; padding:8px 5px; border-radius:8px; border:1px solid #eee; flex: 0 0 calc(33.33% - 10px); min-width:80px; box-sizing:border-box;`;
-            item.innerHTML = `<span style="font-size:0.65em; color:#888; font-weight:bold; margin-bottom:4px; text-align:center; width:100%;" title="${ctrl.description || ''}">${ctrl.label}</span>`;
+            item.innerHTML = `<span style="font-size:0.6em; color:#888; font-weight:bold; margin-bottom:4px; text-align:center; width:100%;" title="${ctrl.description || ''}">${ctrl.label}</span>`;
             const ctrlEl = document.createElement('div');
             
             if (ctrl.type === 'input') { 
                 const input = document.createElement('input'); 
                 input.type = 'number'; 
                 input.value = (savedVal !== null) ? parseInt(savedVal) : ctrl.initial; 
-                input.style.cssText = `width:50px; padding:4px; border:1px solid #6f42c1; border-radius:4px; text-align:center; font-weight:bold; outline:none; font-size:0.85em;`; 
+                input.style.cssText = `width:45px; padding:3px; border:1px solid #6f42c1; border-radius:4px; text-align:center; font-weight:bold; outline:none; font-size:0.8em;`; 
                 input.onchange = () => localStorage.setItem(storageKey, input.value); 
                 ctrlEl.appendChild(input); 
 
                 if (ctrl.hasAuto) {
                     const autoLabel = document.createElement('label');
-                    autoLabel.style.cssText = 'font-size:0.6em; color:#666; margin-left:4px; display:flex; align-items:center; gap:2px; cursor:pointer; font-weight:bold;';
+                    autoLabel.style.cssText = 'font-size:0.55em; color:#666; margin-left:4px; display:flex; align-items:center; gap:2px; cursor:pointer; font-weight:bold;';
                     const autoCheck = document.createElement('input');
                     autoCheck.type = 'checkbox';
                     autoCheck.style.margin = '0';
@@ -568,7 +574,7 @@ function renderSimulatorUI(charId) {
             }
             else { 
                 const btn = document.createElement('button'); 
-                btn.style.cssText = `background:#fff; border:1px solid #6f42c1; color:#6f42c1; font-weight:bold; font-size:0.9em; padding:4px 12px; border-radius:20px; cursor:pointer; min-width:40px;`; 
+                btn.style.cssText = `background:#fff; border:1px solid #6f42c1; color:#6f42c1; font-weight:bold; font-size:0.85em; padding:3px 10px; border-radius:20px; cursor:pointer; min-width:35px;`; 
                 btn.textContent = (savedVal !== null) ? parseInt(savedVal) : ctrl.initial; 
                 btn.onclick = () => { 
                     let next = parseInt(btn.textContent) + 1; 
@@ -600,12 +606,24 @@ function renderSimulatorUI(charId) {
             if (distGraph && res.graphData) {
                 distGraph.innerHTML = res.graphData.map(b => `<div class="bar-grow-item" style="flex:1; height:${b.h}%; background:${b.isAvg ? '#6f42c1' : '#e0e0e0'};"></div>`).join('');
             }
-            // 축 라벨 복구
-            renderAxisLabels(res.axisData, res.yMax, 'dist'); 
+            // [수정] 화면 너비에 맞는 높이 계산하여 축 라벨 복구
+            const screenWidth = window.innerWidth;
+            const drawHeight = screenWidth >= 1100 ? 320 : (screenWidth <= 600 ? 150 : 220);
+            renderAxisLabels(res.axisData, res.yMax, 'dist', drawHeight); 
         } catch(e) { console.error('결과 복구 실패:', e); } 
     }
     document.getElementById('sim-turns').oninput = (e) => { document.getElementById('sim-turns-val').innerText = e.target.value; localStorage.setItem('sim_last_turns', e.target.value); updateActionEditor(charId); };
-    document.getElementById('sim-iterations').onchange = (e) => localStorage.setItem('sim_last_iters', e.target.value);
+    document.getElementById('sim-iterations').oninput = (e) => { 
+        const steps = [30, 100, 300, 500, 750, 1000];
+        let val = parseInt(e.target.value);
+        // 가장 가까운 단계값 찾기
+        const closest = steps.reduce((prev, curr) => {
+            return (Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev);
+        });
+        e.target.value = closest;
+        document.getElementById('sim-iterations-val').innerText = closest;
+        localStorage.setItem('sim_last_iters', closest); 
+    };
     
     // 텍스트 버튼은 해당 캐릭터의 상세 정보 탭으로 이동
     document.getElementById('sim-back-to-list').onclick = () => {
@@ -636,7 +654,10 @@ function renderSimulatorUI(charId) {
             // [추가] 분포도로 돌아갈 때 저장된 최신 결과로 축 라벨 및 예측 구간 갱신
             const lastRes = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
             if (lastRes) {
-                if (lastRes.axisData) renderAxisLabels(lastRes.axisData, lastRes.yMax, 'dist');
+                // [수정] 현재 화면 너비에 맞는 높이 재계산
+                const screenWidth = window.innerWidth;
+                const drawHeight = screenWidth >= 1100 ? 320 : (screenWidth <= 600 ? 150 : 220);
+                if (lastRes.axisData) renderAxisLabels(lastRes.axisData, lastRes.yMax, 'dist', drawHeight);
                 // 예측 구간 다시 보이기
                 const predictionZone = document.getElementById('sim-prediction-zone');
                 const predictionLabel = document.getElementById('sim-prediction-label');
@@ -732,8 +753,10 @@ function runSimulation(charId) {
         
         distGraph.innerHTML = result.graphData.map(b => `<div class="bar-grow-item" style="flex:1; height:${b.h}%; background:${b.isAvg ? '#6f42c1' : '#e0e0e0'};"></div>`).join('');
         
-        // 새 분석 결과에 맞는 축 라벨 렌더링
-        renderAxisLabels(result.axisData, result.yMax, 'dist');
+        // [수정] 새 분석 결과에 맞는 높이 계산하여 축 라벨 렌더링
+        const screenWidth = window.innerWidth;
+        const drawHeight = screenWidth >= 1100 ? 320 : (screenWidth <= 600 ? 150 : 220);
+        renderAxisLabels(result.axisData, result.yMax, 'dist', drawHeight);
 
         // [추가] 예측 구간 배경 및 라벨 렌더링 (분석 직후)
         const predictionZone = document.getElementById('sim-prediction-zone');
@@ -799,7 +822,16 @@ function renderActionButtons(charId, result, stats) {
                 recs.push({ name: "방어", damage: "0", type: "방어", count: 1, isTurnSeparator: false });
             }
         });
-        state.comparisonSnapshots.push({ id: Date.now(), charId, timestamp: new Date().toISOString(), totalDamage: result.closestTotal, records: recs, stats: { lv: stats.lv || 1, s1: parseInt(stats.s1 || 0), s2: parseInt(stats.s2 || 0) } });
+        const supportId = localStorage.getItem(`sim_last_support_${charId}`) || 'none';
+        state.comparisonSnapshots.push({ 
+            id: Date.now(), 
+            charId, 
+            supportId, // 서포터 ID 저장
+            timestamp: new Date().toISOString(), 
+            totalDamage: result.closestTotal, 
+            records: recs, 
+            stats: { lv: stats.lv || 1, s1: parseInt(stats.s1 || 0), s2: parseInt(stats.s2 || 0) } 
+        });
         import('./storage.js').then(mod => mod.saveSnapshots(state.comparisonSnapshots));
         addBtn.innerHTML = '✓ 추가됨'; addBtn.style.background = '#28a745'; setTimeout(() => { addBtn.innerHTML = '+ 비교탭 추가'; addBtn.style.background = '#6f42c1'; }, 2000);
     };

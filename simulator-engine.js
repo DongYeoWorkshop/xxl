@@ -269,6 +269,17 @@ export function runSimulationCore(context) {
     const bins = new Array(binCount).fill(0);
     const centerIdx = Math.floor(binCount / 2);
     iterationResults.forEach(r => { let b = (range === 0) ? centerIdx : Math.floor(((r.total - min) / range) * (binCount - 1)); bins[b]++; });
-    const xLabels = []; if (range > 0) for (let j = 0; j <= 5; j++) { const v = min + (range * (j / 5)); xLabels.push({ pos: (j / 5) * 100, label: v >= 1000 ? (v / 1000).toFixed(0) + 'K' : Math.floor(v) }); } else xLabels.push({ pos: 50, label: min >= 1000 ? (min / 1000).toFixed(0) + 'K' : Math.floor(min) });
+    
+    // [수정] PC 버전에서는 라벨을 더 촘촘하게 (10등분) 표시하여 가로축을 가득 채움
+    const xLabelCount = isMobile ? 5 : 10;
+    const xLabels = []; 
+    if (range > 0) {
+        for (let j = 0; j <= xLabelCount; j++) { 
+            const v = min + (range * (j / xLabelCount)); 
+            xLabels.push({ pos: (j / xLabelCount) * 100, label: v >= 1000 ? (v / 1000).toFixed(0) + 'K' : Math.floor(v) }); 
+        }
+    } else {
+        xLabels.push({ pos: 50, label: min >= 1000 ? (min / 1000).toFixed(0) + 'K' : Math.floor(min) });
+    }
     return { min: min.toLocaleString(), max: max.toLocaleString(), avg: avgRes.total.toLocaleString(), p05: minRes.total.toLocaleString(), p95: maxRes.total.toLocaleString(), results: { min: minRes, avg: avgRes, max: maxRes }, graphData: bins.map((c, i) => { const binStart = min + (range * (i / binCount)), binEnd = min + (range * ((i + 1) / binCount)), binMid = (binStart + binEnd) / 2, inRange = (binMid >= minRes.total && binMid <= maxRes.total), isAvg = (range === 0) ? (i === centerIdx) : (i === Math.floor(((avgRes.total - min) / range) * (binCount - 1))); return { h: (c / Math.max(...bins)) * 100, isAvg: isAvg, inRange: inRange }; }), axisData: { x: xLabels, y: Array.from({length: 6}, (_, i) => Math.floor(Math.max(...bins) * (5 - i) / 5)) }, yMax: Math.max(...bins) };
 }

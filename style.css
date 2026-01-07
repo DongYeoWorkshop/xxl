@@ -22,7 +22,7 @@
 .sim-shortcut-btn {
   position: absolute !important;
   top: 22px !important; 
-  left: 20px !important; /* 18px에서 20px로 추가 이동 */
+  right: 15px !important; /* left에서 right로 변경 */
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
