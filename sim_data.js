@@ -741,7 +741,7 @@ export const simCharData = {
   },
   "rutenix": {
     customControls: [
-        { id: "self_buff_mode", type: "toggle", label: "2스킬 자가 수급", initial: false, description: "체크 시 필살기의 공격력 흡수 버프를 본인이 받습니다." }
+        { id: "self_buff_mode", type: "toggle", label: "필살버프 자가 적용", initial: false, description: "체크 시 필살기의 공격력 흡수 버프를 본인이 받습니다." }
     ],
     commonControls: ["hit_prob"],
     initialState: {
