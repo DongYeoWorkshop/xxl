@@ -291,7 +291,7 @@ function createComparisonGraph(snapshots, container) {
     const chartW = width - padding.left - padding.right;
     const chartH = height - padding.top - padding.bottom;
 
-    const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33F6', '#F6FF33', '#33FFF6', '#FF8C00', '#8A2BE2'];
+    const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33F6', '#FFC300', '#33FFF6', '#FF8C00', '#8A2BE2'];
     
     let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow:visible;">`;
 

@@ -38,6 +38,13 @@
   .comparison-slot { width: 100% !important; min-width: 0 !important; }
   .landing-desc-list { font-size: 0.85em; }
   #report-open-btn { display: none !important; }
+
+  /* Cloud Save Modal Mobile Adjustments */
+  #cloud-save-modal .modal-content h3 { font-size: 1.1em !important; margin-bottom: 10px !important; }
+  #cloud-save-modal .modal-content p { font-size: 0.8em !important; line-height: 1.3 !important; }
+  #cloud-save-modal .modal-content button { font-size: 0.85em !important; padding: 8px !important; }
+  #cloud-load-btn { padding: 8px 12px !important; font-size: 0.65em !important; }
+  #cloud-save-modal .modal-content input { font-size: 0.85em !important; padding: 6px !important; }
 }
 
 /* =========================================
