@@ -731,13 +731,17 @@ export const supportLogic = {
                 tryApplySupportParam(ctx, sState, p2, 'skill4_timer');
             }
         },
-        onAttack: (ctx, sState) => {
-            // [추가] 보통공격이나 필살기 사용 시 수면 및 도장 디버프 해제
-            if (!ctx.isDefend) {
+        onAfterAction: (ctx, sState) => {
+            // 행동 종료 후 처리 (현재는 없음)
+        },
+        onStepEnd: (ctx, sState, step) => {
+            // [수정] 데미지가 발생한 단계(Step)가 끝나는 즉시 수면 및 도장 디버프 해제
+            // 1회용 범위: (메인 공격 + 해당 공격의 추가타) 또는 (피격 시의 반격)
+            if (ctx.damageOccurred) {
                 if (sState.sleep_timer > 0 || sState.skill8_timer > 0) {
                     sState.sleep_timer = 0;
                     sState.skill8_timer = 0;
-                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면/도장디버프] 해제 (피격)", null, null, false, "서포터");
+                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면/도장디버프] 해제 (피격/소모)", null, null, false, "서포터");
                 }
             }
         },
@@ -780,6 +784,16 @@ export function processSupportEnemyHit(ctx, supportId, supportState) {
 export function processSupportAttack(ctx, supportId, supportState) {
     if (!supportId || supportId === 'none' || !supportLogic[supportId] || !supportLogic[supportId].onAttack) return;
     supportLogic[supportId].onAttack(ctx, supportState);
+}
+
+export function processSupportAfterAction(ctx, supportId, supportState) {
+    if (!supportId || supportId === 'none' || !supportLogic[supportId] || !supportLogic[supportId].onAfterAction) return;
+    supportLogic[supportId].onAfterAction(ctx, supportState);
+}
+
+export function processSupportStepEnd(ctx, supportId, supportState, step) {
+    if (!supportId || supportId === 'none' || !supportLogic[supportId] || !supportLogic[supportId].onStepEnd) return;
+    supportLogic[supportId].onStepEnd(ctx, supportState, step);
 }
 
 export function getSupportBonuses(supportId, supportState, targetCharData, ctx) {

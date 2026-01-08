@@ -4,7 +4,7 @@ import { commonControls } from './simulator-common.js';
 import { getStatusInfo, formatStatusMessage, formatStatusAction } from './simulator-status.js';
 import { simParams } from './sim_params.js';
 import { createSimulationContext, getSkillValue } from './sim_ctx.js';
-import { initSupportState, processSupportTurn, processSupportEnemyHit, processSupportAttack, getSupportBonuses } from './sim_support.js';
+import { initSupportState, processSupportTurn, processSupportEnemyHit, processSupportAttack, processSupportAfterAction, processSupportStepEnd, getSupportBonuses } from './sim_support.js';
 
 export function formatBuffState(charId, state, charDataObj, sData, stats) {
     const entries = [];
@@ -117,6 +117,7 @@ export function runSimulationCore(context) {
                 const finalD = isM ? dUnit * targetCount : dUnit;
                 currentTDmg += finalD;
                 if (finalD > 0) {
+                    dynCtx.damageOccurred = true; // 데미지 발생 플래그 세팅
                     const label = event.customTag || (sIdx !== -1 ? ((idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
                     logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${dmgType === '보통공격' ? '보통공격' : label}]</span> ${event.name || s?.name || "추가타"}:</span> <span class="sim-log-dmg">+${Math.floor(finalD).toLocaleString()}</span></div>`);
                 }
@@ -236,6 +237,14 @@ export function runSimulationCore(context) {
                         for (let h = 0; h < (tr ? targetCount : 1); h++) {
                             dynCtx.debugLogs.push(`ICON:icon/simul.png|${msg}`);
                             autoExecuteParams("being_hit");
+                            
+                            // [추가] 각 반격(피격 대응) 마다 즉시 추가타 처리 및 서포터 단계 종료(수면 해제 등) 수행
+                            if (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
+                                dynCtx.extraHits.forEach(e => { calculateAndLogHit(e); });
+                                dynCtx.extraHits = [];
+                            }
+                            processSupportStepEnd(dynCtx, supportId, supportState, "being_hit_sub");
+                            dynCtx.damageOccurred = false; 
                         }
                     }
                     processSupportEnemyHit(dynCtx, supportId, supportState);
@@ -243,6 +252,7 @@ export function runSimulationCore(context) {
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 } else if (step === 'onAfterAction') {
+                    processSupportAfterAction(dynCtx, supportId, supportState);
                     handleHook('onAfterAction'); autoExecuteParams(step);
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
@@ -253,6 +263,10 @@ export function runSimulationCore(context) {
                     dynCtx.extraHits.forEach(e => { calculateAndLogHit(e); });
                     dynCtx.extraHits = [];
                 }
+
+                // [추가] 서포터 단계 종료 처리 (수면 해제 등 1회성 효과 관리)
+                processSupportStepEnd(dynCtx, supportId, supportState, step);
+                dynCtx.damageOccurred = false; // 단계 종료 후 플래그 초기화
             });
             total += currentTDmg; perTurnDmg.push({ dmg: currentTDmg, cumulative: total });
             if (isUlt) cd.ult = ultCD - 1; else if (cd.ult > 0) cd.ult--;

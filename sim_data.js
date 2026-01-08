@@ -354,9 +354,8 @@ export const simCharData = {
         const p = simParams.tyrantino;
         
         // [패시브7] 승리의 Lowball: 적에게 뎀감 효과 있을 시 뎀증
-        // 1명에게만 유효한 효과이므로 getWeightedVal을 통해 가중치(1/N) 적용
         if (ctx.isUlt || ctx.simState.dmg_reduce_timer > 0) {
-            bonuses["뎀증"] += ctx.getWeightedVal(p.skill7_buff, '뎀증');
+            bonuses["뎀증"] += ctx.getVal(6, '뎀증');
         }
 
         return bonuses;
@@ -430,13 +429,44 @@ export const simCharData = {
   },
   "wang": {
     commonControls: ["hit_prob"],
+    customControls: [
+        { id: "self_extra_dmg_active", type: "toggle", label: "추가데미지 본인적용", initial: false, description: "체크 시 본인이 보통공격할 때 필살기(패란의 영감) 추가타를 파티원 기여분 포함하여 계산에 포함합니다." }
+    ],
     initialState: {
         skill2_timer: 0,
         skill5_timer: [] // 피격 시 뎀증 (최대 2중첩)
     },
     onAttack: (ctx) => {
-        // 모든 추가타 로직은 sim_params.js에서 자동 처리됨
-        return { extraHits: [] };
+        const extraHits = [];
+        // [추가] 추가데미지 본인적용(파티 기여분 합산) 로직
+        if (ctx.customValues.self_extra_dmg_active && !ctx.isUlt && ctx.simState.skill2_timer > 0) {
+            const isWangStamped = !!(ctx.stats.stamp);
+            const hitCoef = ctx.getVal(1, '추가공격', isWangStamped);
+            
+            // 본인 제외 아군 4명의 공격을 시뮬레이션 (본인 1타는 sim_params에서 처리됨)
+            for (let i = 0; i < 4; i++) {
+                extraHits.push({ 
+                    name: `멍: 패란의 영감 (아군 #${i+1})`, 
+                    skillId: "wang_skill2", 
+                    val: hitCoef, 
+                    type: "추가공격", 
+                    customTag: "필살기", 
+                    icon: "icon/attack(strong).webp" 
+                });
+                
+                if (isWangStamped && Math.random() < 0.5) {
+                    extraHits.push({ 
+                        name: `멍: [도장] 패란의 영감 (아군 #${i+1})`, 
+                        skillId: "wang_skill2", 
+                        val: hitCoef, 
+                        type: "추가공격", 
+                        customTag: "도장", 
+                        icon: "images/sigilwebp/sigil_wang.webp" 
+                    });
+                }
+            }
+        }
+        return { extraHits };
     },
     getLiveBonuses: (ctx) => {
         const bonuses = { "뎀증": 0 };
@@ -531,11 +561,11 @@ export const simCharData = {
         // 2. 배리어 상태 체크 및 추가타 생성
         if (ctx.simState.shield_timer > 0) {
             const oremExtraCoef = 25; // 도장 효과 25%
-            const loopCount = ctx.isUlt ? 4 : 5;
+            const loopCount = 4; // 필살/보통공격 관계없이 아군 4인분으로 고정
             
             for (let i = 0; i < loopCount; i++) {
                 extraHits.push({
-                    name: `오렘 (배리어 추가타 #${i+1})`,
+                    name: `오렘: 현측 방어 전개 (아군 #${i+1})`,
                     skillId: "orem_skill8",
                     val: oremExtraCoef,
                     type: "추가공격",

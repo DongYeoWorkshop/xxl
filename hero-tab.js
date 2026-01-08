@@ -1,5 +1,5 @@
 // hero-tab.js
-import { state } from './state.js';
+import { state, constants } from './state.js';
 import { charData } from './data.js';
 import { saveSnapshots } from './storage.js';
 
@@ -80,7 +80,10 @@ export function renderHeroTab(dom, updateStatsCallback) {
             const barHeight = maxTotal > 0 ? (totalDmg / maxTotal) * 100 : 0;
             const wrapper = document.createElement('div');
             wrapper.className = 'snapshot-wrapper';
-            if (state.heroComparisonState?.slot1Id === snapshot.id || state.heroComparisonState?.slot2Id === snapshot.id) wrapper.classList.add('selected');
+            
+            // [수정] 선택 상태 확인 로직 (selectedIds 기반)
+            const selectedIds = state.heroComparisonState?.selectedIds || [];
+            if (selectedIds.includes(snapshot.id)) wrapper.classList.add('selected');
 
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '×';
@@ -88,6 +91,10 @@ export function renderHeroTab(dom, updateStatsCallback) {
             deleteBtn.onclick = (e) => {
                 e.stopPropagation();
                 state.comparisonSnapshots = state.comparisonSnapshots.filter(s => s.id !== snapshot.id);
+                // 선택 목록에서도 제거
+                if (state.heroComparisonState?.selectedIds) {
+                    state.heroComparisonState.selectedIds = state.heroComparisonState.selectedIds.filter(id => id !== snapshot.id);
+                }
                 saveSnapshots(state.comparisonSnapshots);
                 updateStatsCallback();
             };
@@ -98,14 +105,25 @@ export function renderHeroTab(dom, updateStatsCallback) {
             imgContainer.style.cssText = 'position: relative; width: 70px; height: 180px; margin-bottom: 8px; cursor: pointer;';
             imgContainer.onclick = (e) => {
                 e.stopPropagation();
-                if (!state.heroComparisonState) state.heroComparisonState = { nextTarget: 1 };
-                if (state.heroComparisonState.nextTarget === 1) {
-                    state.heroComparisonState.slot1Id = snapshot.id;
-                    state.heroComparisonState.nextTarget = 2;
+                if (!state.heroComparisonState) state.heroComparisonState = { selectedIds: [] };
+                if (!state.heroComparisonState.selectedIds) state.heroComparisonState.selectedIds = [];
+                
+                let sIds = state.heroComparisonState.selectedIds;
+                const existingIdx = sIds.indexOf(snapshot.id);
+
+                if (existingIdx !== -1) {
+                    // 이미 선택됨 -> 선택 해제
+                    sIds.splice(existingIdx, 1);
                 } else {
-                    state.heroComparisonState.slot2Id = snapshot.id;
-                    state.heroComparisonState.nextTarget = 1;
+                    // 신규 선택 (최대 5개)
+                    if (sIds.length >= 5) sIds.shift(); // 가장 오래된 선택 제거
+                    sIds.push(snapshot.id);
                 }
+
+                // 하단 표 비교를 위해 slot1, slot2 업데이트 (마지막 2개)
+                state.heroComparisonState.slot1Id = sIds.length >= 2 ? sIds[sIds.length - 2] : (sIds.length === 1 ? sIds[0] : null);
+                state.heroComparisonState.slot2Id = sIds.length >= 2 ? sIds[sIds.length - 1] : null;
+
                 updateStatsCallback(); 
             };
 
@@ -186,14 +204,13 @@ export function renderHeroTab(dom, updateStatsCallback) {
     tablesWrapper.appendChild(tableContainer);
 
     // [추가] 그래프 데이터 생성 및 렌더링
-    // 선택된 두 개의 스냅샷만 그래프에 표시 (없으면 표시 안 함)
-    const s1Id = state.heroComparisonState?.slot1Id;
-    const s2Id = state.heroComparisonState?.slot2Id;
-    const activeSnapshots = state.comparisonSnapshots.filter(s => s.id === s1Id || s.id === s2Id);
+    // 사용자가 직접 선택한 최대 5개의 스냅샷을 그래프에 표시
+    const selectedIds = state.heroComparisonState?.selectedIds || [];
+    const graphSnapshots = snapshots.filter(s => selectedIds.includes(s.id));
     
-    if (activeSnapshots.length > 0) {
+    if (graphSnapshots.length > 0) {
         graphWrapper.style.display = 'block';
-        createComparisonGraph(activeSnapshots, graphDiv);
+        createComparisonGraph(graphSnapshots, graphDiv);
     }
 
     renderUnifiedContent(tableContainer);
@@ -247,19 +264,36 @@ function createComparisonGraph(snapshots, container) {
     const maxTurn = Math.max(...allPoints.map(p => p.t), 1);
     const maxDmg = Math.max(...allPoints.map(p => p.d), 100); // 최소값 보정
 
-    // [수정] 화면 너비에 따라 내부 그리기 높이 동기화 (늘려짐 방지)
+    // [수정] 화면 너비에 따라 내부 그리기 높이 동기화
     const screenWidth = window.innerWidth;
-    const height = screenWidth >= 1100 ? 350 : 250;
+    const height = screenWidth >= 768 ? 350 : 250;
     
-    const width = container.clientWidth || 600; 
-    const padding = { top: 20, right: 40, bottom: 30, left: 50 };
+    // 컨테이너 스타일의 높이도 명시적으로 변경
+    container.style.height = `${height}px`;
+    
+    // [수정] 화면 크기별 스타일 상수 정의
+    const isTablet = (screenWidth >= 768 && screenWidth < 1100);
+    const isMobile = (screenWidth < 768);
+    
+    const fontSizeAxis = isTablet ? 14 : (isMobile ? 10 : 11);
+    const fontSizeLegend = isTablet ? 15 : (isMobile ? 11 : 12);
+    const lineWidth = isTablet ? 3.5 : 2;
+    const pointRadius = isTablet ? 6 : 3;
+    const legendSpacing = isTablet ? 22 : 16;
+
+    // [수정] 가로 너비 조정
+    let width = container.clientWidth || 600;
+    if (isTablet || isMobile) {
+        width = Math.max(width, screenWidth * 1.05);
+    }
+    
+    const padding = { top: 25, right: 40, bottom: 35, left: isTablet ? 65 : 50 }; 
     const chartW = width - padding.left - padding.right;
     const chartH = height - padding.top - padding.bottom;
 
     const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33F6', '#F6FF33', '#33FFF6', '#FF8C00', '#8A2BE2'];
-    // 캐릭터 ID별 고정 색상을 쓰고 싶다면 매핑 필요, 여기서는 순서대로 할당
     
-    let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow:visible;">`;
+    let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow:visible;">`;
 
     // Y축 그리드 & 라벨
     for (let i = 0; i <= 5; i++) {
@@ -268,17 +302,16 @@ function createComparisonGraph(snapshots, container) {
         const label = yVal >= 1000 ? (yVal / 1000).toFixed(0) + 'K' : Math.floor(yVal);
         
         svgHtml += `<line x1="${padding.left}" y1="${yPos}" x2="${width - padding.right}" y2="${yPos}" stroke="#eee" stroke-dasharray="4" />`;
-        svgHtml += `<text x="${padding.left - 5}" y="${yPos + 4}" text-anchor="end" font-size="10" fill="#888">${label}</text>`;
+        svgHtml += `<text x="${padding.left - 10}" y="${yPos + 5}" text-anchor="end" font-size="${fontSizeAxis}" fill="#888">${label}</text>`;
     }
 
     // X축 라벨
     for (let t = 1; t <= maxTurn; t++) {
-        // 턴이 너무 많으면 간격 조절
         if (maxTurn > 15 && t % 2 !== 0 && t !== maxTurn) continue;
         if (maxTurn > 30 && t % 5 !== 0 && t !== maxTurn) continue;
 
         const xPos = padding.left + (chartW * ((t - 1) / (maxTurn - 1 || 1)));
-        svgHtml += `<text x="${xPos}" y="${height - 5}" text-anchor="middle" font-size="10" fill="#888">${t}</text>`;
+        svgHtml += `<text x="${xPos}" y="${height - 5}" text-anchor="middle" font-size="${fontSizeAxis}" fill="#888">${t}</text>`;
     }
 
     // 데이터 라인 그리기
@@ -293,18 +326,22 @@ function createComparisonGraph(snapshots, container) {
             if (i === 0) pathD += `M ${x} ${y}`;
             else pathD += ` L ${x} ${y}`;
             
-            // 데이터 포인트 (원)
-            svgHtml += `<circle cx="${x}" cy="${y}" r="3" fill="${color}" stroke="#fff" stroke-width="1" />`;
+            svgHtml += `<circle cx="${x}" cy="${y}" r="${pointRadius}" fill="${color}" stroke="#fff" stroke-width="${isTablet ? 2 : 1}" />`;
         });
 
-        svgHtml += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" />`;
+        svgHtml += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="${lineWidth}" />`;
         
-        // 범례 (Legend) - 상단 우측
-        const legendX = width - padding.right - 100;
-        const legendY = padding.top + (idx * 15);
-        const charName = charData[g.charId]?.title || g.charId;
-        svgHtml += `<rect x="${legendX}" y="${legendY - 6}" width="8" height="8" fill="${color}" rx="2" />`;
-        svgHtml += `<text x="${legendX + 12}" y="${legendY + 2}" font-size="10" fill="#555" font-weight="bold">${charName}</text>`;
+        // 범례 (Legend) - 상단 좌측
+        const legendX = padding.left + 15;
+        const legendY = padding.top + (idx * legendSpacing);
+        
+        const mainName = charData[g.charId]?.title || g.charId;
+        const snapshot = snapshots.find(s => s.id === g.id);
+        const supportInfo = constants.supportList.find(s => s.id === snapshot?.supportId);
+        const displayName = (supportInfo && supportInfo.id !== 'none') ? `${mainName} (${supportInfo.name})` : mainName;
+
+        svgHtml += `<rect x="${legendX}" y="${legendY - (isTablet ? 10 : 8)}" width="${isTablet ? 12 : 10}" height="${isTablet ? 12 : 10}" fill="${color}" rx="2" />`;
+        svgHtml += `<text x="${legendX + (isTablet ? 20 : 16)}" y="${legendY + 2}" font-size="${fontSizeLegend}" fill="#333" font-weight="bold">${displayName}</text>`;
     });
 
     svgHtml += `</svg>`;
@@ -401,10 +438,19 @@ function createProfileHeader(snapshot, isLeft) {
     let brText = (s1 >= 75) ? "5성" : (s1 >= 50) ? `4성 ${s1-50}단` : (s1 >= 30) ? `3성 ${s1-30}단` : (s1 >= 15) ? `2성 ${s1-15}단` : (s1 >= 5) ? `1성 ${s1-5}단` : `0성 ${s1}단`;
     const spec = `Lv.${lv} / ${brText} / 적합:${s2}`;
 
+    // [추가] 서포터 아이콘 HTML 생성
+    const supportHtml = (snapshot.supportId && snapshot.supportId !== 'none') ? `
+        <div style="position:absolute; top:-2px; right:-2px; width:18px; height:18px; border-radius:50%; border:1px solid #6f42c1; background:black; overflow:hidden; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,0.3);">
+            <img src="images/${snapshot.supportId}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">
+        </div>` : '';
+
     slot.innerHTML = `
-        <div class="comp-header" style="border-bottom:none; margin-bottom:0; background:transparent; box-shadow:none;">
-            <div class="comp-char-info">
-                <img src="images/${snapshot.charId}.webp" class="comp-char-img">
+        <div class="comp-header" style="border-bottom:none; margin-bottom:0; background:transparent; box-shadow:none; overflow:visible;">
+            <div class="comp-char-info" style="overflow:visible;">
+                <div style="position:relative; flex-shrink:0; display:flex; align-items:center; padding:4px;">
+                    <img src="images/${snapshot.charId}.webp" class="comp-char-img" style="margin:0;">
+                    ${supportHtml}
+                </div>
                 <div class="comp-text-wrapper">
                     <span class="comp-name" style="font-size:0.9em; color:#333; font-weight:bold;">${charTitle}</span>
                     <span class="comp-spec" style="font-size:0.65em; color:#666;">${spec}</span>
