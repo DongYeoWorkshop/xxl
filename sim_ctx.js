@@ -165,6 +165,10 @@ export function createSimulationContext(baseData) {
                 const br = parseInt(stats.s1 || 0);
                 if (UNLOCK_REQ[idx] && br < UNLOCK_REQ[idx]) return "";
                 const s = charData.skills[idx];
+                if (s) {
+                    sName = s.name;
+                    sIcon = s.icon || "icon/main.png";
+                }
                 const isStampIcon = s?.icon && s.icon.includes('sigilwebp/');
                 let labelIdx = idx;
                 if (s?.syncLevelWith) {

@@ -506,7 +506,7 @@ function renderSimulatorUI(charId) {
     
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
-        const tooltipText = sData.tooltipDesc || "서포터는 시뮬탭 내부에 지정한 본인의 행동을 그대로 따라합니다.";
+        const tooltipText = sData.tooltipDesc || "서포터는 시뮬탭 내부에 지정한 본인의 행동과 설정을 그대로 따라하며 메인 캐릭터가 가진 아군 행동에 영향받는 스킬에는 영향을 주지 않습니다. 아군 행동에 영향 받는 스킬은 방어를 사용하지않고 3턴 쿨타임의 필살기를 가진 아군이라 가정합니다.";
         infoIcon.onclick = (e) => { e.stopPropagation(); import('./ui.js').then(ui => { const control = ui.showSimpleTooltip(infoIcon, tooltipText); setTimeout(() => control.remove(), 3000); }); };
     }
 
@@ -524,7 +524,11 @@ function renderSimulatorUI(charId) {
         combinedControls.forEach(ctrl => {
             const storageKey = `sim_ctrl_${charId}_${ctrl.id}`;
             const savedVal = localStorage.getItem(storageKey);
-            const item = document.createElement('div'); item.style.cssText = `display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f8f9fa; padding:8px 5px; border-radius:8px; border:1px solid #eee; flex: 0 0 calc(33.33% - 10px); min-width:80px; box-sizing:border-box;`;
+            const isSpecialToggle = ['self_extra_dmg_active', 'self_buff_mode', 'self_sleep_active'].includes(ctrl.id);
+            const bgColor = isSpecialToggle ? '#f9f5ff' : '#f8f9fa'; // 더 연한 보라색
+            const borderColor = isSpecialToggle ? '#e9e0f9' : '#eee';
+
+            const item = document.createElement('div'); item.style.cssText = `display:flex; flex-direction:column; align-items:center; justify-content:center; background:${bgColor}; padding:8px 5px; border-radius:8px; border:1px solid ${borderColor}; flex: 0 0 calc(33.33% - 10px); min-width:80px; box-sizing:border-box;`;
             item.innerHTML = `<span style="font-size:0.6em; color:#888; font-weight:bold; margin-bottom:4px; text-align:center; width:100%;" title="${ctrl.description || ''}">${ctrl.label}</span>`;
             const ctrlEl = document.createElement('div');
             

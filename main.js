@@ -161,7 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (isModified) {
-                    img.style.border = '2px solid rgba(255, 165, 0, 0.7)'; // 주황색 테두리 (2px, 70% 투명도)
+                    const borderWidth = window.innerWidth <= 600 ? '1px' : '2px';
+                    img.style.border = `${borderWidth} solid #ffa500`;
                 }
 
                 // [추가] 마우스 오버 시 중앙 오버레이 툴팁 표시

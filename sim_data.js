@@ -364,7 +364,8 @@ export const simCharData = {
   "tamrang": {
     commonControls: [],
     customControls: [
-        { id: "self_sleep_active", type: "toggle", label: "수면버프 자가적용", initial: false, description: "체크 시 아군이 소비하지 않은 디버프를 본인이 다음 턴에 직접 사용합니다." }
+        { id: "self_sleep_active", type: "toggle", label: "수면버프 자가적용", initial: false, description: "체크 시 아군이 소비하지 않은 디버프를 본인이 다음 턴에 직접 사용합니다." },
+        { id: "is_sleep_immune", type: "toggle", label: "수면 면역", initial: false, description: "적에게 수면 면역이 있어 수면 및 도장 디버프가 적용되지 않습니다." }
     ],
     initialState: {
         sleep_timer: 0,
@@ -375,11 +376,24 @@ export const simCharData = {
     },
     
     onAttack: (ctx) => {
+        const extraHits = [];
         // [특수] 자가적용 시 수면 소모 예약
         if (!ctx.isUlt && ctx.simState.sleep_timer > 0 && ctx.customValues.self_sleep_active) {
             ctx.simState.consume_next = true;
         }
-        return { extraHits: [] };
+
+        // [신규] 수면 및 도장 디버프 수동 적용 (면역 체크)
+        if (ctx.isUlt && !ctx.customValues.is_sleep_immune) {
+            const p = simParams.tamrang;
+            // 수면
+            ctx.applyBuff(p.sleep_status);
+            // 도장
+            if (ctx.stats.stamp) {
+                ctx.applyBuff(p.skill8_vuln);
+            }
+        }
+
+        return { extraHits };
     },
 
     onAfterAction: (ctx) => {
@@ -437,13 +451,26 @@ export const simCharData = {
         skill5_timer: [] // 피격 시 뎀증 (최대 2중첩)
     },
     onAttack: (ctx) => {
+        return { extraHits: [] };
+    },
+    onAfterAction: (ctx) => {
         const extraHits = [];
-        // [추가] 추가데미지 본인적용(파티 기여분 합산) 로직
-        if (ctx.customValues.self_extra_dmg_active && !ctx.isUlt && ctx.simState.skill2_timer > 0) {
+        // [수정] onAfterAction으로 이동: 필살기 턴에는 버프 부여 후 실행
+        // 조건: 
+        // 1. 자가적용 체크됨
+        // 2. 버프가 있음 (방금 필살기로 켰거나 유지 중)
+        // 3. 아군 필살기 턴이 아님 (아군이 평타를 쳐야 함)
+        
+        // 주의: 필살기 턴(isUlt)이면 onAttack 단계에서 skill2_timer가 갱신되지 않았을 수 있으므로
+        // onAfterAction 시점에서는 이미 갱신된 상태임.
+        // 다만 본인이 필살기를 쓴 턴이면 onAttack의 엔진 자동 추가타(본인분)는 없으므로 여기서 아군 4인분만 챙기면 됨.
+        // 본인이 평타를 쓴 턴이면 엔진이 본인 1타는 처리했으므로 여기서 아군 4인분만 챙기면 됨.
+        // 결론: 항상 아군 4인분만 loop 돌리면 됨.
+
+        if (ctx.customValues.self_extra_dmg_active && ctx.simState.skill2_timer > 0 && !ctx.isAllyUltTurn) {
             const isWangStamped = !!(ctx.stats.stamp);
             const hitCoef = ctx.getVal(1, '추가공격', isWangStamped);
             
-            // 본인 제외 아군 4명의 공격을 시뮬레이션 (본인 1타는 sim_params에서 처리됨)
             for (let i = 0; i < 4; i++) {
                 extraHits.push({ 
                     name: `멍: 패란의 영감 (아군 #${i+1})`, 
@@ -482,7 +509,6 @@ export const simCharData = {
     stateDisplay: {
         "blood_mark_timer": "호혈표지"
     },
-    tooltipDesc: "자동 체크 시 적군의 HP는 1턴에 100%로 시작해 마지막 턴에 0%가 되게 설정하며, 턴 내에서는 파티원이 먼저 행동한다 가정합니다.",
     customControls: [
         { id: "enemy_hp_percent", type: "input", label: "적 HP(%)", min: 1, max: 100, initial: 100, hasAuto: true, autoId: "enemy_hp_auto" }
     ],
@@ -552,11 +578,14 @@ export const simCharData = {
         skill4_timer: 0
     },
     onAttack: (ctx) => {
+        return { extraHits: [] };
+    },
+    onAfterAction: (ctx) => {
         const extraHits = [];
         if (!ctx.customValues.self_extra_dmg_active || !ctx.stats.stamp) return { extraHits };
 
-        // 1. 필살기 사용 시 배리어 상태 즉시 활성화
-        if (ctx.isUlt) ctx.simState.shield_timer = 2;
+        // [수정] onAfterAction으로 이동하여 필살기 로그 이후에 출력되도록 함
+        // 이미 onAttack의 sim_params에서 shield_timer가 갱신되었으므로 수동 설정 불필요
 
         // 2. 배리어 상태 체크 및 추가타 생성
         if (ctx.simState.shield_timer > 0) {

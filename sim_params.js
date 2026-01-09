@@ -600,12 +600,10 @@ export const simParams = {
       type: "buff",
       originalId: "tamrang_skill8",
       timerKey: "skill8_timer",
-      phase: "onAttack",
-      condition: ["isUlt", "isStamp"],
       prob: 0.4,
       scaleProb: true,
       startRate: 0.73,
-      duration: 2, // 1에서 2로 수정
+      duration: 2,
       label: "디버프 부여",
       order: 3
     },
@@ -614,8 +612,6 @@ export const simParams = {
       type: "buff",
       originalId: "tamrang_skill2",
       timerKey: "sleep_timer",
-      phase: "onAttack",
-      condition: "isUlt",
       prob: 0.4,
       scaleProb: true,
       startRate: 0.73,
@@ -755,7 +751,7 @@ export const simParams = {
       phase: "onAttack",
       condition: "isUlt",
       duration: 2,
-      label: "발동",
+      label: "[배리어] 부여",
       order: 1
     },
     // [패시브2] 전함 명령:엄수 (50% 확률 배리어 강화)

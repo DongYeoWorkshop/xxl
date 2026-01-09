@@ -17,11 +17,10 @@ export function getCharacterSelectorHtml(validChars, disabledIds, charData, save
                     const isFav = saved?.isFavorite;
 
                     const filterStyle = isDisabled ? 'filter: grayscale(100%); opacity: 0.5; pointer-events: none; cursor: default;' : '';
-                    const imgBorderStyle = isFav ? 'border-color: #6f42c1; border-width: 2.5px;' : '';
                     
                     return `
                     <div class="sim-char-pick-item" data-id="${id}" style="${filterStyle} position: relative;">
-                        <img src="images/${id}.webp" style="${imgBorderStyle}">
+                        <img src="images/${id}.webp">
                         ${isFav ? '<div style="position:absolute; bottom:20px; left:15px; color:#ffcb05; font-size:14px; text-shadow:0 0 3px rgba(0,0,0,0.9); z-index:2; pointer-events:none;">★</div>' : ''}
                         <div class="sim-char-name">${charData[id].title}</div>
                     </div>`;

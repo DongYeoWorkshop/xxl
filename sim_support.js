@@ -706,21 +706,25 @@ export const supportLogic = {
                 const p5 = { ...p.skill7_vuln, customTag: "패시브5" };
                 tryApplySupportParam(ctx, sState, p5, 'skill7_timer');
                 
-                // [수정] 도장 디버프와 수면 로직 통합 처리 (순서 및 확률 표시 개선)
-                const s8 = p.skill8_vuln;
-                const supportStats = state.savedStats['tamrang'] || { skills: {} };
-                const sLv = parseInt(supportStats.skills?.s2 || 1); // skill8은 skill2와 레벨 연동
-                const rate = getSkillMultiplier(sLv, s8.startRate || 0.73);
-                const finalProb = (s8.prob || 0.4) * rate;
-                const displayProb = Math.floor(finalProb * 100);
+                // [수정] 수면 면역 체크 (서포터 전용 설정값 로드)
+                const isImmune = localStorage.getItem('sim_ctrl_tamrang_is_sleep_immune') === 'true';
+                if (!isImmune) {
+                    // [수정] 도장 디버프와 수면 로직 통합 처리 (순서 및 확률 표시 개선)
+                    const s8 = p.skill8_vuln;
+                    const supportStats = state.savedStats['tamrang'] || { skills: {} };
+                    const sLv = parseInt(supportStats.skills?.s2 || 1); // skill8은 skill2와 레벨 연동
+                    const rate = getSkillMultiplier(sLv, s8.startRate || 0.73);
+                    const finalProb = (s8.prob || 0.4) * rate;
+                    const displayProb = Math.floor(finalProb * 100);
 
-                if (Math.random() < finalProb) {
-                    sState.sleep_timer = 2; 
-                    sState.skill8_timer = 2;
-                    // 1. 수면 부여 로그 (확률 포함)
-                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면] 부여", displayProb, 2, false, "서포터");
-                    // 2. 도장 디버프 부여 로그 (확률 포함)
-                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: 디버프 부여", displayProb, 2, false, "서포터");
+                    if (Math.random() < finalProb) {
+                        sState.sleep_timer = 2; 
+                        sState.skill8_timer = 2;
+                        // 1. 수면 부여 로그 (확률 포함)
+                        ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면] 부여", displayProb, 2, false, "서포터");
+                        // 2. 도장 디버프 부여 로그 (확률 포함)
+                        ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: 디버프 부여", displayProb, 2, false, "서포터");
+                    }
                 }
             } else if (actionType === 'defend') {
                 ctx.log(logIdx, "탐랑: [방어]", null, null, false, "서포터");
