@@ -677,7 +677,7 @@ export const simParams = {
       triggers: ["being_hit"],
       duration: 1,
       maxStacks: 6,
-      label: "불타오른다——! [열화질보] 획득",
+      label: "[열화질보] 획득",
       skipDurLog: true,
       customTag: "패시브3",
       order: 1
@@ -689,7 +689,7 @@ export const simParams = {
       timerKey: "skill5_timer",
       triggers: ["being_hit"],
       duration: 1,
-      label: "불타오른다——! 발동 (2턴)",
+      label: "발동 (2턴)",
       skipDurLog: true,
       customTag: "패시브3",
       order: 2

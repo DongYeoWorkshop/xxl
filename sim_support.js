@@ -763,11 +763,9 @@ export const supportLogic = {
             // 4. 도장: 전체 강력 받뎀증 (75%)
             if (sState.skill8_timer > 0) bonuses["뎀증디버프"] += 75; 
 
-            // 5. 패시브4: 수면 대상 데미지 증가 (36%) -> 가중치 적용
+            // 5. 패시브3: 수면 대상 데미지 증가 (36%)
             if (sState.sleep_timer > 0) {
-                const sleepDmgBonus = getSupportVal('tamrang', 4, '뎀증', targetCharData);
-                // 광역기일 경우 1/N 적용, 단일기일 경우 100% 적용
-                bonuses["뎀증"] += sleepDmgBonus * (1 / ctx.targetCount);
+                bonuses["뎀증"] += getSupportVal('tamrang', 4, '뎀증', targetCharData);
             }
             
             return bonuses;

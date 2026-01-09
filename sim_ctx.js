@@ -3,6 +3,7 @@ import { getSkillMultiplier } from './formatter.js';
 import { getStatusInfo } from './simulator-status.js';
 import { simParams } from './sim_params.js';
 import { SKILL_IDX, UNLOCK_REQ } from './simulator-common.js';
+import { formatDetailedLog } from './simulator-logger.js';
 
 export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = false) {
     const skill = charData.skills[skillIdx];
@@ -138,78 +139,8 @@ export function createSimulationContext(baseData) {
         },
 
         log: (idx, res, chance, dur, skipPush = false, customTag = null) => {
-            let sName = "스킬", sIcon = "icon/main.png", label = "";
-
-            // 1. 스킬 정보 및 아이콘 결정
-            if (typeof idx === 'object' && idx !== null) {
-                const actualIdx = (idx.originalIdx !== undefined) ? idx.originalIdx : 
-                                  (idx.originalId ? charData.skills.findIndex(s => s.id === idx.originalId) : -1);
-                const s = (actualIdx !== -1) ? charData.skills[actualIdx] : null;
-                
-                // 이름 결정
-                sName = idx.name || s?.name || "";
-                sIcon = idx.icon || s?.icon || "icon/main.png";
-                
-                // 라벨(태그) 결정
-                let labelIdx = actualIdx;
-                if (s?.syncLevelWith) {
-                    const parentIdx = charData.skills.findIndex(ps => ps.id === s.syncLevelWith);
-                    if (parentIdx !== -1) labelIdx = parentIdx;
-                }
-                const isStampIcon = sIcon.includes('sigilwebp/');
-                const autoLabel = isStampIcon ? "도장" : (labelIdx === 0 ? "보통공격" : labelIdx === SKILL_IDX.ULT ? "필살기" : labelIdx >= 7 ? "도장" : `패시브${labelIdx-1}`);
-                
-                // [중요] customTag를 최우선으로, 그 다음 객체 내부 label, 마지막으로 자동 라벨
-                label = idx.customTag || customTag || idx.label || autoLabel;
-            } else if (typeof idx === 'number') {
-                const br = parseInt(stats.s1 || 0);
-                if (UNLOCK_REQ[idx] && br < UNLOCK_REQ[idx]) return "";
-                const s = charData.skills[idx];
-                if (s) {
-                    sName = s.name;
-                    sIcon = s.icon || "icon/main.png";
-                }
-                const isStampIcon = s?.icon && s.icon.includes('sigilwebp/');
-                let labelIdx = idx;
-                if (s?.syncLevelWith) {
-                    const parentIdx = charData.skills.findIndex(ps => ps.id === s.syncLevelWith);
-                    if (parentIdx !== -1) labelIdx = parentIdx;
-                }
-                const autoLabel = isStampIcon ? "도장" : (labelIdx === 0 ? "보통공격" : labelIdx === SKILL_IDX.ULT ? "필살기" : (labelIdx >= 2 && labelIdx <= 6) ? `패시브${labelIdx-1}` : labelIdx >= 7 ? "도장" : "스킬");
-                label = customTag || autoLabel;
-            } else if (typeof idx === 'string') {
-                const statusInfo = getStatusInfo(idx);
-                if (statusInfo) { 
-                    sName = statusInfo.name; 
-                    sIcon = statusInfo.icon; 
-                    // [수정] 상태이상/스택은 연동된 스킬이 있더라도 부모 카테고리를 따르지 않고 고유 이름을 유지
-                    label = customTag || ""; 
-                } else { 
-                    sName = (idx.includes('_') || idx.includes('timer')) ? "" : idx;
-                    if (idx === "피격") sIcon = "icon/simul.png"; 
-                    else if (idx === "아군공격") sIcon = "icon/compe.png"; 
-                    label = customTag || ""; 
-                }
-            }
-
-            // 2. 메시지 조립
-            const actionMap = { "Buff": "버프 발동", "Trigger": "발동", "apply": "부여", "consume": "소모", "all_consume": "모두 소모", "gain": "획득", "activate": "발동" };
-            
-            let actionMsg = actionMap[res] || "";
-            let userMsg = "";
-            if (typeof idx === 'object' && idx !== null && idx.label) userMsg = idx.label;
-            else userMsg = (actionMap[res] === undefined) ? (res || "") : "";
-
-            // [중요] 모든 자동 생략 로직 제거. 사용자가 준 문구와 시스템 메시지를 정직하게 조립.
-            let finalRes = (userMsg + " " + actionMsg).trim();
-            
-            let m = []; if (chance) m.push(`${chance}%`); if (dur) m.push(`${dur}턴`);
-            const mS = m.length ? ` (${m.join(' / ')})` : "";
-            
-            // [최종] 태그 + 이름 + 메시지 순서로 무조건 결합
-            const finalTag = label ? `[${label.replace(/[\[\]]/g, '')}] ` : "";
-            const msg = `ICON:${sIcon}|${finalTag}${sName}${sName && finalRes ? ' ' : ''}${finalRes}${mS}`;
-            if (!skipPush) debugLogs.push(msg);
+            const msg = formatDetailedLog(ctx, idx, res, chance, dur, customTag);
+            if (msg && !skipPush) debugLogs.push(msg);
             return msg;
         },
 

@@ -5,6 +5,7 @@ import { getStatusInfo, formatStatusMessage, formatStatusAction } from './simula
 import { simParams } from './sim_params.js';
 import { createSimulationContext, getSkillValue } from './sim_ctx.js';
 import { initSupportState, processSupportTurn, processSupportEnemyHit, processSupportAttack, processSupportAfterAction, processSupportStepEnd, getSupportBonuses } from './sim_support.js';
+import { formatMainLog } from './simulator-logger.js';
 
 export function formatBuffState(charId, state, charDataObj, sData, stats) {
     const entries = [];
@@ -119,7 +120,7 @@ export function runSimulationCore(context) {
                 if (finalD > 0) {
                     dynCtx.damageOccurred = true; // 데미지 발생 플래그 세팅
                     const label = event.customTag || (sIdx !== -1 ? ((idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
-                    logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${dmgType === '보통공격' ? '보통공격' : label}]</span> ${event.name || s?.name || "추가타"}:</span> <span class="sim-log-dmg">+${Math.floor(finalD).toLocaleString()}</span></div>`);
+                    logs.push(formatMainLog(t, dmgType === '보통공격' ? '보통공격' : label, event.name || s?.name || "추가타", finalD));
                 }
                 const sS = latest.subStats;
                 const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
@@ -205,8 +206,10 @@ export function runSimulationCore(context) {
                             const hitDmg = calculateDamage(targetType, st.atk, st.subStats, fC, isUlt && stats.stamp, charData.info.속성, enemyAttrIdx) * tc;
                             const hitCoef = ((isUlt && stats.stamp && e.val.stampMax) ? e.val.stampMax : e.val.max) * tc;
                             if (hitDmg > 0) {
-                                const mainTag = `<span class="sim-log-tag">[${isUlt?'필살기':'보통공격'}]</span>`;
-                                logs.push(`<div class="sim-log-line"><span>${mainTag} ${skill.name}:</span> <span class="sim-log-dmg">+${Math.floor(hitDmg).toLocaleString()}</span></div>`);
+                                dynCtx.damageOccurred = true; // [수정] 메인 공격 적중 시에도 데미지 발생 플래그 설정
+                                const mainTag = isUlt ? '필살기' : '보통공격';
+                                logs.push(formatMainLog(t, mainTag, skill.name, hitDmg));
+                                
                                 const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
                                 const specKey = isUlt ? "필살기뎀증" : "평타뎀증", specLabel = isUlt ? "U-Dmg" : "N-Dmg";
                                 let dmgStr = Object.entries(baseTags).map(([key, label]) => st.subStats[key] !== 0 ? ` / ${label}:${parseFloat(st.subStats[key].toFixed(1))}%` : "").join("");
