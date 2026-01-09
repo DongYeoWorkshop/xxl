@@ -61,3 +61,10 @@
   cursor: not-allowed !important;
   filter: grayscale(100%) !important;
 }
+
+/* [추가] PC 버전 헤더 경계선 강제 제거 */
+@media screen and (min-width: 1100px) {
+  .char-header-row {
+    border-bottom: none !important;
+  }
+}

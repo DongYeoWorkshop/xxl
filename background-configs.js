@@ -17,7 +17,8 @@ export const backgroundConfigs = {
         mobile: { xOffset: 250 }  // 모바일: 1.5배, 오른쪽 200px 이동
     },
     "rikano": {
-        tablet:  { xOffset: 0 }
+        tablet:  { xOffset: 0 },
+        pc:      { xOffset: -400}
     },
     "rutenix": {
         tablet:  { scale: 1.1, xOffset: 80 },
