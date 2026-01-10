@@ -698,7 +698,7 @@ export const simCharData = {
         "tactical_stacks": "[전술 판독]"
     },
     customControls: [
-        { id: "ally_hit_prob", type: "input", label: "아군 피격 확률(%)", min: 0, max: 100, initial: 30, description: "매 턴 아군 4명이 각각 공격받을 확률입니다." }
+        { id: "ally_hit_prob", type: "input", label: "아군 피격 확률(%)", min: 0, max: 100, initial: 40, description: "매 턴 아군 4명이 각각 공격받을 확률입니다." }
     ],
     initialState: {
         tactical_stacks: 0,
