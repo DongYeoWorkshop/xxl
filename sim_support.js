@@ -44,6 +44,11 @@ function getSupportVal(charId, skillIdx, effectKey, targetCharData = null, isSta
     if (!data) return 0;
     const stats = state.savedStats[charId] || { lv: 1, s1: 0, s2: 0, skills: {}, stamp: false };
     
+    // [추가] 돌파 단계 체크: 활성화되지 않은 스킬의 수치는 0으로 반환
+    const sBr = parseInt(stats.s1 || 0);
+    const thresholds = [0, 0, 0, 0, 30, 50, 75, 75]; 
+    if (skillIdx >= 4 && skillIdx <= 7 && sBr < thresholds[skillIdx]) return 0;
+
     const skill = data.skills[skillIdx];
     const finalIsStamp = isStamp || (!!(stats.stamp) && (skillIdx === 1 || skill?.hasStampEffect || skill?.isUltExtra));
 
@@ -93,6 +98,14 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
     const supportStats = state.savedStats[ctx.supportId] || { skills: {} };
     const supportData = charData[ctx.supportId];
     const sIdx = supportData.skills.findIndex(s => s.id === param.originalId);
+
+    // [추가] 돌파 단계 체크: 패시브 및 도장 스킬 활성화 제한
+    const sBr = parseInt(supportStats.s1 || 0);
+    const thresholds = [0, 0, 0, 0, 30, 50, 75, 75]; // 인덱스별 돌파 요구치 (4:30, 5:50, 6:75, 7:75)
+    if (sIdx >= 4 && sIdx <= 7 && sBr < thresholds[sIdx]) {
+        return false; 
+    }
+
     let finalProb = param.prob !== undefined ? param.prob : 1.0;
     if (sIdx !== -1 && (param.scaleProb || param.startRate !== undefined)) {
         const skill = supportData.skills[sIdx];

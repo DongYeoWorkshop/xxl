@@ -121,6 +121,12 @@ export function runSimulationCore(context) {
                     dynCtx.damageOccurred = true; // 데미지 발생 플래그 세팅
                     const label = event.customTag || (sIdx !== -1 ? ((idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
                     logs.push(formatMainLog(t, dmgType === '보통공격' ? '보통공격' : label, event.name || s?.name || "추가타", finalD));
+
+                    // [추가] 피격/반격 단계라면 첫 타격 즉시 서포터 1회성 효과 해제
+                    if (dynCtx.isReactionStep) {
+                        processSupportStepEnd(dynCtx, supportId, supportState, "onEnemyHit");
+                        dynCtx.damageOccurred = false; 
+                    }
                 }
                 const sS = latest.subStats;
                 const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
@@ -177,6 +183,7 @@ export function runSimulationCore(context) {
             };
 
             flow.forEach(step => {
+                dynCtx.isReactionStep = (step === 'onEnemyHit'); // 피격 단계 여부 설정
                 if (step === 'onTurn') {
                     if (context.customValues.enemy_hp_auto) turnInfoLogs.push({ enemyHp: context.customValues.enemy_hp_percent }); else turnInfoLogs.push({});
                     for (const key in simState) if (key.endsWith('_timer')) {
@@ -235,23 +242,30 @@ export function runSimulationCore(context) {
                     if (tr) { if (tp >= 100 || Math.random() * 100 < tp) { isHit = true; msg = formatStatusMessage(tl, tp); } }
                     else if (context.customValues.normal_hit_prob > 0 && !dynCtx.isAllyUltTurn && Math.random() * 100 < context.customValues.normal_hit_prob) { isHit = true; msg = `보통공격 피격 (${context.customValues.normal_hit_prob}%)`; }
                     else if (context.customValues.hit_prob > 0 && Math.random() * 100 < context.customValues.hit_prob) { isHit = true; msg = `피격 (${context.customValues.hit_prob}%)`; }
+                    
                     if (isHit) {
                         dynCtx.isHit = true;
                         for (let h = 0; h < (tr ? targetCount : 1); h++) {
                             dynCtx.debugLogs.push(`ICON:icon/simul.png|${msg}`);
                             autoExecuteParams("being_hit");
-                            
-                            // [추가] 각 반격(피격 대응) 마다 즉시 추가타 처리 및 서포터 단계 종료(수면 해제 등) 수행
-                            if (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
-                                dynCtx.extraHits.forEach(e => { calculateAndLogHit(e); });
-                                dynCtx.extraHits = [];
+                            // 즉시 한 발씩 처리
+                            while (dynCtx.extraHits.length > 0) {
+                                calculateAndLogHit(dynCtx.extraHits.shift());
+                                processSupportStepEnd(dynCtx, supportId, supportState, "being_hit_sub");
+                                dynCtx.damageOccurred = false; 
                             }
-                            processSupportStepEnd(dynCtx, supportId, supportState, "being_hit_sub");
-                            dynCtx.damageOccurred = false; 
                         }
                     }
                     processSupportEnemyHit(dynCtx, supportId, supportState);
                     handleHook('onEnemyHit');
+                    
+                    // handleHook 등으로 생성된 오렘 반사 등 처리
+                    while (dynCtx.extraHits.length > 0) {
+                        calculateAndLogHit(dynCtx.extraHits.shift());
+                        processSupportStepEnd(dynCtx, supportId, supportState, "onEnemyHit");
+                        dynCtx.damageOccurred = false; 
+                    }
+                    
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 } else if (step === 'onAfterAction') {
@@ -263,7 +277,14 @@ export function runSimulationCore(context) {
 
                 // [공통] 각 단계(Step)가 끝날 때마다 쌓인 추가타(extraHits)를 즉시 처리 (멍 협공, 오렘 반사 등)
                 if (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
-                    dynCtx.extraHits.forEach(e => { calculateAndLogHit(e); });
+                    dynCtx.extraHits.forEach(e => { 
+                        calculateAndLogHit(e); 
+                        // [추가] 피격/반격 시에는 매 타격마다 즉시 1회성 효과 해제 체크
+                        if (step === 'onEnemyHit') {
+                            processSupportStepEnd(dynCtx, supportId, supportState, "being_hit_sub");
+                            dynCtx.damageOccurred = false; 
+                        }
+                    });
                     dynCtx.extraHits = [];
                 }
 

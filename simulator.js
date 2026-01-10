@@ -3,6 +3,7 @@ import { state, constants } from './state.js';
 import { charData } from './data.js';
 import { simCharData } from './sim_data.js';
 import { runSimulationCore } from './simulator-engine.js';
+import { calculateBaseStats } from './calculations.js';
 import { getCharacterSelectorHtml, getSimulatorLayoutHtml, showDetailedLogModal } from './simulator-ui.js';
 import { getCharacterCommonControls } from './simulator-common.js';
 import { showSimpleTooltip } from './ui.js';
@@ -506,8 +507,8 @@ function renderSimulatorUI(charId) {
     
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
-        const tooltipText = sData.tooltipDesc || "서포터는 시뮬탭 내부에 지정한 본인의 행동과 설정을 그대로 따라하며 메인 캐릭터가 가진 아군 행동에 영향받는 스킬에는 영향을 주지 않습니다. 아군 행동에 영향 받는 스킬은 방어를 사용하지않고 3턴 쿨타임의 필살기를 가진 아군이라 가정합니다.";
-        infoIcon.onclick = (e) => { e.stopPropagation(); import('./ui.js').then(ui => { const control = ui.showSimpleTooltip(infoIcon, tooltipText); setTimeout(() => control.remove(), 3000); }); };
+        const tooltipText = sData.tooltipDesc || `<div style="text-align: left;">・서포터는 시뮬탭 내부에 지정한 본인의 행동과 설정을 그대로 따라하며 메인 캐릭터가 가진 아군 행동에 영향받는 스킬에는 영향을 주지 않습니다.<br><br> ・아군 행동에 영향 받는 스킬은 방어를 사용하지않고 3턴 쿨타임의 필살기를 가진 아군이라 가정합니다.</div>`;
+        infoIcon.onclick = (e) => { e.stopPropagation(); import(`./ui.js?v=${Date.now()}`).then(ui => { const control = ui.showSimpleTooltip(infoIcon, tooltipText); setTimeout(() => control.remove(), 3000); }); };
     }
 
     const supportId = localStorage.getItem(supportStorageKey) || 'none';
@@ -617,10 +618,16 @@ function renderSimulatorUI(charId) {
             const maxDiffEl = document.getElementById('sim-max-diff');
 
             if (avgNum > 0) {
-                const minPercent = (((p05Num / avgNum) - 1) * 100).toFixed(1);
-                const maxPercent = (((p95Num / avgNum) - 1) * 100).toFixed(1);
-                minDiffEl.innerText = `${minPercent}%`;
-                maxDiffEl.innerText = `+${maxPercent}%`;
+                const minDiff = Math.floor(p05Num - avgNum);
+                const maxDiff = Math.floor(p95Num - avgNum);
+                const minPercent = ((minDiff / avgNum) * 100).toFixed(1);
+                const maxPercent = ((maxDiff / avgNum) * 100).toFixed(1);
+                
+                const minDiffK = (minDiff / 1000).toFixed(0);
+                const maxDiffK = (maxDiff / 1000).toFixed(0);
+                
+                minDiffEl.innerText = `${Number(minDiffK).toLocaleString()}K (${minPercent}%)`;
+                maxDiffEl.innerText = `+${Number(maxDiffK).toLocaleString()}K (+${maxPercent}%)`;
                 minDiffEl.style.visibility = 'visible';
                 maxDiffEl.style.visibility = 'visible';
             }
@@ -772,26 +779,30 @@ function runSimulation(charId) {
         document.getElementById('sim-avg-dmg').innerText = result.avg; 
         document.getElementById('sim-max-dmg').innerText = result.p95; 
         
-        // [수정] 카드별 오차 퍼센트 계산 및 표시
-        const avgNum = parseFloat(result.avg.replace(/,/g, ''));
-        const p05Num = parseFloat(result.p05.replace(/,/g, ''));
-        const p95Num = parseFloat(result.p95.replace(/,/g, ''));
-        
-        const minDiffEl = document.getElementById('sim-min-diff');
-        const maxDiffEl = document.getElementById('sim-max-diff');
-        
-        if (avgNum > 0) {
-            const minPercent = (((p05Num / avgNum) - 1) * 100).toFixed(1);
-            const maxPercent = (((p95Num / avgNum) - 1) * 100).toFixed(1);
-            
-            minDiffEl.innerText = `${minPercent}%`;
-            maxDiffEl.innerText = `+${maxPercent}%`;
-            minDiffEl.style.visibility = 'visible';
-            maxDiffEl.style.visibility = 'visible';
-        } else {
-            minDiffEl.style.visibility = 'hidden';
-            maxDiffEl.style.visibility = 'hidden';
-        }
+                // [수정] 카드별 오차 퍼센트 계산 및 표시
+                const avgNum = parseFloat(result.avg.replace(/,/g, '')) || 0;
+                const p05Num = parseFloat(result.p05.replace(/,/g, '')) || 0;
+                const p95Num = parseFloat(result.p95.replace(/,/g, '')) || 0;
+                
+                const minDiffEl = document.getElementById('sim-min-diff');
+                const maxDiffEl = document.getElementById('sim-max-diff');
+                
+                        if (avgNum > 0) {
+                            const minDiff = Math.floor(p05Num - avgNum);
+                            const maxDiff = Math.floor(p95Num - avgNum);
+                            const minPercent = ((minDiff / avgNum) * 100).toFixed(1);
+                            const maxPercent = ((maxDiff / avgNum) * 100).toFixed(1);
+                            
+                            const minDiffK = (minDiff / 1000).toFixed(0);
+                            const maxDiffK = (maxDiff / 1000).toFixed(0);
+                            
+                            minDiffEl.innerText = `${Number(minDiffK).toLocaleString()}K (${minPercent}%)`;
+                            maxDiffEl.innerText = `+${Number(maxDiffK).toLocaleString()}K (+${maxPercent}%)`;
+                        } else {                    minDiffEl.innerText = `0 (0.0%)`;
+                    maxDiffEl.innerText = `+0 (+0.0%)`;
+                }            
+        minDiffEl.style.visibility = 'visible';
+        maxDiffEl.style.visibility = 'visible';
         
         displaySimResult(charId, result, 'avg');
         

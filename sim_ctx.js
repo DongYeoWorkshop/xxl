@@ -91,6 +91,7 @@ export function createSimulationContext(baseData) {
     const ctx = {
         t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, debugLogs,
         isHit: false, // 엔진에서 직접 수정 가능하도록 객체 속성으로 관리
+        extraHits: [], // [추가] 추가타 목록 초기화
 
         setTimer: (key, dur) => {
             simState[key] = ctx.isHit ? dur + 1 : dur;

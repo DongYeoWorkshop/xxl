@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
             forceMainHeader();
             
             // 시뮬레이터 초기화 (목록 화면 렌더링)
-            import('./simulator.js').then(mod => mod.initSimulator());
+            import(`./simulator.js?v=${Date.now()}`).then(mod => mod.initSimulator());
         };
     }
 
