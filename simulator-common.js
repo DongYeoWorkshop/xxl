@@ -30,7 +30,7 @@ export const commonControls = {
         label: "보통공격 피격 확률(%)",
         min: 0,
         max: 100,
-        initial: 30,
+        initial: 40,
         description: "캐릭터가 적의 보통공격에 피격될 확률입니다."
     },
     "ally_ult_count": {
