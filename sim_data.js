@@ -377,41 +377,39 @@ export const simCharData = {
     
     onAttack: (ctx) => {
         const extraHits = [];
-        // [특수] 자가적용 시 수면 소모 예약
-        if (!ctx.isUlt && ctx.simState.sleep_timer > 0 && ctx.customValues.self_sleep_active) {
-            ctx.simState.consume_next = true;
-        }
-
-        // [신규] 수면 및 도장 디버프 수동 적용 (면역 체크)
-        if (ctx.isUlt && !ctx.customValues.is_sleep_immune) {
+        
+        // [수정] 수면 및 도장 디버프 수동 적용 (단일 확률 시행)
+        if (ctx.isUlt && !ctx.customValues.is_sleep_immune && ctx.customValues.self_sleep_active) {
             const p = simParams.tamrang;
-            // 수면
-            ctx.applyBuff(p.sleep_status);
-            // 도장
-            if (ctx.stats.stamp) {
-                ctx.applyBuff(p.skill8_vuln);
+            const skill = ctx.charData.skills[1];
+            const sLv = ctx.stats.skills?.s2 || 1;
+            const startRate = p.sleep_status.startRate || skill.startRate || 0.73;
+            const rate = Math.min(1, (startRate + (sLv - 1) * 0.04));
+            const finalProb = (p.sleep_status.prob || 0.4) * rate;
+
+            if (Math.random() < finalProb) {
+                ctx.applyBuff({ ...p.sleep_status, prob: 1.0 });
+                if (ctx.stats.stamp) {
+                    ctx.applyBuff({ ...p.skill8_vuln, prob: 1.0 });
+                }
             }
         }
 
         return { extraHits };
     },
 
-    onAfterAction: (ctx) => {
-        // [특수] 자가적용 로직 유지
-        if (ctx.isUlt) {
-            if (!ctx.customValues.self_sleep_active) {
-                // 자가적용 안하면 즉시 아군이 쓴걸로 침
+    // [추가] 데미지 발생 즉시 수면 해제 로직
+    onStepEnd: (ctx) => {
+        if (ctx.damageOccurred && ctx.customValues.self_sleep_active) {
+            if (ctx.simState.sleep_timer > 0 || ctx.simState.skill8_timer > 0) {
                 ctx.simState.sleep_timer = 0;
                 ctx.simState.skill8_timer = 0;
-                ctx.log("-아군의 디버프 소비-");
+                ctx.log("수면/도장디버프", "consume");
             }
         }
-        if (ctx.simState.consume_next) {
-            ctx.simState.sleep_timer = 0;
-            ctx.simState.skill8_timer = 0;
-            ctx.simState.consume_next = false;
-            ctx.log("수면/도장디버프", "consume");
-        }
+    },
+
+    onAfterAction: (ctx) => {
         return { extraHits: [] };
     },
 

@@ -1049,11 +1049,16 @@ function renderActionButtons(charId, result, stats) {
                 recs.push({ name: "방어", damage: "0", type: "방어", count: 1, isTurnSeparator: false });
             }
         });
-        const supportId = localStorage.getItem(`sim_last_support_${charId}`) || 'none';
+        
+        // [수정] 서포터 2명 정보 저장
+        const supportId1 = localStorage.getItem(`sim_last_support_1_${charId}`) || 'none';
+        const supportId2 = localStorage.getItem(`sim_last_support_2_${charId}`) || 'none';
+        
         state.comparisonSnapshots.push({ 
             id: Date.now(), 
             charId, 
-            supportId, // 서포터 ID 저장
+            supportId: supportId1, // 구형 호환성 (메인 서포터)
+            supportIds: [supportId1, supportId2], // 신규 배열 구조
             timestamp: new Date().toISOString(), 
             totalDamage: result.closestTotal, 
             records: recs, 

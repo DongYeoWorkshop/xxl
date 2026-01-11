@@ -600,6 +600,7 @@ export const simParams = {
       type: "buff",
       originalId: "tamrang_skill8",
       timerKey: "skill8_timer",
+      // phase 제거 (수동 발동)
       prob: 0.4,
       scaleProb: true,
       startRate: 0.73,
@@ -612,6 +613,7 @@ export const simParams = {
       type: "buff",
       originalId: "tamrang_skill2",
       timerKey: "sleep_timer",
+      // phase 제거 (수동 발동)
       prob: 0.4,
       scaleProb: true,
       startRate: 0.73,
@@ -1074,7 +1076,7 @@ export const simParams = {
       type: "buff",
       originalId: "jetblack_skill1",
       timerKey: "skill1_timer",
-      phase: "onAttack",
+      phase: "onCalculateDamage", // 공격 전 미리 적용
       condition: "isNormal",
       duration: 1,
       label: "버프 부여",
@@ -1087,7 +1089,7 @@ export const simParams = {
       type: "buff",
       originalId: "jetblack_skill2",
       timerKey: "skill2_timer",
-      phase: "onAttack",
+      phase: "onCalculateDamage", // 공격 전 미리 적용
       condition: "isUlt",
       duration: 3,
       label: "버프 부여",
@@ -1176,7 +1178,7 @@ export const simParams = {
       type: "buff",
       originalId: "beernox_skill1",
       timerKey: "skill1_timer",
-      phase: "onAttack",
+      phase: "onCalculateDamage", // 공격 전 미리 적용
       condition: "isNormal",
       duration: 1,
       label: "버프 부여",
@@ -1189,7 +1191,7 @@ export const simParams = {
       type: "buff",
       originalId: "beernox_skill2",
       timerKey: "skill2_timer",
-      phase: "onAttack",
+      phase: "onCalculateDamage", // 공격 전 미리 적용
       condition: "isUlt",
       duration: 1,
       label: "버프 부여",
@@ -1202,7 +1204,7 @@ export const simParams = {
       type: "buff",
       originalId: "beernox_skill2", // 스탬프 패시브 대신 실제 수치가 있는 스킬2를 참조
       timerKey: "skill2_stamp_timer",
-      phase: "onAttack",
+      phase: "onCalculateDamage", // 공격 전 미리 적용
       condition: ["isUlt", "isStamp"],
       prob: 0.33,
       duration: 1,

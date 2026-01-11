@@ -132,7 +132,11 @@ export function runSimulationCore(context) {
                 const finalD = isM ? dUnit * targetCount : dUnit;
                 currentTDmg += finalD;
                 if (finalD > 0) {
-                    dynCtx.damageOccurred = true; 
+                    // [수정] 서포터의 공격은 메인 캐릭터의 '타격 발생' 상태(수면 해제 등)를 트리거하지 않음
+                    if (event.customTag !== "서포터") {
+                        dynCtx.damageOccurred = true; 
+                    }
+                    
                     const label = event.customTag || (sIdx !== -1 ? ((idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
                     logs.push(formatMainLog(t, dmgType === '보통공격' ? '보통공격' : label, event.name || s?.name || "추가타", finalD));
 
@@ -244,6 +248,14 @@ export function runSimulationCore(context) {
                         // [수정] 서포터 지원 공격 처리 (순회)
                         supportStates.forEach(s => processSupportAttack(dynCtx, s.id, s.state));
 
+                        // [추가] 서포터 추가타 즉시 처리 (디버프 부여 등 후속 이벤트보다 먼저 로그에 찍히도록)
+                        while (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
+                            const hit = dynCtx.extraHits.shift();
+                            calculateAndLogHit(hit);
+                            // [수정] 루프 내부에서는 단계 종료(수면 해제 등)를 호출하지 않음 -> 모든 연계 공격이 끝난 뒤 해제
+                        }
+
+                        // [수정] 메인 캐릭터의 패시브 추가타 등 예약 (서포터 공격 후 실행)
                         handleHook('onAttack');
                     }
                     autoExecuteParams(step);
@@ -305,6 +317,10 @@ export function runSimulationCore(context) {
 
                 // [수정] 서포터 단계 종료 처리 (순회)
                 supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, step));
+                
+                // [추가] 메인 캐릭터 단계 종료 처리 (수면 해제 등)
+                handleHook('onStepEnd');
+
                 dynCtx.damageOccurred = false; 
             });
             total += currentTDmg; perTurnDmg.push({ dmg: currentTDmg, cumulative: total });

@@ -133,24 +133,24 @@ export function renderHeroTab(dom, updateStatsCallback) {
             img.style.marginBottom = '0'; // 컨테이너에서 마진 관리
             imgContainer.appendChild(img);
 
-            // [추가] 서포터 아이콘 표시 (이미지 컨테이너 기준 우측 하단)
-            if (snapshot.supportId && snapshot.supportId !== 'none') {
-                const supportIconArea = document.createElement('div');
-                supportIconArea.style.cssText = `
-                    position: absolute;
-                    bottom: 2px;
-                    right: 2px;
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    border: 2px solid #6f42c1;
-                    background: black;
-                    overflow: hidden;
-                    z-index: 5;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-                `;
-                supportIconArea.innerHTML = `<img src="images/${snapshot.supportId}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;">`;
-                imgContainer.appendChild(supportIconArea);
+            // [추가] 서포터 아이콘 표시 (2개 지원)
+            const sIds = snapshot.supportIds || (snapshot.supportId && snapshot.supportId !== 'none' ? [snapshot.supportId] : []);
+            
+            if (sIds.length > 0) {
+                // 서포터 1 (우측 하단)
+                if (sIds[0] && sIds[0] !== 'none') {
+                    const s1 = document.createElement('div');
+                    s1.style.cssText = `position:absolute; bottom:2px; right:2px; width:32px; height:32px; border-radius:50%; border:2px solid #6f42c1; background:black; overflow:hidden; z-index:6; box-shadow:0 2px 8px rgba(0,0,0,0.4);`;
+                    s1.innerHTML = `<img src="images/${sIds[0]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">`;
+                    imgContainer.appendChild(s1);
+                }
+                // 서포터 2 (서포터 1 바로 위)
+                if (sIds[1] && sIds[1] !== 'none') {
+                    const s2 = document.createElement('div');
+                    s2.style.cssText = `position:absolute; bottom:36px; right:2px; width:32px; height:32px; border-radius:50%; border:2px solid #28a745; background:black; overflow:hidden; z-index:5; box-shadow:0 2px 8px rgba(0,0,0,0.4);`;
+                    s2.innerHTML = `<img src="images/${sIds[1]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">`;
+                    imgContainer.appendChild(s2);
+                }
             }
             
             wrapper.appendChild(imgContainer);
@@ -337,8 +337,20 @@ function createComparisonGraph(snapshots, container) {
         
         const mainName = charData[g.charId]?.title || g.charId;
         const snapshot = snapshots.find(s => s.id === g.id);
-        const supportInfo = constants.supportList.find(s => s.id === snapshot?.supportId);
-        const displayName = (supportInfo && supportInfo.id !== 'none') ? `${mainName} (${supportInfo.name})` : mainName;
+        
+        // [수정] 서포터 이름들 추출 (2명 지원)
+        const sIds = snapshot?.supportIds || (snapshot?.supportId && snapshot.supportId !== 'none' ? [snapshot.supportId] : []);
+        const supportNames = sIds
+            .map(sid => {
+                const info = constants.supportList.find(s => s.id === sid);
+                return (info && info.id !== 'none') ? info.name : null;
+            })
+            .filter(name => name && name !== '선택 안 함' && name !== '-');
+
+        let displayName = mainName;
+        if (supportNames.length > 0) {
+            displayName += ` (${supportNames.join(', ')})`;
+        }
 
         svgHtml += `<rect x="${legendX}" y="${legendY - (isTablet ? 10 : 8)}" width="${isTablet ? 12 : 10}" height="${isTablet ? 12 : 10}" fill="${color}" rx="2" />`;
         svgHtml += `<text x="${legendX + (isTablet ? 20 : 16)}" y="${legendY + 2}" font-size="${fontSizeLegend}" fill="#333" font-weight="bold">${displayName}</text>`;
@@ -438,11 +450,30 @@ function createProfileHeader(snapshot, isLeft) {
     let brText = (s1 >= 75) ? "5성" : (s1 >= 50) ? `4성 ${s1-50}단` : (s1 >= 30) ? `3성 ${s1-30}단` : (s1 >= 15) ? `2성 ${s1-15}단` : (s1 >= 5) ? `1성 ${s1-5}단` : `0성 ${s1}단`;
     const spec = `Lv.${lv} / ${brText} / 적합:${s2}`;
 
-    // [추가] 서포터 아이콘 HTML 생성
-    const supportHtml = (snapshot.supportId && snapshot.supportId !== 'none') ? `
-        <div style="position:absolute; top:-2px; right:-2px; width:18px; height:18px; border-radius:50%; border:1px solid #6f42c1; background:black; overflow:hidden; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,0.3);">
-            <img src="images/${snapshot.supportId}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">
-        </div>` : '';
+    // [추가] 서포터 아이콘 HTML 생성 (2개 지원 - S1 왼쪽, S2 오른쪽)
+    const sIds = snapshot.supportIds || (snapshot.supportId && snapshot.supportId !== 'none' ? [snapshot.supportId] : []);
+    let supportHtml = '';
+    
+    if (sIds.length > 0) {
+        supportHtml = `<div style="position:absolute; top:-6px; right:-4px; display:flex; gap:2px; z-index:10;">`;
+        
+        // 서포터 1 (왼쪽)
+        if (sIds[0] && sIds[0] !== 'none') {
+            supportHtml += `
+            <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #6f42c1; background:black; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3);">
+                <img src="images/${sIds[0]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">
+            </div>`;
+        }
+        // 서포터 2 (오른쪽)
+        if (sIds[1] && sIds[1] !== 'none') {
+            supportHtml += `
+            <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #28a745; background:black; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3);">
+                <img src="images/${sIds[1]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">
+            </div>`;
+        }
+        
+        supportHtml += `</div>`;
+    }
 
     slot.innerHTML = `
         <div class="comp-header" style="border-bottom:none; margin-bottom:0; background:transparent; box-shadow:none; overflow:visible;">
