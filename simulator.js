@@ -241,18 +241,60 @@ function displaySimResult(charId, fullResult, type = 'avg') {
 // 기존 renderDamageLineChart 함수 수정 (결과 데이터를 인자로 받도록)
 export function renderDamageLineChart(charId, specificResult = null) {
     const container = document.getElementById('sim-line-graph');
-    let res = specificResult;
     
+    // [수정] 전체 결과에서 모든 타입(min, avg, max) 중 절대적 최대 데미지 값을 찾음
+    const fullResult = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
+    if (!fullResult) return;
+
+    let globalMaxTrn = 0;
+    let globalMaxCum = 0;
+
+    if (fullResult.results) {
+        ['min', 'avg', 'max'].forEach(type => {
+            const data = fullResult.results[type];
+            // [수정] turnData 혹은 perTurnDmg 둘 다 체크
+            const tData = data ? (data.turnData || data.perTurnDmg) : null;
+            if (tData) {
+                const trn = Math.max(...tData.map(d => d.dmg));
+                const cum = Math.max(...tData.map(d => d.cumulative));
+                if (trn > globalMaxTrn) globalMaxTrn = trn;
+                if (cum > globalMaxCum) globalMaxCum = cum;
+            }
+        });
+    }
+
+    let res = specificResult;
     if (!res) {
-        const full = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
-        if (!full) return;
-        // 저장된 결과가 이전 방식이면 호환성을 위해 처리, 아니면 현재 선택된 세부 데이터 찾기
-        res = full.results ? full.results.avg : full; 
+        // [추가] 인자가 없으면 현재 활성화된(보라색 배경) 카드를 찾아서 해당 데이터를 사용
+        let activeType = 'avg'; // 기본값
+        const boxes = {
+            min: document.getElementById('sim-min-dmg')?.parentElement,
+            avg: document.getElementById('sim-avg-dmg')?.parentElement,
+            max: document.getElementById('sim-max-dmg')?.parentElement
+        };
+        
+        // 배경색이 보라색(#6f42c1)이거나 opacity가 1인 것을 찾음
+        for (const [key, box] of Object.entries(boxes)) {
+            if (box && (box.style.background === 'rgb(111, 66, 193)' || box.style.opacity === '1')) {
+                activeType = key;
+                break;
+            }
+        }
+        
+        if (fullResult.results && fullResult.results[activeType]) {
+            res = fullResult.results[activeType];
+        } else {
+            // 구형 데이터 호환
+            res = fullResult.results ? fullResult.results.avg : fullResult;
+        }
     }
     
-    const turnData = res.turnData || res.perTurnDmg, maxCum = Math.max(...turnData.map(d => d.cumulative)), maxTrn = Math.max(...turnData.map(d => d.dmg)), turnCount = turnData.length;
+    const turnData = res.turnData || res.perTurnDmg, 
+          maxCum = globalMaxCum || Math.max(...turnData.map(d => d.cumulative)), 
+          maxTrn = globalMaxTrn || Math.max(...turnData.map(d => d.dmg)), 
+          turnCount = turnData.length;
     
-    // [추가] 최대 데미지 턴 인덱스 찾기
+    // [추가] 현재 선택된 데이터에서의 최대 데미지 턴 인덱스 찾기 (라벨 표시용)
     let maxDmgIdx = -1;
     let maxDmgVal = -1;
     turnData.forEach((d, i) => {
@@ -508,7 +550,23 @@ function renderSimulatorUI(charId) {
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
         const tooltipText = sData.tooltipDesc || `<div style="text-align: left;">・서포터는 시뮬탭 내부에 지정한 본인의 행동과 설정을 그대로 따라하며 메인 캐릭터가 가진 아군 행동에 영향받는 스킬에는 영향을 주지 않습니다.<br><br> ・아군 행동에 영향 받는 스킬은 방어를 사용하지않고 3턴 쿨타임의 필살기를 가진 아군이라 가정합니다.</div>`;
-        infoIcon.onclick = (e) => { e.stopPropagation(); import(`./ui.js?v=${Date.now()}`).then(ui => { const control = ui.showSimpleTooltip(infoIcon, tooltipText); setTimeout(() => control.remove(), 3000); }); };
+        infoIcon.onclick = (e) => { 
+            e.stopPropagation(); 
+            import(`./ui.js?v=${Date.now()}`).then(ui => { 
+                const existing = document.querySelector('.buff-tooltip');
+                if (existing) existing.remove();
+
+                const control = ui.showSimpleTooltip(infoIcon, tooltipText); 
+                const timeoutId = setTimeout(() => control.remove(), 6000);
+
+                const closeOnOutside = () => { 
+                    control.remove(); 
+                    clearTimeout(timeoutId);
+                    document.removeEventListener('click', closeOnOutside); 
+                }; 
+                setTimeout(() => document.addEventListener('click', closeOnOutside), 50);
+            }); 
+        };
     }
 
     const supportId = localStorage.getItem(supportStorageKey) || 'none';
