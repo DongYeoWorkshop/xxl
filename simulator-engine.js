@@ -59,14 +59,22 @@ export function formatBuffState(charId, state, charDataObj, sData, stats) {
 }
 
 export function runSimulationCore(context) {
-    const { charId, charData, sData, stats, turns, iterations, targetCount, manualPattern, enemyAttrIdx, customValues, defaultGrowthRate, supportId } = context;
+    // [수정] supportIds 배열 처리 (구형 호환성을 위해 supportId가 있으면 배열로 변환)
+    let { charId, charData, sData, stats, turns, iterations, targetCount, manualPattern, enemyAttrIdx, customValues, defaultGrowthRate, supportId, supportIds } = context;
+    
+    if (!supportIds) {
+        supportIds = supportId ? [supportId] : [];
+    }
+
     const br = parseInt(stats.s1 || 0), baseStats = calculateBaseStats(charData.base, parseInt(stats.lv || 1), br, parseInt(stats.s2 || 0), defaultGrowthRate);
     const iterationResults = [];
     const flow = sData.flow || ['onTurn', 'onCalculateDamage', 'onAttack', 'onEnemyHit', 'onAfterAction'];
 
     for (let i = 0; i < iterations; i++) {
         let simState = sData.initialState ? JSON.parse(JSON.stringify(sData.initialState)) : {};
-        let supportState = initSupportState(supportId);
+        
+        // [수정] 각 서포터별 상태 초기화
+        let supportStates = supportIds.map(id => ({ id: id, state: initSupportState(id) }));
         
         let total = 0, logs = [], perTurnDmg = [], stateLogs = [], detailedLogs = [], turnInfoLogs = [];
         const ultCD = (() => { const m = charData.skills[1].desc?.match(/\(쿨타임\s*:\s*(\d+)턴\)/); return m ? parseInt(m[1]) : 3; })();
@@ -85,13 +93,19 @@ export function runSimulationCore(context) {
             const isAllyUltTurn = sData.isAllyUltTurn ? sData.isAllyUltTurn(t) : (t > 1 && (t - 1) % 3 === 0);
             const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs: turnDebugLogs });
 
-            processSupportTurn(dynCtx, supportId, supportState);
+            // [수정] 서포터 턴 시작 처리 (순회)
+            supportStates.forEach(s => processSupportTurn(dynCtx, s.id, s.state));
 
             const getLatestSubStats = (isMulti = true) => {
                 const subStats = { "기초공증": 0, "공증": 0, "고정공증": 0, "뎀증": 0, "평타뎀증": 0, "필살기뎀증": 0, "트리거뎀증": 0, "뎀증디버프": 0, "속성디버프": 0, "HP증가": 0, "기초HP증가": 0, "회복증가": 0, "배리어증가": 0, "지속회복증가": 0 };
                 dynCtx.isMulti = isMulti;
-                const sBonuses = getSupportBonuses(supportId, supportState, charData, dynCtx);
-                for (const k in sBonuses) if (subStats.hasOwnProperty(k)) subStats[k] += sBonuses[k];
+                
+                // [수정] 모든 서포터의 보너스 합산
+                supportStates.forEach(s => {
+                    const sBonuses = getSupportBonuses(s.id, s.state, charData, dynCtx);
+                    for (const k in sBonuses) if (subStats.hasOwnProperty(k)) subStats[k] += sBonuses[k];
+                });
+
                 charData.skills.forEach((s, idx) => {
                     if (!charData.defaultBuffSkills?.includes(s.id) || idx === 1) return;
                     if (s.hasCounter || s.hasToggle || s.customLink) return;
@@ -118,13 +132,13 @@ export function runSimulationCore(context) {
                 const finalD = isM ? dUnit * targetCount : dUnit;
                 currentTDmg += finalD;
                 if (finalD > 0) {
-                    dynCtx.damageOccurred = true; // 데미지 발생 플래그 세팅
+                    dynCtx.damageOccurred = true; 
                     const label = event.customTag || (sIdx !== -1 ? ((idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
                     logs.push(formatMainLog(t, dmgType === '보통공격' ? '보통공격' : label, event.name || s?.name || "추가타", finalD));
 
-                    // [추가] 피격/반격 단계라면 첫 타격 즉시 서포터 1회성 효과 해제
                     if (dynCtx.isReactionStep) {
-                        processSupportStepEnd(dynCtx, supportId, supportState, "onEnemyHit");
+                        // [수정] 서포터 단계 종료 처리 (순회)
+                        supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, "onEnemyHit"));
                         dynCtx.damageOccurred = false; 
                     }
                 }
@@ -183,7 +197,7 @@ export function runSimulationCore(context) {
             };
 
             flow.forEach(step => {
-                dynCtx.isReactionStep = (step === 'onEnemyHit'); // 피격 단계 여부 설정
+                dynCtx.isReactionStep = (step === 'onEnemyHit'); 
                 if (step === 'onTurn') {
                     if (context.customValues.enemy_hp_auto) turnInfoLogs.push({ enemyHp: context.customValues.enemy_hp_percent }); else turnInfoLogs.push({});
                     for (const key in simState) if (key.endsWith('_timer')) {
@@ -213,7 +227,7 @@ export function runSimulationCore(context) {
                             const hitDmg = calculateDamage(targetType, st.atk, st.subStats, fC, isUlt && stats.stamp, charData.info.속성, enemyAttrIdx) * tc;
                             const hitCoef = ((isUlt && stats.stamp && e.val.stampMax) ? e.val.stampMax : e.val.max) * tc;
                             if (hitDmg > 0) {
-                                dynCtx.damageOccurred = true; // [수정] 메인 공격 적중 시에도 데미지 발생 플래그 설정
+                                dynCtx.damageOccurred = true; 
                                 const mainTag = isUlt ? '필살기' : '보통공격';
                                 logs.push(formatMainLog(t, mainTag, skill.name, hitDmg));
                                 
@@ -227,8 +241,8 @@ export function runSimulationCore(context) {
                         });
                         currentTDmg = turnDmgTotal;
                         
-                        // [추가] 서포터 지원 공격 (예: 오렘 배리어 추가타) 실행
-                        processSupportAttack(dynCtx, supportId, supportState);
+                        // [수정] 서포터 지원 공격 처리 (순회)
+                        supportStates.forEach(s => processSupportAttack(dynCtx, s.id, s.state));
 
                         handleHook('onAttack');
                     }
@@ -248,49 +262,50 @@ export function runSimulationCore(context) {
                         for (let h = 0; h < (tr ? targetCount : 1); h++) {
                             dynCtx.debugLogs.push(`ICON:icon/simul.png|${msg}`);
                             autoExecuteParams("being_hit");
-                            // 즉시 한 발씩 처리
                             while (dynCtx.extraHits.length > 0) {
                                 calculateAndLogHit(dynCtx.extraHits.shift());
-                                processSupportStepEnd(dynCtx, supportId, supportState, "being_hit_sub");
+                                // [수정] 서포터 단계 종료 (순회)
+                                supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, "being_hit_sub"));
                                 dynCtx.damageOccurred = false; 
                             }
                         }
                     }
-                    processSupportEnemyHit(dynCtx, supportId, supportState);
+                    // [수정] 서포터 피격 반응 (순회)
+                    supportStates.forEach(s => processSupportEnemyHit(dynCtx, s.id, s.state));
                     handleHook('onEnemyHit');
                     
-                    // handleHook 등으로 생성된 오렘 반사 등 처리
                     while (dynCtx.extraHits.length > 0) {
                         calculateAndLogHit(dynCtx.extraHits.shift());
-                        processSupportStepEnd(dynCtx, supportId, supportState, "onEnemyHit");
+                        // [수정] 서포터 단계 종료 (순회)
+                        supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, "onEnemyHit"));
                         dynCtx.damageOccurred = false; 
                     }
                     
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 } else if (step === 'onAfterAction') {
-                    processSupportAfterAction(dynCtx, supportId, supportState);
+                    // [수정] 서포터 행동 종료 후 처리 (순회)
+                    supportStates.forEach(s => processSupportAfterAction(dynCtx, s.id, s.state));
                     handleHook('onAfterAction'); autoExecuteParams(step);
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 }
 
-                // [공통] 각 단계(Step)가 끝날 때마다 쌓인 추가타(extraHits)를 즉시 처리 (멍 협공, 오렘 반사 등)
                 if (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
                     dynCtx.extraHits.forEach(e => { 
                         calculateAndLogHit(e); 
-                        // [추가] 피격/반격 시에는 매 타격마다 즉시 1회성 효과 해제 체크
                         if (step === 'onEnemyHit') {
-                            processSupportStepEnd(dynCtx, supportId, supportState, "being_hit_sub");
+                            // [수정] 서포터 단계 종료 (순회)
+                            supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, "being_hit_sub"));
                             dynCtx.damageOccurred = false; 
                         }
                     });
                     dynCtx.extraHits = [];
                 }
 
-                // [추가] 서포터 단계 종료 처리 (수면 해제 등 1회성 효과 관리)
-                processSupportStepEnd(dynCtx, supportId, supportState, step);
-                dynCtx.damageOccurred = false; // 단계 종료 후 플래그 초기화
+                // [수정] 서포터 단계 종료 처리 (순회)
+                supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, step));
+                dynCtx.damageOccurred = false; 
             });
             total += currentTDmg; perTurnDmg.push({ dmg: currentTDmg, cumulative: total });
             if (isUlt) cd.ult = ultCD - 1; else if (cd.ult > 0) cd.ult--;

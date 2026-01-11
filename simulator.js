@@ -25,11 +25,33 @@ function updateActionEditor(charId) {
         { id: 'ult', label: '필살', activeStyle: 'background:#ffebee; color:#c62828; border-color:#ef9a9a;' }
     ];
 
-    // [추가] 행동 수정 버튼 스타일 업데이트 함수
+    // [추가] 행동 수정 버튼 스타일 업데이트 함수 (기본 패턴 비교 로직 추가)
     const updateEditBtnStyle = () => {
         const editBtn = document.getElementById('sim-edit-actions-btn');
         if (!editBtn) return;
-        const hasPattern = !!localStorage.getItem(`sim_pattern_${charId}`);
+        
+        let hasPattern = false;
+        const savedPatternJson = localStorage.getItem(`sim_pattern_${charId}`);
+        
+        if (savedPatternJson) {
+            const savedPattern = JSON.parse(savedPatternJson);
+            // 기본 패턴 생성 (쿨타임 고려)
+            const defaultPattern = Array.from({ length: turns }, (_, k) => (k > 0 && k % CD === 0) ? 'ult' : 'normal');
+            
+            // 길이 비교 및 내용 비교
+            if (savedPattern.length !== defaultPattern.length) {
+                hasPattern = true;
+            } else {
+                const isDifferent = savedPattern.some((val, idx) => val !== defaultPattern[idx]);
+                if (isDifferent) {
+                    hasPattern = true;
+                } else {
+                    // 완전히 동일하면 스토리지에서 제거하여 '커스텀 아님' 상태로 복구
+                    localStorage.removeItem(`sim_pattern_${charId}`);
+                }
+            }
+        }
+
         editBtn.style.background = hasPattern ? '#f9f5ff' : '#f0f0f0';
         editBtn.style.borderColor = hasPattern ? '#6f42c1' : '#ccc';
         editBtn.style.color = hasPattern ? '#6f42c1' : '#666';
@@ -84,8 +106,12 @@ function updateActionEditor(charId) {
                 const isActive = sBtn === btn;
                 sBtn.style.cssText = `flex:1; font-size:0.75em; padding:6px 0; border-radius:6px; border:1px solid; font-weight:bold; cursor:pointer; transition:all 0.1s; ${isActive ? act.activeStyle : 'background:#f5f5f5; color:#bbb; border-color:#ddd;'}`;
             });
+
+            if (typeof updateEditBtnStyle === 'function') updateEditBtnStyle();
         };
     });
+
+    if (typeof updateEditBtnStyle === 'function') updateEditBtnStyle();
 }
 
 /**
@@ -482,71 +508,112 @@ function renderSimulatorUI(charId) {
     const brVal = parseInt(stats.s1||0), brText = (brVal < 5) ? `0성 ${brVal}단계` : (brVal < 15) ? `1성 ${brVal-5}단계` : (brVal < 30) ? `2성 ${brVal-15}단계` : (brVal < 50) ? `3성 ${brVal-30}단계` : (brVal < 75) ? `4성 ${brVal-50}단계` : "5성";
     const hasMulti = data.skills.some(s => s.isMultiTarget || (s.damageDeal && s.damageDeal.some(d => d.isMultiTarget || d.stampIsMultiTarget)));
     const savedTurns = localStorage.getItem('sim_last_turns') || "10", savedIters = localStorage.getItem('sim_last_iters') || "100";
-    // [수정] 캐릭터별 서포터 설정 저장/로드
-    const supportStorageKey = `sim_last_support_${charId}`;
-    const savedSupport = localStorage.getItem(supportStorageKey) || "none";
+    // [수정] 서포터 1, 2 설정 로드
+    const supportKey1 = `sim_last_support_1_${charId}`;
+    const supportKey2 = `sim_last_support_2_${charId}`;
+    const savedSupport1 = localStorage.getItem(supportKey1) || "none";
+    const savedSupport2 = localStorage.getItem(supportKey2) || "none";
 
     container.innerHTML = getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, savedTurns, savedIters);
 
-    // [수정] 서포터 선택 UI 로직
-    const supportToggleBtn = document.getElementById('sim-support-toggle-btn');
-    const supportPanel = document.getElementById('sim-support-selector-panel');
-    const selectedIcon = document.getElementById('sim-selected-support-icon');
-    const selectedName = document.getElementById('sim-selected-support-name');
+    // [수정] 2개 서포터 슬롯 UI 로직
+    const btn1 = document.getElementById('sim-support-1-toggle-btn');
+    const btn2 = document.getElementById('sim-support-2-toggle-btn');
+    const panel = document.getElementById('sim-support-selector-panel');
+    const selectorTitle = document.getElementById('sim-support-selector-title');
+    
+    // 현재 선택 중인 슬롯 번호 (1 또는 2, 없으면 0)
+    let activeSlot = 0;
 
-    // 초기 상태 설정 함수
-    const updateSupportDisplay = (id) => {
-        const supportInfo = constants.supportList.find(s => s.id === id) || { name: '선택 안 함', id: 'none' };
-        selectedName.textContent = supportInfo.name;
+    const updateSlotDisplay = (slotNum, id) => {
+        const iconEl = document.getElementById(`sim-selected-support-${slotNum}-icon`);
+        const nameEl = document.getElementById(`sim-selected-support-${slotNum}-name`);
+        const info = constants.supportList.find(s => s.id === id) || { name: '선택 안 함', id: 'none' };
+        
+        nameEl.textContent = info.name;
         if (id === 'none') {
-            selectedIcon.innerHTML = '<span style="font-size:0.8em; color:#888;">-</span>';
-            selectedIcon.style.border = '1px solid #bbb';
-            selectedIcon.style.cursor = 'default';
-            selectedIcon.onclick = null;
+            iconEl.innerHTML = `<span style="font-size:0.8em; color:#888;">${slotNum}</span>`;
+            iconEl.style.border = '1px solid #bbb';
+            iconEl.style.cursor = 'default';
+            iconEl.onclick = null;
         } else {
-            selectedIcon.innerHTML = `<img src="images/${id}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">`;
-            selectedIcon.style.border = '2px solid #6f42c1';
-            selectedIcon.style.cursor = 'pointer';
-            selectedIcon.title = `${supportInfo.name} 분석 화면으로 이동`;
-            // 아이콘 클릭 시 해당 캐릭터의 시뮬레이터 설정으로 전환
-            selectedIcon.onclick = (e) => {
-                e.stopPropagation(); // 토글 버튼 이벤트 전파 방지
+            iconEl.innerHTML = `<img src="images/${id}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">`;
+            iconEl.style.border = '2px solid #6f42c1';
+            iconEl.style.cursor = 'pointer';
+            iconEl.onclick = (e) => {
+                e.stopPropagation();
                 window.scrollTo(0, 0);
                 localStorage.setItem('sim_last_char_id', id);
-                renderSimulatorUI(id); // 해당 캐릭터의 시뮬레이터 UI로 즉시 전환
+                renderSimulatorUI(id);
             };
         }
-        
-        // 패널 내 선택 표시 업데이트
-        container.querySelectorAll('.sim-support-option').forEach(opt => {
-            const isSelected = opt.dataset.id === id;
-            opt.querySelector('div, img').style.borderColor = isSelected ? '#6f42c1' : '#ddd';
-            opt.querySelector('div, img').style.boxShadow = isSelected ? '0 0 5px rgba(111, 66, 193, 0.5)' : 'none';
-        });
     };
 
-    if (supportToggleBtn && supportPanel) {
-        // 초기화
-        updateSupportDisplay(savedSupport);
+    const openPanel = (slotNum) => {
+        if (activeSlot === slotNum) {
+            // 이미 열려있으면 닫기
+            panel.style.display = 'none';
+            activeSlot = 0;
+            btn1.style.background = '#f9f9f9'; btn1.style.borderColor = '#ccc';
+            btn2.style.background = '#f9f9f9'; btn2.style.borderColor = '#ccc';
+        } else {
+            // 열기
+            activeSlot = slotNum;
+            panel.style.display = 'block';
+            selectorTitle.textContent = `${slotNum}순위 서포터 선택`;
+            
+            // 버튼 스타일 활성화
+            if (slotNum === 1) {
+                btn1.style.background = '#f3e5f5'; btn1.style.borderColor = '#6f42c1';
+                btn2.style.background = '#f9f9f9'; btn2.style.borderColor = '#ccc';
+            } else {
+                btn1.style.background = '#f9f9f9'; btn1.style.borderColor = '#ccc';
+                btn2.style.background = '#f3e5f5'; btn2.style.borderColor = '#6f42c1';
+            }
+            
+            // 현재 선택된 옵션 강조
+            const currentId = (slotNum === 1) ? localStorage.getItem(supportKey1) : localStorage.getItem(supportKey2);
+            container.querySelectorAll('.sim-support-option').forEach(opt => {
+                const isSel = opt.dataset.id === (currentId || 'none');
+                opt.querySelector('div, img').style.borderColor = isSel ? '#6f42c1' : '#ddd';
+                opt.querySelector('div, img').style.boxShadow = isSel ? '0 0 5px rgba(111, 66, 193, 0.5)' : 'none';
+                
+                // [중요] 이미 다른 슬롯에 선택된 서포터는 중복 선택 불가 처리 (흐리게)
+                const otherId = (slotNum === 1) ? localStorage.getItem(supportKey2) : localStorage.getItem(supportKey1);
+                if (opt.dataset.id !== 'none' && opt.dataset.id === otherId) {
+                    opt.style.opacity = '0.3';
+                    opt.style.pointerEvents = 'none';
+                } else {
+                    opt.style.opacity = '1';
+                    opt.style.pointerEvents = 'auto';
+                }
+            });
+        }
+    };
 
-        // 토글 버튼 클릭
-        supportToggleBtn.onclick = () => {
-            const isHidden = supportPanel.style.display === 'none';
-            supportPanel.style.display = isHidden ? 'block' : 'none';
-            supportToggleBtn.querySelector('span:last-child').textContent = isHidden ? '▲' : '▼';
-        };
+    if (btn1 && btn2 && panel) {
+        updateSlotDisplay(1, savedSupport1);
+        updateSlotDisplay(2, savedSupport2);
 
-        // 옵션 클릭
+        btn1.onclick = () => openPanel(1);
+        btn2.onclick = () => openPanel(2);
+
         container.querySelectorAll('.sim-support-option').forEach(opt => {
             opt.onclick = () => {
+                if (activeSlot === 0) return;
                 const newId = opt.dataset.id;
-                // [수정] 캐릭터별 키에 저장
-                localStorage.setItem(supportStorageKey, newId);
-                updateSupportDisplay(newId);
-                supportPanel.style.display = 'none'; // 선택 후 닫기
-                supportToggleBtn.querySelector('span:last-child').textContent = '▼';
+                const key = (activeSlot === 1) ? supportKey1 : supportKey2;
+                localStorage.setItem(key, newId);
                 
-                // [추가] 서포터가 바뀌면 전용 컨트롤 갱신을 위해 UI 전체 다시 그리기
+                updateSlotDisplay(activeSlot, newId);
+                panel.style.display = 'none';
+                
+                // 스타일 초기화
+                activeSlot = 0;
+                btn1.style.background = '#f9f9f9'; btn1.style.borderColor = '#ccc';
+                btn2.style.background = '#f9f9f9'; btn2.style.borderColor = '#ccc';
+                
+                // UI 갱신 (서포터 컨트롤 등)
                 renderSimulatorUI(charId);
             };
         });
@@ -560,7 +627,7 @@ function renderSimulatorUI(charId) {
     
     const infoIcon = document.getElementById('sim-info-icon');
     if (infoIcon) { 
-        const tooltipText = sData.tooltipDesc || `<div style="text-align: left;">・서포터는 시뮬탭 내부에 지정한 본인의 행동과 설정을 그대로 따라하며 메인 캐릭터가 가진 아군 행동에 영향받는 스킬에는 영향을 주지 않습니다.<br><br> ・아군 행동에 영향 받는 스킬은 방어를 사용하지않고 3턴 쿨타임의 필살기를 가진 아군이라 가정합니다.</div>`;
+        const tooltipText = sData.tooltipDesc || `<div style="text-align: left;">・서포터는 시뮬탭 내부에 지정한 본인의 행동과 설정을 그대로 따라하며 메인 캐릭터가 가진 아군 행동에 영향받는 스킬에는 영향을 주지 않습니다.<br><br> ・아군과 적군은 매턴 보통공격을 사용하며 방어를 사용하지않고 3턴 쿨타임의 필살기를 가졌다고 가정합니다.</div>`;
         infoIcon.onclick = (e) => { 
             e.stopPropagation(); 
             import(`./ui.js?v=${Date.now()}`).then(ui => { 
@@ -580,9 +647,12 @@ function renderSimulatorUI(charId) {
         };
     }
 
-    const supportId = localStorage.getItem(supportStorageKey) || 'none';
-    const sSupportData = simCharData[supportId] || {};
+    const supportId1 = localStorage.getItem(supportKey1) || 'none';
+    const supportId2 = localStorage.getItem(supportKey2) || 'none';
+    const sSupportData1 = simCharData[supportId1] || {};
+    const sSupportData2 = simCharData[supportId2] || {};
     
+    // [수정] 서포터 컨트롤 자동 생성 로직 제거 (사용자가 직접 가서 설정하게 함)
     const combinedControls = [
         ...(sData.customControls || []),
         ...getCharacterCommonControls(sData.commonControls)
@@ -595,7 +665,7 @@ function renderSimulatorUI(charId) {
             const storageKey = `sim_ctrl_${charId}_${ctrl.id}`;
             const savedVal = localStorage.getItem(storageKey);
             const isSpecialToggle = ['self_extra_dmg_active', 'self_buff_mode', 'self_sleep_active'].includes(ctrl.id);
-            const bgColor = isSpecialToggle ? '#f9f5ff' : '#f8f9fa'; // 더 연한 보라색
+            const bgColor = isSpecialToggle ? '#f9f5ff' : '#f8f9fa';
             const borderColor = isSpecialToggle ? '#e9e0f9' : '#eee';
 
             const item = document.createElement('div'); item.style.cssText = `display:flex; flex-direction:column; align-items:center; justify-content:center; background:${bgColor}; padding:8px 5px; border-radius:8px; border:1px solid ${borderColor}; flex: 0 0 calc(33.33% - 10px); min-width:80px; box-sizing:border-box;`;
@@ -736,7 +806,20 @@ function renderSimulatorUI(charId) {
         localStorage.setItem(`sim_last_target_${charId}`,c); 
     };
     document.getElementById('sim-edit-actions-btn').onclick = () => { const ed = document.getElementById('sim-action-editor'); ed.style.display = ed.style.display==='block' ? 'none' : 'block'; if(ed.style.display==='block') updateActionEditor(charId); };
-    document.getElementById('sim-reset-pattern-btn').onclick = () => { if (confirm('패턴을 초기화하시겠습니까?')) { localStorage.removeItem(`sim_pattern_${charId}`); updateActionEditor(charId); } };
+    document.getElementById('sim-reset-pattern-btn').onclick = () => { 
+        if (confirm('패턴을 초기화하시겠습니까?')) { 
+            localStorage.removeItem(`sim_pattern_${charId}`); 
+            updateActionEditor(charId); 
+            // [추가] 초기화 시 버튼 스타일도 즉시 복구
+            const editBtn = document.getElementById('sim-edit-actions-btn');
+            if (editBtn) {
+                editBtn.style.background = '#f0f0f0';
+                editBtn.style.borderColor = '#ccc';
+                editBtn.style.color = '#666';
+                editBtn.style.fontWeight = 'normal';
+            }
+        } 
+    };
     document.getElementById('run-simulation-btn').onclick = () => runSimulation(charId);
 
     // [추가] 분포도 / 딜 그래프 전환 버튼 이벤트 연결
@@ -802,32 +885,50 @@ function runSimulation(charId) {
         const targetCount = parseInt(document.getElementById('sim-target-btn')?.innerText || "1");
         const enemyAttrIdx = parseInt(localStorage.getItem(`sim_last_enemy_attr_${charId}`) || String(data.info?.속성 ?? 0));
         
-        // 커스텀 컨트롤 + 공통 컨트롤 통합값 수집
         const combinedControls = [
             ...(sData.customControls || []),
             ...getCharacterCommonControls(sData.commonControls)
         ];
         
         const customValues = {}; 
+        // 1. 메인 캐릭터 값 수집
         combinedControls.forEach(c => { 
             const v = localStorage.getItem(`sim_ctrl_${charId}_${c.id}`); 
-            
-            if (c.type === 'toggle') {
-                customValues[c.id] = (v !== null) ? (v === 'true') : (c.initial === true);
-            } else {
-                customValues[c.id] = (v !== null) ? parseInt(v) : (c.initial || 0);
-            }
-
+            if (c.type === 'toggle') customValues[c.id] = (v !== null) ? (v === 'true') : (c.initial === true);
+            else customValues[c.id] = (v !== null) ? parseInt(v) : (c.initial || 0);
             if (c.hasAuto && c.autoId) {
                 const av = localStorage.getItem(`sim_ctrl_${charId}_${c.autoId}`);
                 customValues[c.autoId] = (av === 'true');
             }
         });
 
-        // [수정] 서포터 ID 추가 (캐릭터별 저장된 값 사용)
-        const supportId = localStorage.getItem(`sim_last_support_${charId}`) || 'none';
+        // 2. 서포터 1, 2 값 수집 (각 서포터의 원본 저장소에서 가져옴)
+        const supportId1 = localStorage.getItem(`sim_last_support_1_${charId}`) || 'none';
+        const supportId2 = localStorage.getItem(`sim_last_support_2_${charId}`) || 'none';
+        
+        const fetchSupportValues = (sid, slotNum) => {
+            if (sid === 'none') return;
+            const sd = simCharData[sid]; if (!sd) return;
+            const ctrlList = [...(sd.customControls || []), ...getCharacterCommonControls(sd.commonControls)];
+            ctrlList.forEach(c => {
+                const v = localStorage.getItem(`sim_ctrl_${sid}_${c.id}`);
+                const finalKey = `s${slotNum}_${c.id}`; // 엔진에서 구분하기 위해 s1_, s2_ 접두사 사용
+                if (c.type === 'toggle') customValues[finalKey] = (v !== null) ? (v === 'true') : (c.initial === true);
+                else customValues[finalKey] = (v !== null) ? parseInt(v) : (c.initial || 0);
+                if (c.hasAuto && c.autoId) {
+                    const av = localStorage.getItem(`sim_ctrl_${sid}_${c.autoId}`);
+                    customValues[`s${slotNum}_${c.autoId}`] = (av === 'true');
+                }
+            });
+        };
 
-        const result = runSimulationCore({ charId, charData: data, sData, stats, turns, iterations, targetCount, manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [], enemyAttrIdx, customValues, defaultGrowthRate: constants.defaultGrowth, supportId });
+        fetchSupportValues(supportId1, 1);
+        fetchSupportValues(supportId2, 2);
+
+        // [수정] 서포터 ID 배열 전달
+        const supportIds = [supportId1, supportId2];
+
+        const result = runSimulationCore({ charId, charData: data, sData, stats, turns, iterations, targetCount, manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [], enemyAttrIdx, customValues, defaultGrowthRate: constants.defaultGrowth, supportIds });
         
         localStorage.setItem(`sim_last_result_${charId}`, JSON.stringify(result));
         

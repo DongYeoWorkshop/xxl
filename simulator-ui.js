@@ -69,17 +69,34 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                             <div id="sim-info-icon" style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #999; color: #999; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; font-weight: bold;">i</div>
                         </div>
                         
-                        <!-- 선택된 서포터 표시 및 토글 버튼 -->
-                        <div id="sim-support-toggle-btn" style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #ccc; border-radius:8px; background:#f9f9f9; cursor:pointer; transition:all 0.2s;">
-                            <div id="sim-selected-support-icon" style="width:32px; height:32px; border-radius:6px; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb;">
-                                <span style="font-size:0.8em; color:#888;">-</span>
+                        <!-- 2개의 서포터 슬롯 -->
+                        <div style="display:flex; gap:10px;">
+                            <!-- 서포터 1 슬롯 -->
+                            <div id="sim-support-1-toggle-btn" style="flex:1; display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid #ccc; border-radius:8px; background:#f9f9f9; cursor:pointer; transition:all 0.2s;">
+                                <div id="sim-selected-support-1-icon" style="width:32px; height:32px; border-radius:6px; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb; flex-shrink:0;">
+                                    <span style="font-size:0.8em; color:#888;">1</span>
+                                </div>
+                                <div style="display:flex; flex-direction:column; overflow:hidden;">
+                                    <span style="font-size:0.65em; color:#888;">1순위</span>
+                                    <span id="sim-selected-support-1-name" style="font-weight:bold; color:#333; font-size:0.8em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">선택 안 함</span>
+                                </div>
                             </div>
-                            <span id="sim-selected-support-name" style="font-weight:bold; color:#333; font-size:0.85em;">선택 안 함</span>
-                            <span style="margin-left:auto; color:#888;">▼</span>
+
+                            <!-- 서포터 2 슬롯 -->
+                            <div id="sim-support-2-toggle-btn" style="flex:1; display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid #ccc; border-radius:8px; background:#f9f9f9; cursor:pointer; transition:all 0.2s;">
+                                <div id="sim-selected-support-2-icon" style="width:32px; height:32px; border-radius:6px; background:#ddd; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #bbb; flex-shrink:0;">
+                                    <span style="font-size:0.8em; color:#888;">2</span>
+                                </div>
+                                <div style="display:flex; flex-direction:column; overflow:hidden;">
+                                    <span style="font-size:0.65em; color:#888;">2순위</span>
+                                    <span id="sim-selected-support-2-name" style="font-weight:bold; color:#333; font-size:0.8em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">선택 안 함</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- 서포터 선택 패널 (초기 숨김) -->
+                        <!-- 서포터 선택 패널 (공용) -->
                         <div id="sim-support-selector-panel" style="display:none; margin-top:10px; padding:10px; border:1px solid #eee; border-radius:8px; background:#fff;">
+                            <div style="font-size:0.75em; color:#6f42c1; margin-bottom:8px; font-weight:bold;" id="sim-support-selector-title">서포터 선택</div>
                             <div class="sim-support-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap:10px;">
                                 <!-- 선택 안 함 옵션 -->
                                 <div class="sim-support-option" data-id="none" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;">
