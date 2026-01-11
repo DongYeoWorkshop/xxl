@@ -25,6 +25,17 @@ function updateActionEditor(charId) {
         { id: 'ult', label: '필살', activeStyle: 'background:#ffebee; color:#c62828; border-color:#ef9a9a;' }
     ];
 
+    // [추가] 행동 수정 버튼 스타일 업데이트 함수
+    const updateEditBtnStyle = () => {
+        const editBtn = document.getElementById('sim-edit-actions-btn');
+        if (!editBtn) return;
+        const hasPattern = !!localStorage.getItem(`sim_pattern_${charId}`);
+        editBtn.style.background = hasPattern ? '#f9f5ff' : '#f0f0f0';
+        editBtn.style.borderColor = hasPattern ? '#6f42c1' : '#ccc';
+        editBtn.style.color = hasPattern ? '#6f42c1' : '#666';
+        editBtn.style.fontWeight = hasPattern ? 'bold' : 'normal';
+    };
+
     for (let t = 1; t <= turns; t++) {
         const currentAction = pattern[t-1] || (t > 1 && (t - 1) % CD === 0 ? 'ult' : 'normal');
         const row = document.createElement('div'); 

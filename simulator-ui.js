@@ -106,7 +106,13 @@ export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, sa
                                 <input type="range" id="sim-turns" min="1" max="30" value="${savedTurns}" step="1" list="sim-turns-ticks" style="width:100%; cursor:pointer; accent-color: #6f42c1;">
                                 <datalist id="sim-turns-ticks"><option value="1"></option><option value="5"></option><option value="10"></option><option value="15"></option><option value="20"></option><option value="25"></option><option value="30"></option></datalist>
                             </div>
-                            <button id="sim-edit-actions-btn" class="sim-edit-btn" style="background:#f0f0f0; border:1px solid #ccc; border-radius:4px; font-size:0.75em; padding:4px 10px; cursor:pointer; white-space: nowrap;">⚙️ 행동 수정</button>
+                            ${(() => {
+                                const hasPattern = !!localStorage.getItem(`sim_pattern_${charId}`);
+                                const btnBg = hasPattern ? '#f9f5ff' : '#f0f0f0';
+                                const btnBorder = hasPattern ? '#6f42c1' : '#ccc';
+                                const btnColor = hasPattern ? '#6f42c1' : '#666';
+                                return `<button id="sim-edit-actions-btn" class="sim-edit-btn" style="background:${btnBg}; border:1px solid ${btnBorder}; color:${btnColor}; border-radius:4px; font-size:0.75em; padding:4px 10px; cursor:pointer; white-space: nowrap; font-weight: ${hasPattern ? 'bold' : 'normal'};">⚙️ 행동 수정</button>`;
+                            })()}
                         </div>
                     </div>
 
