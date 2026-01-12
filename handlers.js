@@ -497,8 +497,25 @@ function adjustSlider(slider, delta, max) { let val = parseInt(slider.value) + d
 export function setupSortListeners() {
     const imageRow = document.querySelector('.image-row');
     const applyFilter = (type, value = null) => {
-        imageRow.querySelectorAll('.main-image').forEach(img => { const charId = img.dataset.id; if (charId === 'hero' || charId === 'simulator') { img.style.display = 'block'; return; }
-            if (type === 'all') img.style.display = 'block'; else if (type === 'fav') img.style.display = state.savedStats[charId]?.isFavorite ? 'block' : 'none'; else if (type === 'attr') img.style.display = (charData[charId]?.info?.속성 === value) ? 'block' : 'none'; });
+        imageRow.querySelectorAll('.main-image').forEach(img => { 
+            const charId = img.dataset.id;
+            
+            // 래퍼가 있으면 래퍼를 제어, 없으면 이미지 자체를 제어
+            const hasWrapper = img.parentElement.classList.contains('char-slot-wrapper');
+            const target = hasWrapper ? img.parentElement : img;
+            
+            if (charId === 'hero' || charId === 'simulator') { 
+                target.style.display = hasWrapper ? 'flex' : 'block'; 
+                return; 
+            }
+            
+            let isVisible = false;
+            if (type === 'all') isVisible = true; 
+            else if (type === 'fav') isVisible = state.savedStats[charId]?.isFavorite; 
+            else if (type === 'attr') isVisible = (charData[charId]?.info?.속성 === value);
+            
+            target.style.display = isVisible ? (hasWrapper ? 'flex' : 'block') : 'none';
+        });
     };
     document.querySelector('.sort-icon-all')?.addEventListener('click', () => applyFilter('all')); document.querySelector('.sort-icon-fav')?.addEventListener('click', () => applyFilter('fav'));
     document.querySelectorAll('.sort-icon').forEach(icon => { icon.onclick = () => applyFilter('attr', parseInt(icon.dataset.attr)); });

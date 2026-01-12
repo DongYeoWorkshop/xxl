@@ -111,6 +111,45 @@
 .main-image.modified { border: 2px solid var(--accent-color); }
 .main-image.selected.modified { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(255, 165, 0, 0.8); }
 
+/* Character Info Overlay Wrapper */
+.char-slot-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 80px; /* 이미지 너비 고정 */
+  height: 200px; /* 이미지 높이 고정 */
+  overflow: hidden; /* 래퍼를 벗어나는 요소 숨김 (선택사항) */
+  border-radius: 0; /* 필요시 이미지와 동일하게 */
+}
+
+.char-info-overlay {
+  position: absolute;
+  bottom: 0; /* 바닥에 딱 붙임 */
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.75); /* 배경 조금 더 진하게 */
+  color: #fff;
+  font-size: 0.75em; /* 폰트 약간 키움 */
+  font-weight: bold;
+  text-align: center;
+  padding: 4px 0; /* 패딩 조정 */
+  line-height: 1.1;
+  pointer-events: none;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.overlay-row {
+  display: block;
+}
+
 /* Special Navigation Column (Hero + Simulator) */
 .nav-column-special {
   display: flex;

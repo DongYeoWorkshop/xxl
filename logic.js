@@ -58,12 +58,66 @@ export function saveCurrentStats() {
 }
 
 export function updateCharacterListIndicators() {
-    document.querySelectorAll('.main-image').forEach(img => {
+    // [수정] 헤더의 모든 메인 이미지 순회 (동적으로 래퍼 생성 및 정보 오버레이 추가)
+    document.querySelectorAll('.header-left .main-image').forEach(img => {
         const id = img.dataset.id;
+        // 특수 아이콘('hero', 'simulator', 'nav-hero-btn' 등) 제외
         if (!id || id === 'hero' || id === 'simulator') return;
-        const saved = state.savedStats[id];
+
+        // 1. 래퍼(Wrapper) 확인 및 생성
+        let wrapper = img.parentElement;
+        
+        // 이미지가 아직 래퍼 안에 없다면 생성 (헤더 영역인 경우에만)
+        if (!wrapper.classList.contains('char-slot-wrapper')) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'char-slot-wrapper';
+            
+            // 기존 위치에 래퍼 삽입 후 이미지를 내부로 이동
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+        }
+
+        // 2. 오버레이(Overlay) 확인 및 생성
+        let overlay = wrapper.querySelector('.char-info-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'char-info-overlay';
+            wrapper.appendChild(overlay);
+        }
+
+        // 3. 저장된 스탯 가져오기 및 텍스트 포맷팅
+        const saved = state.savedStats[id] || {};
+        const lv = saved.lv || 1;
+        
+        const brVal = parseInt(saved.s1 || 0);
+        let brText = (brVal < 5) ? "0성" : 
+                     (brVal < 15) ? "1성" : 
+                     (brVal < 30) ? "2성" : 
+                     (brVal < 50) ? "3성" : 
+                     (brVal < 75) ? "4성" : "5성";
+
+        // 별(★) 기호 사용 시: 
+        // const stars = (brVal < 5) ? 0 : (brVal < 15) ? 1 : (brVal < 30) ? 2 : (brVal < 50) ? 3 : (brVal < 75) ? 4 : 5;
+        // brText = `★${stars}`;
+
+        const fit = parseInt(saved.s2 || 0);
+        const fitImg = fit > 0 ? `heart${fit}.png` : `heart.png`;
+        const fitHtml = `<img src="icon/${fitImg}" style="width: 20px; height: 20px; object-fit: contain; margin-left: 2px; vertical-align: middle;" alt="${fit}">`;
+        
+        // 오버레이 내용 업데이트 (좌우 분리 구조)
+        overlay.innerHTML = `
+            <div class="info-left-col">
+                <span class="overlay-row-item">Lv.${lv}</span>
+                <span class="overlay-row-item">${brText}</span>
+            </div>
+            <div class="info-right-col">
+                ${fitHtml}
+            </div>
+        `;
+
+        // 4. 변경 사항 표시 (테두리 등)
         let isModified = false;
-        if (saved) {
+        if (state.savedStats[id]) {
             const isLvDefault = (parseInt(saved.lv || 1) === 1);
             const isS1Default = (parseInt(saved.s1 || 0) === 0);
             const isS2Default = (parseInt(saved.s2 || 0) === 0);

@@ -161,8 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (isModified) {
-                    const borderWidth = window.innerWidth <= 600 ? '1px' : '2px';
-                    img.style.border = `${borderWidth} solid #ffa500`;
+                    img.style.border = `1px solid #ffa500`;
                 }
 
                 // [추가] 마우스 오버 시 중앙 오버레이 툴팁 표시
