@@ -113,7 +113,7 @@ export function initCloudSharing() {
 
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ id: randomId, data: dataToSave })
+                    body: JSON.stringify({ id: "'" + randomId, data: dataToSave })
                 });
 
                 const json = await response.json();
