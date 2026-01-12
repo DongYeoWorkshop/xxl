@@ -7,21 +7,21 @@ export const statusRegistry = {
     // 1. 각흔 (바드 전용)
     "scar": {
         name: "[각흔]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "status"
     },
     
     // 2. 수면 (탐랑 전용)
     "sleep_status_timer": {
         name: "[수면]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "cc"
     },
 
     // 3. 전의 (다양수이 전용)
     "skill4_spirit": {
         name: "[전의]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "stack",
         unit: "중첩"
     },
@@ -29,14 +29,14 @@ export const statusRegistry = {
     // 4. 조롱 (탱커 공용)
     "taunt": {
         name: "[조롱]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "status"
     },
 
     // 5. 호혈표지 (카라트 전용)
     "blood_mark_timer": {
         name: "[호혈표지]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "stack",
         unit: "중첩"
     },
@@ -44,14 +44,14 @@ export const statusRegistry = {
     // 6. 배리어 (오렘/탱커 전용)
     "shield_timer": {
         name: "[배리어]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "status"
     },
 
     // 7. 용의 분노 (타란디오 전용)
     "fury_stacks": {
         name: "[용의 분노]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "stack",
         unit: "중첩"
     },
@@ -59,7 +59,7 @@ export const statusRegistry = {
     // 8. 용족의 위압 (타란디오 적 디버프)
     "fear_timer": {
         name: "[용족의 위압]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "stack",
         unit: "중첩" 
     },
@@ -67,21 +67,21 @@ export const statusRegistry = {
     // 9. 데미지 감소 (타란디오 적 디버프)
     "dmg_reduce_timer": {
         name: "[데미지 감소]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "status"
     },
 
     // 10. 받는 데미지 증가 (디버프 공용)
     "vuln_timer": {
         name: "[받는 데미지 증가]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "status"
     },
 
     // 11. 열화질보 (골든라이더 전용)
     "blazing_stride_timer": {
         name: "[열화질보]",
-        icon: "icon/compe.PNG",
+        icon: "icon/compe.png",
         type: "stack",
         unit: "중첩"
     },
