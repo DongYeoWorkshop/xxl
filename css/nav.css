@@ -113,9 +113,83 @@
 }
 
 .main-image:active { transform: scale(0.95); }
-.main-image.selected { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(0, 123, 255, 0.6); transform: scale(1.05); }
-.main-image.modified { border: 2px solid var(--accent-color); }
-.main-image.selected.modified { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(255, 165, 0, 0.8); }
+/* transform 제거 (래퍼에서 통합 처리) */
+.main-image.selected { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(0, 123, 255, 0.6); }
+/* .main-image.modified 스타일 제거됨 */
+.main-image.selected.modified { border: 2px solid var(--primary-color); } /* 주황색 박스쉐도우 제거 */
+
+/* Character Info Overlay Wrapper */
+.char-slot-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 80px;
+  height: 200px;
+  /* overflow: hidden; 제거 -> 확대 시 잘림 방지 */
+  z-index: 1; /* 기본 z-index */
+  transition: transform 0.2s; /* 부드러운 확대 효과 */
+}
+
+/* 선택된 이미지가 있는 래퍼 전체를 확대하고 z-index를 높임 */
+.char-slot-wrapper:has(.main-image.selected) {
+  z-index: 10;
+  transform: scale(1.05);
+}
+
+/* 래퍼 내부 이미지 마진 제거 */
+.char-slot-wrapper .main-image {
+    margin: 0 !important;
+}
+
+.char-info-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px; /* 그라데이션을 위해 높이를 살짝 늘림 */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.info-left-col {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: #fff;
+  font-size: 0.75em;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.info-right-col {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* 오버레이 내부 이미지(하트)에도 테두리 효과 적용 (검은색) */
+.char-info-overlay img {
+  filter: drop-shadow(1px 0 0 #000) 
+          drop-shadow(-1px 0 0 #000) 
+          drop-shadow(0 1px 0 #000) 
+          drop-shadow(0 -1px 0 #000);
+}
+
+.overlay-row-item {
+  display: block;
+  white-space: nowrap;
+}
 
 /* Special Navigation Column (Hero + Simulator) */
 .nav-column-special {
