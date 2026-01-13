@@ -66,7 +66,7 @@
   width: 40px; height: 40px; border-radius: 5px; border: 2px solid #000; cursor: pointer; background-color: black; transition: all 0.2s;
 }
 .detail-icon-list-item.selected {
-  border-color: var(--primary-color); box-shadow: 0 0 8px rgba(0, 123, 255, 0.6); transform: scale(1.1);
+  border-color: var(--primary-color); box-shadow: 0 0 8px rgba(255, 166, 2, 0.6); transform: scale(1.1);
 }
 
 /* Skill Grid */
