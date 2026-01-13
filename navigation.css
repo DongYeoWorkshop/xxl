@@ -107,7 +107,7 @@
 }
 
 .main-image:active { transform: scale(0.95); }
-.main-image.selected { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(0, 123, 255, 0.6); transform: scale(1.05); }
+.main-image.selected { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(255, 166, 2, 0.6); transform: scale(1.05); }
 .main-image.modified { border: 2px solid var(--accent-color); }
 .main-image.selected.modified { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(255, 165, 0, 0.8); }
 

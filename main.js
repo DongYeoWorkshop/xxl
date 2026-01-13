@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 img.style.borderRadius = '8px';
                 
                 img.style.border = '1px solid #444';
-                img.style.backgroundColor = 'black';
+                img.style.backgroundColor = '#30363d';
                 
                 // 클릭 이벤트는 래퍼에 연결
                 wrapper.onclick = () => {

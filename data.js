@@ -2084,6 +2084,116 @@ export const charData = {
       }
     ]
   },             
+  "bossren": {
+    title: "임부언",
+    base: { "공격력": 470, "HP": 2652 },
+    info: { "속성": 1, "포지션": "보조" },
+    defaultBuffSkills: ["bossren_skill1","bossren_skill2", "bossren_skill3", "bossren_skill4", "bossren_skill6","bossren_skill7","bossren_stamp_passive"], 
+    skills: [
+      { 
+        id: "bossren_skill1",
+        excludeFromBuffSearch: false,
+        decimalPlaces: 2,
+        name: "노동 부하", 
+        icon: "icon/attack.webp", 
+        hasToggle: true,
+        toggleType: "isAppliedStamped",
+        ratioEffects: { "고정공증": { from: "기초공격력", max: 30 } },
+        buffDesc: "비어녹스의 기초공격력의 {0}%만큼 공격력 가산",
+        desc: "아군 전체에게 비어녹스의 기초공격력의 {0}%만큼 공격력 가산", 
+        calc: [{ max: 30 }]
+      },
+      {
+        id: "bossren_skill2",
+        excludeFromBuffSearch: false,
+        hasStampEffect: true,
+        decimalPlaces: 2,
+        name: "임박 상품 쟁탈전", 
+        hasToggle: true,
+        toggleType: "isAppliedStamped",        
+        icon: "icon/attack(strong).webp", 
+        ratioEffects: { "고정공증": { from: "기초공격력", max: 60 } },
+        buffDesc: "비어녹스의 기초공격력의 {0}%만큼 공격력 가산",
+        desc: "(쿨타임 : 3턴) \n 아군 전체에게 비어녹스의 기초공격력의 {0}%만큼 공격력 가산", 
+        stampDesc: "(쿨타임 : 3턴) \n 아군 전체에게 비어녹스의 기초공격력의 {0}%만큼 공격력을 가산시키며, 33% 확률로 필살기 버프가 2배로 발동", 
+        calc: [{ max: 60}],
+      }, 
+      {
+        id: "bossren_skill3",
+        excludeFromBuffSearch: false,
+        decimalPlaces: 2,
+        buffEffects: { "공증": { max: 15 } },
+        buffDesc: "공격력 {0}% 증가", 
+        name: "전체 공격 강화Ⅳ", 
+        icon: "icon/passive2.webp", 
+        desc: "아군 전체의 공격력 {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "bossren_skill4",
+        excludeFromBuffSearch: false,
+        decimalPlaces: 2,
+        buffEffects: { "뎀증": { max: 15 } }, 
+        buffDesc: "나무속성이 3인 이상일 시 데미지 {0}% 증가", 
+        hasToggle: true,
+        toggleType: "isAppliedStamped",
+        name: "특별 시급 두 배",
+        icon: "icon/passive2.webp",
+        desc: "파티에 나무속성의 아군이 3명 이상일 경우 아군 전체에게 데미지 {0}%증가 부여",
+        calc: [{ max: 15 }]
+      },
+      { id: "bossren_skill5", 
+        excludeFromBuffSearch: false, 
+        decimalPlaces: 2, 
+        buffEffects: { "회복증가": { max: 30 } }, // stampBuffEffects에서 buffEffects로 이동
+        buffDesc: "HP비율이 가장 낮은 아군에게 회복량 {0}% 증가", 
+        hasToggle: true, 
+        toggleType: "isAppliedStamped", 
+        name: "알바 열풍", 
+        icon: "icon/passive5.webp", 
+        desc: "보통공격 시 HP비율이 가장 낮은 아군에게 회복량 {0}% 증가 부여", 
+        calc: [{ max: 30 }] 
+      },
+      {
+        id: "bossren_skill6",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초공증": { max: 15 },  "기초HP증가": { max: 15 } }, 
+        buffDesc: "기초공격력/HP {0}% 증가", 
+        name: "고강도 훈련 성과", 
+        icon: "icon/passive5.webp", 
+        desc: "자신의 기초 공격력, 기초 HP {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "bossren_skill7",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초공증": { max: 2 } }, 
+        buffDesc: "매턴 기초공격력 {0}% 증가 (최대 15중첩)", 
+        hasCounter: true, 
+        counterRange: { min: 0, max: 15 }, 
+        name: "타임 체크", 
+        icon: "icon/passive5.webp", 
+        desc: "매턴 기초공격력 {0}% 증가 (최대 15중첩)", 
+        calc: [{ max: 2 }] 
+      },
+      {
+        id: "bossren_stamp_passive",
+        name: "임박 상품 쟁탈전 ",
+        decimalPlaces: 2,
+        ratioEffects: { "고정공증": { from: "기초공격력", max: 60 } },  
+        hasToggle: true,
+        toggleType: "isAppliedStamped",          
+        buffDesc: "비어녹스의 기초공격력의 {0}%만큼 공격력 가산",         
+        icon: "images/sigilwebp/sigil_bossren.webp",
+        excludeFromBuffSearch: false,
+        isUltExtra: true,
+        syncLevelWith: "bossren_skill2",
+        toggleDependency: "bossren_skill2"
+      }
+    ]
+  },  
   "test_dummy": {
     title: "커스텀 버프 (테스트용)",
     desc: "직접 수치를 입력하여 테스트할 수 있는 캐릭터입니다.",

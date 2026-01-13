@@ -49,6 +49,7 @@ export const constants = {
         { id: 'rutenix', name: '루테닉스' },
         { id: 'duncan', name: '던컨 찰스' },
         { id: 'famido', name: '파미도' },
-        { id: 'rikano', name: '리카노' }
+        { id: 'rikano', name: '리카노' },
+        { id: 'bossren', name: '임부언' }
     ]
 };

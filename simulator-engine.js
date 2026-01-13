@@ -6,6 +6,68 @@ import { simParams } from './sim_params.js';
 import { createSimulationContext, getSkillValue } from './sim_ctx.js';
 import { initSupportState, processSupportTurn, processSupportEnemyHit, processSupportAttack, processSupportAfterAction, processSupportStepEnd, getSupportBonuses } from './sim_support.js';
 import { formatMainLog } from './simulator-logger.js';
+import { getCharacterCommonControls, getDefaultActionPattern } from './simulator-common.js';
+
+/**
+ * [추가] 시뮬레이션 실행 전 모든 설정 데이터를 수집함 (localStorage 기반)
+ */
+export function collectSimulationConfig(charId, charData, simCharData) {
+    const sData = simCharData[charId] || {};
+    const turns = parseInt(localStorage.getItem('sim_last_turns') || "10");
+    const iterations = parseInt(localStorage.getItem('sim_last_iters') || "100");
+    const targetCount = parseInt(localStorage.getItem(`sim_last_target_${charId}`) || "1");
+    const enemyAttrIdx = parseInt(localStorage.getItem(`sim_last_enemy_attr_${charId}`) || String(charData[charId]?.info?.속성 ?? 0));
+    
+    const combinedControls = [
+        ...(sData.customControls || []),
+        ...getCharacterCommonControls(sData.commonControls)
+    ];
+    
+    const customValues = {}; 
+    // 1. 메인 캐릭터 값 수집
+    combinedControls.forEach(c => { 
+        const v = localStorage.getItem(`sim_ctrl_${charId}_${c.id}`); 
+        if (c.type === 'toggle') customValues[c.id] = (v !== null) ? (v === 'true') : (c.initial === true);
+        else customValues[c.id] = (v !== null) ? parseInt(v) : (c.initial || 0);
+        if (c.hasAuto && c.autoId) {
+            const av = localStorage.getItem(`sim_ctrl_${charId}_${c.autoId}`);
+            customValues[c.autoId] = (av === 'true');
+        }
+    });
+
+    // 2. 서포터 1, 2 값 수집
+    const supportId1 = localStorage.getItem(`sim_last_support_1_${charId}`) || 'none';
+    const supportId2 = localStorage.getItem(`sim_last_support_2_${charId}`) || 'none';
+    
+    const fetchSupportValues = (sid, slotNum) => {
+        if (sid === 'none') return;
+        const sd = simCharData[sid]; if (!sd) return;
+        const ctrlList = [...(sd.customControls || []), ...getCharacterCommonControls(sd.commonControls)];
+        ctrlList.forEach(c => {
+            const v = localStorage.getItem(`sim_ctrl_${sid}_${c.id}`);
+            const finalKey = `s${slotNum}_${c.id}`;
+            if (c.type === 'toggle') customValues[finalKey] = (v !== null) ? (v === 'true') : (c.initial === true);
+            else customValues[finalKey] = (v !== null) ? parseInt(v) : (c.initial || 0);
+            if (c.hasAuto && c.autoId) {
+                const av = localStorage.getItem(`sim_ctrl_${sid}_${c.autoId}`);
+                customValues[`s${slotNum}_${c.autoId}`] = (av === 'true');
+            }
+        });
+    };
+
+    fetchSupportValues(supportId1, 1);
+    fetchSupportValues(supportId2, 2);
+
+    return {
+        turns,
+        iterations,
+        targetCount,
+        enemyAttrIdx,
+        customValues,
+        supportIds: [supportId1, supportId2],
+        manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || []
+    };
+}
 
 export function formatBuffState(charId, state, charDataObj, sData, stats) {
     const entries = [];

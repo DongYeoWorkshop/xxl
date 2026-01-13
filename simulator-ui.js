@@ -1,5 +1,87 @@
 // simulator-ui.js
-import { constants } from './state.js';
+import { state, constants } from './state.js';
+import { charData } from './data.js';
+import { getDefaultActionPattern } from './simulator-common.js';
+
+/**
+ * [추가] 서포터의 행동 패턴을 가져옴 (행동 수정 탭 데이터 우선)
+ */
+export function getSupportAction(charId, turn) {
+    try {
+        const savedPattern = JSON.parse(localStorage.getItem(`sim_pattern_${charId}`));
+        if (savedPattern && savedPattern[turn - 1]) return savedPattern[turn - 1];
+    } catch (e) {}
+    return getDefaultActionPattern(charId, turn);
+}
+
+/**
+ * [추가] 행동 패턴 에디터 업데이트 (simulator.js에서 이동)
+ */
+export function updateActionEditor(charId) {
+    const turnsSelect = document.getElementById('sim-turns'), listContainer = document.getElementById('sim-action-list');
+    if (!turnsSelect || !listContainer) return;
+    const turns = parseInt(turnsSelect.value), data = charData[charId];
+    let pattern = []; try { pattern = JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || []; } catch(e) {}
+    listContainer.innerHTML = '';
+    const CD = (() => { const m = data.skills[1].desc?.match(/\(쿨타임\s*:\s*(\d+)턴\)/); return m ? parseInt(m[1]) : 3; })();
+    
+    const actions = [
+        { id: 'normal', label: '보통', activeStyle: 'background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7;' },
+        { id: 'defend', label: '방어', activeStyle: 'background:#e3f2fd; color:#1565c0; border-color:#90caf9;' },
+        { id: 'ult', label: '필살', activeStyle: 'background:#ffebee; color:#c62828; border-color:#ef9a9a;' }
+    ];
+
+    const updateEditBtnStyle = () => {
+        const editBtn = document.getElementById('sim-edit-actions-btn');
+        if (!editBtn) return;
+        let hasPattern = false;
+        const savedPatternJson = localStorage.getItem(`sim_pattern_${charId}`);
+        if (savedPatternJson) {
+            const savedPattern = JSON.parse(savedPatternJson);
+            const defaultPattern = Array.from({ length: turns }, (_, k) => (k > 0 && k % CD === 0) ? 'ult' : 'normal');
+            if (savedPattern.length !== defaultPattern.length) hasPattern = true;
+            else {
+                const isDifferent = savedPattern.some((val, idx) => val !== defaultPattern[idx]);
+                if (isDifferent) hasPattern = true;
+                else localStorage.removeItem(`sim_pattern_${charId}`);
+            }
+        }
+        editBtn.style.background = hasPattern ? '#f9f5ff' : '#f0f0f0';
+        editBtn.style.borderColor = hasPattern ? '#6f42c1' : '#ccc';
+        editBtn.style.color = hasPattern ? '#6f42c1' : '#666';
+        editBtn.style.fontWeight = hasPattern ? 'bold' : 'normal';
+    };
+
+    for (let t = 1; t <= turns; t++) {
+        const currentAction = pattern[t-1] || (t > 1 && (t - 1) % CD === 0 ? 'ult' : 'normal');
+        const row = document.createElement('div'); row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;';
+        let html = `<span style="font-size:0.75em; font-weight:bold; min-width:30px; color:#888;">${t}턴</span><div style="display:flex; flex:1; gap:4px;">`;
+        actions.forEach(act => {
+            const isActive = currentAction === act.id;
+            const style = isActive ? act.activeStyle : 'background:#f5f5f5; color:#bbb; border-color:#ddd;';
+            html += `<button class="sim-action-btn" data-turn="${t-1}" data-value="${act.id}" style="flex:1; font-size:0.75em; padding:6px 0; border-radius:6px; border:1px solid; font-weight:bold; cursor:pointer; transition:all 0.1s; ${style}">${act.label}</button>`;
+        });
+        html += `</div>`; row.innerHTML = html; listContainer.appendChild(row);
+    }
+
+    listContainer.querySelectorAll('.sim-action-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const turnIdx = parseInt(btn.dataset.turn), newValue = btn.dataset.value;
+            let p = JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [];
+            if (p.length === 0) { for(let k=0; k<turns; k++) p[k] = (k > 0 && k % CD === 0) ? 'ult' : 'normal'; }
+            p[turnIdx] = newValue;
+            localStorage.setItem(`sim_pattern_${charId}`, JSON.stringify(p));
+            const siblingBtns = btn.parentElement.querySelectorAll('.sim-action-btn');
+            siblingBtns.forEach(sBtn => {
+                const act = actions.find(a => a.id === sBtn.dataset.value);
+                const isActive = sBtn === btn;
+                sBtn.style.cssText = `flex:1; font-size:0.75em; padding:6px 0; border-radius:6px; border:1px solid; font-weight:bold; cursor:pointer; transition:all 0.1s; ${isActive ? act.activeStyle : 'background:#f5f5f5; color:#bbb; border-color:#ddd;'}`;
+            });
+            updateEditBtnStyle();
+        };
+    });
+    updateEditBtnStyle();
+}
 
 /**
  * 캐릭터 선택 화면 HTML 생성
@@ -347,4 +429,205 @@ export function showDetailedLogModal(resultToSave) {
             });
         };
     }
+}
+
+/**
+ * 시각화 로직: 축 라벨 렌더링
+ */
+export function renderAxisLabels(axisData, yMax, type = 'dist', drawHeight = 220) {
+    const yAxis = document.getElementById('sim-y-axis'), xAxis = document.getElementById('sim-x-axis'), grid = document.getElementById('sim-grid-lines');
+    if (yAxis && yMax) {
+        yAxis.innerHTML = type === 'dist' ? axisData.y.map(val => { const label = val >= 10000 ? (val/1000).toFixed(0)+'K' : val.toLocaleString(); const bp = (val / yMax) * 100; return `<div style="position:absolute;bottom:${bp}%;right:8px;transform:translateY(50%);white-space:nowrap;">${label}</div>`; }).join('') : '';
+        if (grid) grid.innerHTML = axisData.y.map(val => val === 0 ? '' : `<div style="position:absolute;bottom:${(val/yMax)*100}%;width:100%;border-top:1px dashed #e0e0e0;"></div>`).join('');
+    }
+    if (xAxis) {
+        xAxis.innerHTML = axisData.x.map(val => `<div style="position:absolute;left:${val.pos}%;top:0;width:0;overflow:visible;"><div style="width:1px;height:6px;background:#ddd;position:absolute;top:0;left:0;"><div style="position:absolute;bottom:6px;left:0;width:1px;height:${drawHeight}px;border-left:1px dashed #ccc;pointer-events:none;"></div></div><div style="transform:rotate(-60deg);transform-origin:right top;font-size:0.55em;color:#999;white-space:nowrap;margin-top:10px;text-align:right;width:100px;position:absolute;right:0;">${val.label}</div></div>`).join('');
+    }
+}
+
+/**
+ * 시각화 로직: 딜 그래프(SVG) 그리기
+ */
+export function renderDamageLineChart(charId, specificResult = null) {
+    const container = document.getElementById('sim-line-graph');
+    if (!container) return;
+    
+    const fullResult = JSON.parse(localStorage.getItem(`sim_last_result_${charId}`));
+    if (!fullResult) return;
+
+    let globalMaxTrn = 0;
+    let globalMaxCum = 0;
+
+    if (fullResult.results) {
+        ['min', 'avg', 'max'].forEach(type => {
+            const data = fullResult.results[type];
+            const tData = data ? (data.turnData || data.perTurnDmg) : null;
+            if (tData) {
+                const trn = Math.max(...tData.map(d => d.dmg));
+                const cum = Math.max(...tData.map(d => d.cumulative));
+                if (trn > globalMaxTrn) globalMaxTrn = trn;
+                if (cum > globalMaxCum) globalMaxCum = cum;
+            }
+        });
+    }
+
+    let res = specificResult;
+    if (!res) {
+        let activeType = 'avg';
+        const boxes = {
+            min: document.getElementById('sim-min-dmg')?.parentElement,
+            avg: document.getElementById('sim-avg-dmg')?.parentElement,
+            max: document.getElementById('sim-max-dmg')?.parentElement
+        };
+        for (const [key, box] of Object.entries(boxes)) {
+            if (box && (box.style.background === 'rgb(111, 66, 193)' || box.style.opacity === '1')) {
+                activeType = key;
+                break;
+            }
+        }
+        if (fullResult.results && fullResult.results[activeType]) res = fullResult.results[activeType];
+        else res = fullResult.results ? fullResult.results.avg : fullResult;
+    }
+    
+    const turnData = res.turnData || res.perTurnDmg, 
+          maxCum = globalMaxCum || Math.max(...turnData.map(d => d.cumulative)), 
+          maxTrn = globalMaxTrn || Math.max(...turnData.map(d => d.dmg)), 
+          turnCount = turnData.length;
+    
+    let maxDmgIdx = -1, maxDmgVal = -1;
+    turnData.forEach((d, i) => { if (d.dmg > maxDmgVal) { maxDmgVal = d.dmg; maxDmgIdx = i; } });
+
+    const screenWidth = window.innerWidth;
+    const drawWidth = container.clientWidth || 400; 
+    const drawHeight = screenWidth >= 1100 ? 320 : (screenWidth <= 600 ? 150 : 220);
+
+    let html = `<svg width="100%" height="100%" viewBox="0 0 ${drawWidth} ${drawHeight}" preserveAspectRatio="none" style="overflow:visible;"><defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6f42c1" stop-opacity="0.3"/><stop offset="100%" stop-color="#6f42c1" stop-opacity="0"/></linearGradient></defs>`;
+    
+    let areaPath = `M 0,${drawHeight} `; 
+    turnData.forEach((d, i) => { 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * drawWidth : 0; 
+        const y = maxCum > 0 ? drawHeight - (d.cumulative / maxCum) * drawHeight : drawHeight; 
+        areaPath += `L ${x},${y} `; 
+    }); 
+    areaPath += `L ${turnCount > 1 ? drawWidth : 0},${drawHeight} Z`; 
+    html += `<path class="svg-bar-grow" d="${areaPath}" fill="url(#areaGrad)" style="pointer-events:none;" />`;
+    
+    let pts = ""; 
+    turnData.forEach((d, i) => { 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * drawWidth : 0; 
+        const y = maxCum > 0 ? drawHeight - (d.cumulative / maxCum) * drawHeight : drawHeight; 
+        pts += (i === 0 ? "M " : "L ") + `${x},${y} `; 
+    }); 
+    html += `<path class="svg-bar-grow" d="${pts}" fill="none" stroke="#6f42c1" stroke-width="3" stroke-opacity="0.5" style="pointer-events:none;" />`;
+
+    turnData.forEach((d, i) => { 
+        const x = turnCount > 1 ? (i / (turnCount - 1)) * drawWidth : 0; 
+        const h = maxTrn > 0 ? (d.dmg / maxTrn) * (drawHeight * 0.5) : 0; 
+        const isMax = (i === maxDmgIdx);
+        const color = isMax ? '#6f42c1' : '#e0e0e0';
+        html += `<rect x="${x-3}" y="${drawHeight-h}" width="6" height="${h}" fill="${color}" rx="2" style="pointer-events:none;" />`;
+        html += `<rect class="svg-bar-grow sim-dmg-bar" x="${x-5}" y="${drawHeight-h}" width="10" height="${h}" fill="transparent" data-dmg="${d.dmg}" data-turn="${i+1}" style="pointer-events:all;" />`; 
+        if (isMax) {
+            const labelVal = d.dmg >= 1000 ? (d.dmg/1000).toFixed(0)+'K' : d.dmg;
+            html += `<text x="${x}" y="${drawHeight-h-5}" text-anchor="middle" font-size="10" font-weight="bold" fill="#6f42c1" style="pointer-events:none;">${labelVal}</text>`;
+        }
+    });
+    
+    html += `<text id="sim-bar-label" x="0" y="0" text-anchor="middle" font-size="11" font-weight="bold" fill="#333" style="opacity:0; pointer-events:none; text-shadow: 0px 0px 3px white; transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); transform: translateY(5px);"></text>`;
+    container.innerHTML = html + `</svg>`;
+
+    const labelText = container.querySelector('#sim-bar-label');
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    let hideTimeout = null;
+
+    container.querySelectorAll('.sim-dmg-bar').forEach(bar => {
+        if (bar.getAttribute('fill') === '#6f42c1') return;
+        const showLabel = (e) => {
+            e.stopPropagation();
+            if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
+            const rawDmg = parseInt(bar.dataset.dmg);
+            const dmgText = rawDmg >= 1000 ? (rawDmg / 1000).toFixed(0) + 'K' : rawDmg.toLocaleString();
+            const x = parseFloat(bar.getAttribute('x')) + parseFloat(bar.getAttribute('width')) / 2;
+            const y = parseFloat(bar.getAttribute('y')) - 5;
+            labelText.textContent = dmgText;
+            labelText.setAttribute('x', x);
+            labelText.setAttribute('y', y);
+            labelText.style.transition = 'none';
+            labelText.style.opacity = '0';
+            labelText.style.transform = 'translateY(5px)';
+            void labelText.offsetWidth;
+            labelText.style.transition = 'opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+            labelText.style.opacity = '1';
+            labelText.style.transform = 'translateY(0)';
+        };
+        bar.onclick = showLabel;
+        if (!isTouch) {
+            bar.onmouseenter = showLabel;
+            bar.onmouseleave = () => { 
+                hideTimeout = setTimeout(() => {
+                    labelText.style.opacity = '0';
+                    labelText.style.transform = 'translateY(5px)';
+                }, 1000); 
+            };
+        }
+    });
+
+    const turnLabels = []; 
+    for (let i = 0; i < turnCount; i++) { 
+        const turnNum = i + 1; 
+        if (i === 0 || (turnCount >= 30 ? turnNum % 5 === 0 : (turnCount >= 16 ? turnNum % 2 === 0 : true))) {
+            const pos = turnCount > 1 ? (i / (turnCount - 1)) * 100 : 0;
+            turnLabels.push({ pos, label: turnNum + '턴' }); 
+        }
+    }
+    renderAxisLabels({ y: [maxCum, Math.floor(maxCum / 2), 0], x: turnLabels }, maxCum, 'line', drawHeight);
+}
+
+/**
+ * 시각화 로직: 결과 표시 메인 함수 (탭 전환 포함)
+ */
+export function displaySimResult(charId, fullResult, type = 'avg', extraRenderers = {}) {
+    if (!fullResult.results) {
+        fullResult.results = { avg: { logs: fullResult.closestLogs || [], total: fullResult.closestTotal || 0, detailedLogs: fullResult.closestDetailedLogs || [], stateLogs: fullResult.closestStateLogs || [], turnInfoLogs: fullResult.closestTurnInfoLogs || [], perTurnDmg: fullResult.turnData || [] } };
+        fullResult.results.min = fullResult.results.avg; fullResult.results.max = fullResult.results.avg;
+    }
+    const res = fullResult.results[type];
+    const stats = state.savedStats[charId] || {};
+    const boxes = { min: document.getElementById('sim-min-dmg').parentElement, avg: document.getElementById('sim-avg-dmg').parentElement, max: document.getElementById('sim-max-dmg').parentElement };
+    
+    Object.keys(boxes).forEach(key => {
+        const isTarget = (key === type), box = boxes[key], label = box.querySelector('div:first-child'), value = box.querySelector('div:last-child');
+        if (isTarget) { box.style.background = '#6f42c1'; box.style.boxShadow = '0 4px 10px rgba(111, 66, 193, 0.2)'; box.style.opacity = '1'; if (label) { label.style.color = 'rgba(255,255,255,0.9)'; label.style.fontWeight = 'bold'; } if (value) { value.style.color = 'white'; value.style.fontSize = '1.1em'; value.style.fontWeight = '900'; } }
+        else { box.style.background = '#f8f9fa'; box.style.boxShadow = 'none'; box.style.opacity = '0.7'; if (label) { label.style.color = '#888'; label.style.fontWeight = 'normal'; } if (value) { value.style.color = '#333'; value.style.fontSize = '0.9em'; value.style.fontWeight = 'bold'; } }
+        if (key === 'min' && fullResult.p05) value.innerText = fullResult.p05;
+        if (key === 'max' && fullResult.p95) value.innerText = fullResult.p95;
+        box.onclick = () => displaySimResult(charId, fullResult, key, extraRenderers);
+    });
+
+    document.getElementById('sim-log').innerHTML = res.logs.join('');
+    const totalHeader = document.getElementById('sim-total-dmg-header');
+    if (totalHeader) totalHeader.innerText = `: ${res.total.toLocaleString()}`;
+
+    const mergedResult = { ...fullResult, selectedType: type, closestTotal: res.total, closestLogs: res.logs, closestDetailedLogs: res.detailedLogs, closestStateLogs: res.stateLogs, closestTurnInfoLogs: res.turnInfoLogs, turnData: res.perTurnDmg };
+    
+    if (extraRenderers.renderActionButtons) extraRenderers.renderActionButtons(charId, mergedResult, stats);
+
+    const distGraph = document.getElementById('sim-dist-graph');
+    if (distGraph && fullResult.graphData) {
+        const minVal = parseFloat(fullResult.min.replace(/,/g, '')), maxVal = parseFloat(fullResult.max.replace(/,/g, '')), currentVal = res.total, range = maxVal - minVal, binCount = distGraph.children.length;
+        let targetIdx = (range === 0) ? Math.floor(binCount / 2) : Math.floor(((currentVal - minVal) / range) * (binCount - 1));
+        targetIdx = Math.max(0, Math.min(binCount - 1, targetIdx));
+        Array.from(distGraph.children).forEach((bar, idx) => { bar.style.background = (idx === targetIdx) ? '#6f42c1' : '#e0e0e0'; });
+        const predictionZone = document.getElementById('sim-prediction-zone'), predictionLabel = document.getElementById('sim-prediction-label');
+        if (predictionZone && predictionLabel && fullResult.p05 && fullResult.p95) {
+            const p05Val = parseFloat(fullResult.p05.replace(/,/g, '')), p95Val = parseFloat(fullResult.p95.replace(/,/g, ''));
+            if (range > 0) {
+                const leftPercent = ((p05Val - minVal) / range) * 100, widthPercent = ((p95Val - p05Val) / range) * 100;
+                predictionZone.style.left = `${leftPercent}%`; predictionZone.style.width = `${widthPercent}%`; predictionLabel.style.left = `${leftPercent + 1}%`;
+                const isDistVisible = (distGraph && distGraph.style.display !== 'none');
+                predictionZone.style.display = isDistVisible ? 'block' : 'none'; predictionLabel.style.display = isDistVisible ? 'block' : 'none';
+            } else { predictionZone.style.display = 'none'; predictionLabel.style.display = 'none'; }
+        }
+    }
+    if (document.getElementById('sim-line-graph').style.display !== 'none') renderDamageLineChart(charId, mergedResult);
 }
