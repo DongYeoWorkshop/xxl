@@ -751,9 +751,19 @@ export const supportLogic = {
         onAfterAction: (ctx, sState) => {
             // 행동 종료 후 처리 (현재는 없음)
         },
+        onPostAttack: (ctx, sState) => {
+            ctx.supportId = 'tamrang';
+            // [추가] 메인 공격 종료 후 즉시 수면 및 디버프 해제 (임부언 추가타 등 2회 적용 방지)
+            if (ctx.damageOccurred) {
+                if (sState.sleep_timer > 0 || sState.skill8_timer > 0) {
+                    sState.sleep_timer = 0;
+                    sState.skill8_timer = 0;
+                    ctx.log({ name: "", icon: "images/tamrang.webp" }, "탐랑: [수면/도장디버프] 해제 (피격/소모)", null, null, false, "서포터");
+                }
+            }
+        },
         onStepEnd: (ctx, sState, step) => {
-            // [수정] 데미지가 발생한 단계(Step)가 끝나는 즉시 수면 및 도장 디버프 해제
-            // 1회용 범위: (메인 공격 + 해당 공격의 추가타) 또는 (피격 시의 반격)
+            // [안전장치] 데미지가 발생한 단계(Step)가 끝나는 즉시 수면 및 도장 디버프 해제
             if (ctx.damageOccurred) {
                 if (sState.sleep_timer > 0 || sState.skill8_timer > 0) {
                     sState.sleep_timer = 0;

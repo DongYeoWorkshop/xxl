@@ -328,7 +328,7 @@ export const simParams = {
         type: "buff",
         originalId: "anuberus_skill4",
         timerKey: "skill4_black_timer",
-        phase: "onAfterAction",
+        // phase 제거
         order: 98,
         prob: 0.5,
         scaleProb: true,
@@ -341,7 +341,7 @@ export const simParams = {
         type: "buff",
         originalId: "anuberus_skill4",
         timerKey: "skill4_white_timer",
-        phase: "onAfterAction",
+        // phase 제거
         order: 99,
         prob: 0.5,
         scaleProb: true,

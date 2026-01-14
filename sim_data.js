@@ -264,6 +264,9 @@ export const simCharData = {
             if (ctx.stats.stamp) extraHits.push(p.skill8_hit);
         }
 
+        // [추가] 흑구/백구 발동 체크를 행동의 맨 마지막으로 이동
+        extraHits.push(p.black_dog, p.white_dog);
+
         return { extraHits };
     },
     
@@ -361,7 +364,9 @@ export const simCharData = {
   },
   "tamrang": {
     commonControls: [],
-    customControls: [],
+    customControls: [
+        { id: "is_sleep_immune", type: "toggle", label: "수면 면역", initial: false, description: "적에게 수면 면역이 있어 수면 및 도장 디버프가 적용되지 않습니다." }
+    ],
     initialState: {
         sleep_timer: 0,
         skill4_timer: [], // 패시브2
@@ -913,7 +918,7 @@ export const simCharData = {
     onTurn: (ctx) => {
         // [수정] 2턴부터 타임 체크 스택 획득
         if (ctx.t > 1 && ctx.simState.skill7_stacks < 15) {
-            ctx.gainStack({ id: "skill7_stacks", originalId: "beernox_skill7", maxStacks: 15, label: "[타임 체크] 획득", customTag: "패시브6" });
+            ctx.gainStack({ id: "skill7_stacks", originalId: "beernox_skill7", maxStacks: 15, label: "[타임 체크] 획득", customTag: "패시브5" });
         }
     },
     getLiveBonuses: (ctx) => {
