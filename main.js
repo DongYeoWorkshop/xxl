@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (isModified) {
                     img.style.border = `1px solid #ffa500`;
+                    img.style.backgroundColor = '#56c5b1';
                 }
 
                 // [추가] 마우스 오버 시 중앙 오버레이 툴팁 표시
