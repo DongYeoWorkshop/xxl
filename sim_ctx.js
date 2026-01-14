@@ -35,6 +35,10 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
     else if (typeof effectKey === 'number') {
         if (skill.calc && skill.calc[effectKey]) {
             const calcItem = skill.calc[effectKey];
+            // [추가] 고정 레벨 수치 배열이 있으면 우선 사용
+            if (calcItem && calcItem.fixedLevels && Array.isArray(calcItem.fixedLevels)) {
+                return calcItem.fixedLevels[lvS - 1] || 0;
+            }
             // [수정] 아이콘 이름뿐만 아니라 인자로 받은 isStamp 값도 확인
             e = (typeof calcItem === 'object') ? ((isStamp || isStampIcon) ? (calcItem.stampMax || calcItem.max) : calcItem.max) : calcItem;
         }
@@ -86,10 +90,10 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
 }
 
 export function createSimulationContext(baseData) {
-    const { t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs } = baseData;
+    const { t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs, extraPattern } = baseData;
 
     const ctx = {
-        t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, debugLogs,
+        t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs, extraPattern,
         isHit: false, // 엔진에서 직접 수정 가능하도록 객체 속성으로 관리
         extraHits: [], // [추가] 추가타 목록 초기화
 
@@ -342,6 +346,8 @@ export function createSimulationContext(baseData) {
         checkCondition: (cond) => {
             const innerCheck = (c) => {
                 if (!c) return true;
+                // [추가] 함수형 조건 처리
+                if (typeof c === 'function') return c(ctx);
                 if (Array.isArray(c)) return c.every(item => innerCheck(item));
                 if (typeof c === 'object') {
                     if (c.or) return c.or.some(item => innerCheck(item));
@@ -349,10 +355,10 @@ export function createSimulationContext(baseData) {
                     return true;
                 }
                 if (typeof c === 'string') {
-                    if (c === "isUlt") return !!isUlt;
-                    if (c === "isNormal") return !isUlt && !isDefend;
-                    if (c === "isDefend") return !!isDefend;
-                    if (c === "!isDefend") return !isDefend;
+                    if (c === "isUlt") return !!ctx.isUlt;
+                    if (c === "isNormal") return !ctx.isUlt && !ctx.isDefend;
+                    if (c === "isDefend") return !!ctx.isDefend;
+                    if (c === "!isDefend") return !ctx.isDefend;
                     if (c === "isStamp") return !!stats.stamp;
                     if (c === "enemy_hp_50") return (customValues?.enemy_hp_percent || 0) >= 50;
                     

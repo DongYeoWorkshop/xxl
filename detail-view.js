@@ -242,12 +242,6 @@ export function renderSkillIconList(charId, breakthroughValue, dom, logic) {
     const container = dom.newSectionArea.querySelector('.detail-icon-list');
     if (!container) return;
 
-    // [추가] 선택된 스킬이 없으면 첫 번째 스킬(보통공격)로 초기화
-    if (state.selectedSkillIndex === null) {
-        state.selectedSkillIndex = 0;
-        state.selectedIsExternal = false;
-    }
-
     const saved = state.savedStats[charId] || {};
     const isUltStamped = saved.stamp || false;
 

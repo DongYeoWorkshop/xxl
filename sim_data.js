@@ -144,33 +144,31 @@ export const simCharData = {
     },
     // 1. 공격
     onAttack: (ctx) => {
-        const extraHits = [];
-        const hasScar = ctx.simState.scar_stacks > 0;
+        const p = simParams.baade;
+        const hasScar = (ctx.simState.scar_stacks || 0) > 0;
 
         if (!ctx.isUlt) {
             // [보통공격] 각흔 대상 평타 시 트리거 발동
             if (hasScar) {
                 ctx.checkBuffTriggers("attack_on_scar");
             }
+            return { extraHits: [] };
+        } else {
+            // [필살기] 상태를 확인하여 부여 혹은 소모(데미지 포함) 중 하나만 예약
+            const extraHits = [];
+            
+            if (hasScar) {
+                extraHits.push(p.skill2_scar_consume); // 이 안에 도장 데미지 로직이 포함됨
+            } else {
+                extraHits.push(p.skill2_scar_apply);
+            }
+
+            return { extraHits };
         }
-        // 필살기 시 각흔 상태 변경은 추가타 판정을 위해 onAfterAction으로 지연시킴
-        return { extraHits };
     },
     
-    // 2. 행동 종료 후 (상태 갱신)
+    // 2. 행동 종료 후
     onAfterAction: (ctx) => {
-        if (ctx.isUlt) {
-            const hasScar = ctx.simState.scar_stacks > 0;
-            if (hasScar) {
-                // 각흔 소모 (패시브4 조건: 필살기로 타격 시 해제)
-                ctx.simState.scar_stacks = 0;
-                ctx.log({ name: "쇄강파 공격 [각흔]", icon: "icon/attack(strong).webp" }, "consume", null, null, false, "필살기");
-            } else {
-                // 각흔 부여
-                ctx.simState.scar_stacks = 1;
-                ctx.log({ name: "쇄강파 공격 [각흔]", icon: "icon/attack(strong).webp" }, "apply", null, null, false, "필살기");
-            }
-        }
         return { extraHits: [] };
     },
 
@@ -696,6 +694,7 @@ export const simCharData = {
         "tactical_stacks": "[전술 판독]"
     },
     customControls: [
+        { id: "pos3_fixed", type: "toggle", label: "포지션 3 고정", initial: true, description: "체크 시 포지션 3에 있는 것으로 간주하여 매 턴 [전술 판독] 스택을 획득합니다." },
         { id: "ally_hit_prob", type: "input", label: "아군 피격 확률(%)", min: 0, max: 100, initial: 40, description: "매 턴 아군 4명이 각각 공격받을 확률입니다." }
     ],
     initialState: {
@@ -707,8 +706,10 @@ export const simCharData = {
         skill4_boost_timer: 0
     },
     onTurn: (ctx) => {
-        // 1. [포지션3 고정] 매턴 전술 판독 1스택 획득
-        ctx.gainStack({ id: "tactical_stacks", originalId: "famido_skill4", maxStacks: 3, label: "[전술 판독] 획득", customTag: "패시브2" });
+        // 1. [포지션3 체크] 체크박스가 켜져 있을 때만 매턴 전술 판독 1스택 획득
+        if (ctx.customValues.pos3_fixed) {
+            ctx.gainStack({ id: "tactical_stacks", originalId: "famido_skill4", maxStacks: 3, label: "[전술 판독] 획득", customTag: "패시브2" });
+        }
     },
     onEnemyHit: (ctx) => {
         // 아군 4명 피격 시뮬레이션 (5스킬 스택 수급)

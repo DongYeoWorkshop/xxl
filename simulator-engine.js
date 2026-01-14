@@ -4,7 +4,7 @@ import { commonControls } from './simulator-common.js';
 import { getStatusInfo, formatStatusMessage, formatStatusAction } from './simulator-status.js';
 import { simParams } from './sim_params.js';
 import { createSimulationContext, getSkillValue } from './sim_ctx.js';
-import { initSupportState, processSupportTurn, processSupportEnemyHit, processSupportAttack, processSupportAfterAction, processSupportStepEnd, getSupportBonuses } from './sim_support.js';
+import { initSupportState, processSupportTurn, processSupportEnemyHit, processSupportAttack, processSupportPostAttack, processSupportAfterAction, processSupportStepEnd, getSupportBonuses } from './sim_support.js';
 import { formatMainLog } from './simulator-logger.js';
 import { getCharacterCommonControls, getDefaultActionPattern } from './simulator-common.js';
 
@@ -65,7 +65,8 @@ export function collectSimulationConfig(charId, charData, simCharData) {
         enemyAttrIdx,
         customValues,
         supportIds: [supportId1, supportId2],
-        manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || []
+        manualPattern: JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [],
+        extraPattern: JSON.parse(localStorage.getItem(`sim_pattern_extra_${charId}`)) || {}
     };
 }
 
@@ -145,15 +146,20 @@ export function runSimulationCore(context) {
         for (let t = 1; t <= turns; t++) {
             logs.push(`<div class="sim-log-turn-header" data-turn="${t}">----- ${t}턴 -----</div>`);
             const turnDebugLogs = [];
-            let currentTDmg = 0;
             const actionType = manualPattern[t-1] || (cd.ult === 0 ? 'ult' : 'normal');
             const isUlt = actionType === 'ult', isDefend = actionType === 'defend';
             const skill = isUlt ? charData.skills[1] : charData.skills[0];
+            
+            // [추가] 실시간 쿨타임 관리를 위한 플래그
+            let ultimateUsedThisTurn = isUlt;
 
             if (customValues.enemy_hp_auto) customValues.enemy_hp_percent = Math.max(0, Math.floor(100 * (1 - t / turns)));
 
             const isAllyUltTurn = sData.isAllyUltTurn ? sData.isAllyUltTurn(t) : (t > 1 && (t - 1) % 3 === 0);
-            const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs: turnDebugLogs });
+            const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs: turnDebugLogs, extraPattern: context.extraPattern });
+            
+            // [추가] 이번 턴의 총 데미지를 컨텍스트에서 관리
+            dynCtx.currentTDmg = 0;
 
             // [수정] 서포터 턴 시작 처리 (순회)
             supportStates.forEach(s => processSupportTurn(dynCtx, s.id, s.state));
@@ -182,7 +188,103 @@ export function runSimulationCore(context) {
                 return { atk: final.최종공격력, subStats };
             };
 
+            const executeAction = (tag, label) => {
+                const curIsUlt = dynCtx.isUlt;
+                const curSkill = curIsUlt ? charData.skills[1] : charData.skills[0];
+                const targetType = curIsUlt ? "필살공격" : "보통공격";
+
+                curSkill.damageDeal?.forEach((e, idx) => {
+                    if (e.type !== targetType && e.type !== "기초공격") return;
+                    let isM = e.isSingleTarget ? false : (e.isMultiTarget || (stats.stamp && e.stampIsMultiTarget) || curSkill.isMultiTarget || false);
+                    const tc = isM ? targetCount : 1;
+                    const st = getLatestSubStats(isM);
+                    const fC = dynCtx.getVal(curIsUlt ? 1 : 0, e.val || idx);
+                    const hitDmg = calculateDamage(targetType, st.atk, st.subStats, fC, curIsUlt && stats.stamp, charData.info.속성, enemyAttrIdx) * tc;
+                    const hitCoef = ((curIsUlt && stats.stamp && e.val?.stampMax) ? e.val.stampMax : (e.val?.max || e.val || 0)) * tc;
+
+                    if (hitDmg > 0) {
+                        dynCtx.damageOccurred = true; 
+                        logs.push(formatMainLog(label, tag, curSkill.name, hitDmg));
+                        const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
+                        const specKey = curIsUlt ? "필살기뎀증" : "평타뎀증", specLabel = curIsUlt ? "U-Dmg" : "N-Dmg";
+                        let dmgStr = Object.entries(baseTags).map(([key, l]) => st.subStats[key] !== 0 ? ` / ${l}:${parseFloat(st.subStats[key].toFixed(1))}%` : "").join("");
+                        if (st.subStats[specKey] !== 0) dmgStr += ` / ${specLabel}:${parseFloat(st.subStats[specKey].toFixed(1))}%`;
+                        
+                        dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${curSkill.icon}|[${tag}] ${curSkill.name}: +${Math.floor(hitDmg).toLocaleString()}`, statMsg: `Coef:${parseFloat((isM ? hitCoef : hitCoef/tc).toFixed(1))}% / Atk:${st.atk.toLocaleString()}${dmgStr}` });
+                        dynCtx.currentTDmg += hitDmg;
+                    }
+                });
+            };
+
+            // [핵심] 모든 행동(메인/추가)을 수행하는 통합 함수
+            const performAction = (targetIsUlt, targetIsDefend, tag, label) => {
+                const originalUlt = dynCtx.isUlt;
+                const originalDef = dynCtx.isDefend;
+                
+                dynCtx.isUlt = targetIsUlt;
+                dynCtx.isDefend = targetIsDefend;
+
+                if (dynCtx.isDefend) {
+                    logs.push(formatMainLog(label, tag, "방어", 0));
+                    dynCtx.debugLogs.push(`ICON:icon/simul.png|[${tag}]`);
+                    handleHook('onAttack');
+                    autoExecuteParams('onAttack');
+                } else {
+                    // 1. 메인 스킬 실행
+                    executeAction(tag, label);
+                    
+                    // 2. 서포터 지원 공격 실행 (아누비로스 등 트리거)
+                    supportStates.forEach(s => processSupportAttack(dynCtx, s.id, s.state));
+                    
+                    // 3. 즉시 큐 비우기 (아누비로스/신리랑의 연계 공격 실행)
+                    while (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
+                        calculateAndLogHit(dynCtx.extraHits.shift());
+                    }
+
+                    // 4. 나머지 패시브 훅 및 트리거 처리
+                    autoExecuteParams('onAttack'); 
+                    handleHook('onAttack');
+                }
+
+                // [중요] 혹시라도 남은 추가타가 있다면 마저 처리
+                while (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
+                    calculateAndLogHit(dynCtx.extraHits.shift());
+                }
+
+                dynCtx.isUlt = originalUlt;
+                dynCtx.isDefend = originalDef;
+            };
+
             const calculateAndLogHit = (event) => {
+                // [행동 재실행] 추가행동 시 유저가 설정한 패턴(보통/필살/방어)에 따라 재실행
+                if (event.isActionReplay) {
+                    const extraAction = event.extraActionType || 'ult';
+                    const isExtraUlt = (extraAction === 'ult');
+                    const isExtraDefend = (extraAction === 'defend');
+                    
+                    const replayTag = isExtraUlt ? "추가행동" : isExtraDefend ? "추가방어" : "추가평타";
+                    const originalReplayTag = dynCtx.currentReplayTag;
+                    dynCtx.currentReplayTag = replayTag;
+
+                    if (isExtraUlt) ultimateUsedThisTurn = true;
+
+                    // 메인 로직과 100% 동일한 함수 호출 (여기서 공격 + 패시브 다 처리됨)
+                    performAction(isExtraUlt, isExtraDefend, replayTag, `${t}-2턴`);
+
+                    // 2. 사후 처리 훅 (필살기 종료 등 상태 갱신)
+                    handleHook('onAfterAction');
+                    autoExecuteParams('onAfterAction');
+                    
+                    while (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
+                        const hit = dynCtx.extraHits.shift();
+                        hit.customTag = replayTag;
+                        calculateAndLogHit(hit);
+                    }
+
+                    dynCtx.currentReplayTag = originalReplayTag;
+                    return;
+                }
+
                 const targetId = event.skillId || event.originalId;
                 const sIdx = targetId ? charData.skills.findIndex(sk => sk.id === targetId) : -1;
                 const s = sIdx !== -1 ? charData.skills[sIdx] : null;
@@ -192,18 +294,47 @@ export function runSimulationCore(context) {
                 const dmgType = event.type || "추가공격";
                 const dUnit = calculateDamage(dmgType, latest.atk, latest.subStats, coef, false, charData.info.속성, enemyAttrIdx);
                 const finalD = isM ? dUnit * targetCount : dUnit;
-                currentTDmg += finalD;
+                
                 if (finalD > 0) {
-                    // [수정] 서포터의 공격은 메인 캐릭터의 '타격 발생' 상태(수면 해제 등)를 트리거하지 않음
+                    // [중요] 데미지를 컨텍스트의 TDmg에 합산 (이곳이 유일한 합산 지점)
+                    dynCtx.currentTDmg += finalD;
+
                     if (event.customTag !== "서포터") {
                         dynCtx.damageOccurred = true; 
+                        if (event.skillId) {
+                            const originalIsUlt = dynCtx.isUlt;
+                            const originalIsDefend = dynCtx.isDefend;
+
+                            // 현재 추가행동의 종류에 따라 상태 강제 고정
+                            if (dynCtx.currentReplayTag === "추가행동") {
+                                dynCtx.isUlt = true;
+                                dynCtx.isDefend = false;
+                            } else if (dynCtx.currentReplayTag === "추가방어") {
+                                dynCtx.isUlt = false;
+                                dynCtx.isDefend = true;
+                            } else if (dynCtx.currentReplayTag === "추가평타") {
+                                dynCtx.isUlt = false;
+                                dynCtx.isDefend = false;
+                            }
+
+                            dynCtx.checkStackTriggers(event.skillId);
+                            dynCtx.checkBuffTriggers(event.skillId);
+
+                            // 상태 복구
+                            dynCtx.isUlt = originalIsUlt;
+                            dynCtx.isDefend = originalIsDefend;
+                        }
                     }
                     
                     const label = event.customTag || (sIdx !== -1 ? ((idx=sIdx) => (idx===0?'보통공격':idx===1?'필살기':idx<=6?`패시브${idx-1}`:'도장'))() : "추가타");
-                    logs.push(formatMainLog(t, dmgType === '보통공격' ? '보통공격' : label, event.name || s?.name || "추가타", finalD));
+                    
+                    // [수정] 현재가 추가행동(isActionReplay) 루프 안인지 확인하여 라벨 결정
+                    const isReplayLoop = (dynCtx.currentReplayTag === "추가행동" || dynCtx.currentReplayTag === "추가평타" || dynCtx.currentReplayTag === "추가방어");
+                    const turnLabel = dynCtx.isReactionStep ? `${t}턴(피격)` : (isReplayLoop ? `${t}-2턴` : `${t}턴`);
+                    
+                    logs.push(formatMainLog(turnLabel, dmgType === '보통공격' ? '보통공격' : label, event.name || s?.name || "추가타", finalD));
 
                     if (dynCtx.isReactionStep) {
-                        // [수정] 서포터 단계 종료 처리 (순회)
                         supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, "onEnemyHit"));
                         dynCtx.damageOccurred = false; 
                     }
@@ -223,10 +354,15 @@ export function runSimulationCore(context) {
 
             const processExtra = (e) => {
                 if (!e) return;
+                
+                // [실제 코드 수정] 판정 직전, dynCtx의 상태를 명확히 고정
                 const targetSkillId = e.skillId || e.originalId;
                 if (targetSkillId) { const skillIdx = dynCtx.getSkillIdx(targetSkillId); if (skillIdx !== -1 && !dynCtx.isUnlocked(skillIdx)) return; }
+                
+                // 엔진이 현재 performAction에서 설정한 isDefend 상태를 무시하지 못하도록 함
                 if (e.condition && !dynCtx.checkCondition(e.condition)) return;
-                if (e.type === "buff" || e.type === "hit" || e.type === "action" || e.type === "stack") {
+                
+                if (e.type === "buff" || e.type === "hit" || (e.type === "action" && e.action === "all_consume") || e.type === "stack") {
                     if (e.type === "buff") dynCtx.applyBuff(e);
                     else if (e.type === "hit") {
                         const idx = dynCtx.getSkillIdx(e.originalId);
@@ -279,50 +415,17 @@ export function runSimulationCore(context) {
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
                     turnDebugLogs.length = 0;
                 } else if (step === 'onAttack') {
-                    if (isDefend) {
-                        logs.push(`<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[방어]</span></span> <span class="sim-log-dmg">+0</span></div>`);
-                        dynCtx.debugLogs.push('ICON:icon/simul.png|[방어]');
-                        handleHook('onAttack');
-                    } else {
-                        let turnDmgTotal = 0; const targetType = isUlt ? "필살공격" : "보통공격";
-                        skill.damageDeal?.forEach((e, idx) => {
-                            if (e.type !== targetType && e.type !== "기초공격") return;
-                            let isM = false; if (e.isSingleTarget) isM = false; else if (e.isMultiTarget || (isUlt && stats.stamp && e.stampIsMultiTarget)) isM = true; else isM = skill.isMultiTarget || false;
-                            const tc = isM ? targetCount : 1; const st = getLatestSubStats(isM);
-                            const param = e.val ? e.val : idx; const fC = dynCtx.getVal(charData.skills.indexOf(skill), param);
-                            const hitDmg = calculateDamage(targetType, st.atk, st.subStats, fC, isUlt && stats.stamp, charData.info.속성, enemyAttrIdx) * tc;
-                            const hitCoef = ((isUlt && stats.stamp && e.val.stampMax) ? e.val.stampMax : e.val.max) * tc;
-                            if (hitDmg > 0) {
-                                dynCtx.damageOccurred = true; 
-                                const mainTag = isUlt ? '필살기' : '보통공격';
-                                logs.push(formatMainLog(t, mainTag, skill.name, hitDmg));
-                                
-                                const baseTags = { "뎀증": "Dmg", "뎀증디버프": "Vul", "속성디버프": "A-Vul" };
-                                const specKey = isUlt ? "필살기뎀증" : "평타뎀증", specLabel = isUlt ? "U-Dmg" : "N-Dmg";
-                                let dmgStr = Object.entries(baseTags).map(([key, label]) => st.subStats[key] !== 0 ? ` / ${label}:${parseFloat(st.subStats[key].toFixed(1))}%` : "").join("");
-                                if (st.subStats[specKey] !== 0) dmgStr += ` / ${specLabel}:${parseFloat(st.subStats[specKey].toFixed(1))}%`;
-                                dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${skill.icon}|${mainTag} ${skill.name}: +${Math.floor(hitDmg).toLocaleString()}`, statMsg: `Coef:${parseFloat((isM ? hitCoef : hitCoef / tc).toFixed(1))}% / Atk:${st.atk.toLocaleString()}${dmgStr}` });
-                                turnDmgTotal += hitDmg;
-                            }
-                        });
-                        currentTDmg = turnDmgTotal;
-                        
-                        // [수정] 서포터 지원 공격 처리 (순회)
-                        supportStates.forEach(s => processSupportAttack(dynCtx, s.id, s.state));
-
-                        // [추가] 서포터 추가타 즉시 처리 (디버프 부여 등 후속 이벤트보다 먼저 로그에 찍히도록)
+                    // [수정] 공통 함수를 사용하여 메인 공격/방어 수행
+                    const mainTag = isUlt ? '필살기' : isDefend ? '방어' : '보통공격';
+                    performAction(isUlt, isDefend, mainTag, `${t}턴`);
+                    
+                    // [추가] 메인 캐릭터의 모든 공격(패시브 포함)이 끝난 후 서포터의 후속 처리 (임부언 등)
+                    if (step === 'onAttack') {
+                        supportStates.forEach(s => processSupportPostAttack(dynCtx, s.id, s.state));
                         while (dynCtx.extraHits && dynCtx.extraHits.length > 0) {
-                            const hit = dynCtx.extraHits.shift();
-                            calculateAndLogHit(hit);
-                            // [수정] 루프 내부에서는 단계 종료(수면 해제 등)를 호출하지 않음 -> 모든 연계 공격이 끝난 뒤 해제
+                            calculateAndLogHit(dynCtx.extraHits.shift());
                         }
-
-                        // [수정] 메인 캐릭터의 패시브 추가타 등 예약 (서포터 공격 후 실행)
-                        handleHook('onAttack');
                     }
-                    autoExecuteParams(step);
-                    turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
-                    turnDebugLogs.length = 0;
                 } else if (step === 'onEnemyHit') {
                     const tr = sData.isTaunted?.(dynCtx);
                     const tl = (typeof tr === 'object' ? tr.label : tr) || "조롱 상태", tp = tr?.prob || 100;
@@ -349,10 +452,8 @@ export function runSimulationCore(context) {
                     handleHook('onEnemyHit');
                     
                     while (dynCtx.extraHits.length > 0) {
-                        calculateAndLogHit(dynCtx.extraHits.shift());
-                        // [수정] 서포터 단계 종료 (순회)
-                        supportStates.forEach(s => processSupportStepEnd(dynCtx, s.id, s.state, "onEnemyHit"));
-                        dynCtx.damageOccurred = false; 
+                        const hit = dynCtx.extraHits.shift();
+                        calculateAndLogHit(hit);
                     }
                     
                     turnDebugLogs.forEach(item => detailedLogs.push({ t, ...(typeof item === 'string' ? { type: 'debug', msg: item } : item) }));
@@ -385,8 +486,9 @@ export function runSimulationCore(context) {
 
                 dynCtx.damageOccurred = false; 
             });
-            total += currentTDmg; perTurnDmg.push({ dmg: currentTDmg, cumulative: total });
-            if (isUlt) cd.ult = ultCD - 1; else if (cd.ult > 0) cd.ult--;
+            // [중요 수정] 이제 currentTDmg 변수가 아닌 dynCtx.currentTDmg에서 합산 결과를 가져옴
+            total += dynCtx.currentTDmg; perTurnDmg.push({ dmg: dynCtx.currentTDmg, cumulative: total });
+            if (ultimateUsedThisTurn) cd.ult = ultCD - 1; else if (cd.ult > 0) cd.ult--;
         }
         iterationResults.push({ total, logs, perTurnDmg, stateLogs, detailedLogs, turnInfoLogs });
     }

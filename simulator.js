@@ -20,6 +20,10 @@ function renderCharacterSelector() {
     localStorage.removeItem('sim_last_char_id');
     const container = document.getElementById('simulator-content'), 
           validChars = Object.keys(charData).filter(id => charData[id].base && id !== 'hero' && id !== 'test_dummy');
+    
+    // [추가] 마지막 렌더링 기록 초기화 (재진입 시 토스트 트리거용)
+    container.removeAttribute('data-last-char-id');
+
     const disabledIds = constants.disabledSimChars;
     container.innerHTML = getCharacterSelectorHtml(validChars, disabledIds, charData, state.savedStats);
     container.querySelectorAll('.sim-char-pick-item').forEach(item => { if (item.style.pointerEvents !== 'none') item.onclick = () => { localStorage.setItem('sim_last_char_id', item.dataset.id); renderSimulatorUI(item.dataset.id); }; });
@@ -45,6 +49,9 @@ function renderSimAttributePicker(charId) {
 
 function renderSimulatorUI(charId) {
     const container = document.getElementById('simulator-content'), data = charData[charId], sData = simCharData[charId] || {}, stats = state.savedStats[charId] || {};
+    
+    container.setAttribute('data-last-char-id', charId);
+
     const brVal = parseInt(stats.s1||0), brText = (brVal < 5) ? `0성 ${brVal}단계` : (brVal < 15) ? `1성 ${brVal-5}단계` : (brVal < 30) ? `2성 ${brVal-15}단계` : (brVal < 50) ? `3성 ${brVal-30}단계` : (brVal < 75) ? `4성 ${brVal-50}단계` : "5성";
     const hasMulti = data.skills.some(s => s.isMultiTarget || (s.damageDeal && s.damageDeal.some(d => d.isMultiTarget || d.stampIsMultiTarget)));
     const savedTurns = localStorage.getItem('sim_last_turns') || "10", savedIters = localStorage.getItem('sim_last_iters') || "100";
@@ -153,11 +160,26 @@ function renderSimulatorUI(charId) {
                 btn1.style.background = '#f9f9f9'; btn1.style.borderColor = '#ccc';
                 btn2.style.background = '#f9f9f9'; btn2.style.borderColor = '#ccc';
                 
-                // UI 갱신 (서포터 컨트롤 등)
+                // UI 갱신 (서포터 컨트롤 및 임부언 안내 문구)
                 renderSimulatorUI(charId);
             };
         });
     }
+
+    // [복구] 임부언 안내 문구 업데이트 함수
+    const updateBossrenNotice = () => {
+        const noticeArea = document.getElementById('sim-notice-area');
+        if (!noticeArea) return;
+        const s1 = localStorage.getItem(supportKey1);
+        const s2 = localStorage.getItem(supportKey2);
+        if (charId === 'bossren' || s1 === 'bossren' || s2 === 'bossren') {
+            noticeArea.innerHTML = "💡 임부언 필살기의 쿨타임 감소 효과는 직접 행동 수정으로 조정해야합니다.";
+            noticeArea.style.display = 'block';
+        } else {
+            noticeArea.style.display = 'none';
+        }
+    };
+    updateBossrenNotice();
 
     renderSimAttributePicker(charId);
     // 캐릭터 아이콘은 상세 정보 탭으로 이동
@@ -175,7 +197,7 @@ function renderSimulatorUI(charId) {
                 if (existing) existing.remove();
 
                 const control = ui.showSimpleTooltip(infoIcon, tooltipText); 
-                const timeoutId = setTimeout(() => control.remove(), 6000);
+                const timeoutId = setTimeout(() => control.remove(), 10000);
 
                 const closeOnOutside = () => { 
                     control.remove(); 
@@ -189,6 +211,17 @@ function renderSimulatorUI(charId) {
 
     const supportId1 = localStorage.getItem(supportKey1) || 'none';
     const supportId2 = localStorage.getItem(supportKey2) || 'none';
+    
+    const editBtn = document.getElementById('sim-edit-actions-btn');
+    
+    // [수정] 강제 고정 로직 삭제, 모든 상황에서 버튼 활성화 (기존 스타일 유지)
+    if (editBtn) {
+        editBtn.disabled = false;
+        editBtn.style.pointerEvents = 'auto';
+        editBtn.style.opacity = '1';
+        editBtn.innerHTML = "⚙️ 행동 수정";
+    }
+
     const sSupportData1 = simCharData[supportId1] || {};
     const sSupportData2 = simCharData[supportId2] || {};
     
@@ -204,7 +237,7 @@ function renderSimulatorUI(charId) {
         combinedControls.forEach(ctrl => {
             const storageKey = `sim_ctrl_${charId}_${ctrl.id}`;
             const savedVal = localStorage.getItem(storageKey);
-            const isSpecialToggle = ['self_extra_dmg_active', 'self_buff_mode', 'self_sleep_active'].includes(ctrl.id);
+            const isSpecialToggle = ['self_extra_dmg_active', 'self_buff_mode', 'self_sleep_active', 'pos3_fixed'].includes(ctrl.id);
             const bgColor = isSpecialToggle ? '#f9f5ff' : '#f8f9fa';
             const borderColor = isSpecialToggle ? '#e9e0f9' : '#eee';
 

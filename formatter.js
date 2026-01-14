@@ -25,6 +25,11 @@ export function getDynamicDesc(skill, level, isStamped, descriptionToFormat = nu
     
     // 계산된 수치들을 먼저 준비
     const calculatedValues = skill.calc.map((formula) => {
+        // [추가] 고정 레벨 수치 배열이 있으면 우선 사용
+        if (formula.fixedLevels && Array.isArray(formula.fixedLevels)) {
+            return formula.fixedLevels[safeLevel - 1] || 0;
+        }
+
         const currentStartRate = (isStamped && formula.stampStartRate !== undefined) 
                                  ? formula.stampStartRate 
                                  : (formula.startRate !== undefined ? formula.startRate : (skill.startRate !== undefined ? skill.startRate : 0.6));

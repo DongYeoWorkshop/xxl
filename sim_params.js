@@ -208,12 +208,44 @@ export const simParams = {
     skill8_stamp_hit: {
       type: "hit",
       originalId: "baade_skill8",
-      phase: "onAttack",
-      order: 2,
+      order: 10, // 메인 필살기보다 뒤에 나오도록 설정
       condition: ["isUlt", "isStamp", "hasStack:scar_stacks:1"], 
       valKey: "추가공격",
       label: "쇄강 파공격",
       customTag: "도장"      
+    },
+    // [필살기] 각흔 부여 (아누비로스 스타일)
+    skill2_scar_apply: {
+      type: "action",
+      order: 99,
+      step1: (c) => {
+          c.simState.scar_stacks = 1;
+          c.log({ name: "쇄강파 공격 [각흔]", icon: "icon/attack(strong).webp" }, "apply", null, null, false, "필살기");
+          return null;
+      }
+    },
+    // [필살기] 각흔 소모 (도장 데미지 통합형)
+    skill2_scar_consume: {
+      type: "action",
+      order: 99,
+      step1: (c) => {
+          let hitData = null;
+          // [추가] 각흔 소모 시 도장이 있다면 데미지 데이터 준비
+          if (c.stats.stamp) {
+              hitData = {
+                  type: "추가공격",
+                  val: c.getVal(c.getSkillIdx("baade_skill8"), "추가공격"),
+                  name: "쇄강 파공격",
+                  customTag: "도장",
+                  icon: "images/sigilwebp/sigil_baade.webp"
+              };
+          }
+          
+          c.simState.scar_stacks = 0;
+          c.log({ name: "쇄강파 공격 [각흔]", icon: "icon/attack(strong).webp" }, "consume", null, null, false, "필살기");
+          
+          return hitData; // 도장 데미지가 있으면 반환하여 즉시 실행
+      }
     }
   },
   "khafka": {
@@ -296,7 +328,7 @@ export const simParams = {
         type: "buff",
         originalId: "anuberus_skill4",
         timerKey: "skill4_black_timer",
-        phase: "onAttack",
+        phase: "onAfterAction",
         order: 98,
         prob: 0.5,
         scaleProb: true,
@@ -309,7 +341,7 @@ export const simParams = {
         type: "buff",
         originalId: "anuberus_skill4",
         timerKey: "skill4_white_timer",
-        phase: "onAttack",
+        phase: "onAfterAction",
         order: 99,
         prob: 0.5,
         scaleProb: true,
@@ -1214,6 +1246,60 @@ export const simParams = {
       showAtkBoost: true,
       customTag: "도장",
       order: 2
+    }
+  },
+  "bossren": {
+    // [스킬1] 지정 조련 (평타 시 고정공증 1턴)
+    skill1_buff: {
+      type: "buff",
+      originalId: "bossren_skill1",
+      timerKey: "skill1_timer",
+      condition: "!isDefend", // [수정] 필살기 시에도 발동
+      duration: 1,
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
+      customTag: "보통공격",
+      order: 1
+    },
+    // [패시브2] 순종 교육 (공격 시 고정공증 1턴)
+    skill4_buff: {
+      type: "buff",
+      originalId: "bossren_skill4",
+      timerKey: "skill4_timer",
+      condition: "!isDefend", // [수정] 필살기 시에도 발동
+      duration: 1,
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
+      customTag: "패시브2",
+      order: 2
+    },
+    // [패시브5] 최고의 보상 (평타 시 뎀증 1턴)
+    skill7_buff: {
+      type: "buff",
+      originalId: "bossren_skill7",
+      timerKey: "skill7_timer",
+      condition: "!isDefend",
+      duration: 1,
+      label: "버프 부여",
+      valKey: 0,
+      customTag: "패시브5",
+      order: 3
+    },
+    // [패시브2-확률] 순종 교육 추가 가산 (50% 확률)
+    skill8_buff: {
+      type: "buff",
+      originalId: "bossren_skill8",
+      timerKey: "skill8_timer",
+      condition: "!isDefend",
+      prob: 0.5,
+      duration: 1,
+      label: "버프 부여",
+      valKey: 0,
+      showAtkBoost: true,
+      customTag: "패시브2",
+      order: 4
     }
   }
 };

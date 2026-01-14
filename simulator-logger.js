@@ -77,6 +77,6 @@ export function formatDetailedLog(context, idx, res, chance, dur, customTag = nu
 /**
  * 시뮬레이터 메인 로그(녹색 텍스트) 라인을 생성합니다.
  */
-export function formatMainLog(t, tag, name, damage) {
-    return `<div class="sim-log-line"><span>${t}턴: <span class="sim-log-tag">[${tag}]</span> ${name}:</span> <span class="sim-log-dmg">+${Math.floor(damage).toLocaleString()}</span></div>`;
+export function formatMainLog(tLabel, tag, name, damage) {
+    return `<div class="sim-log-line"><span>${tLabel}: <span class="sim-log-tag">[${tag}]</span> ${name}:</span> <span class="sim-log-dmg">+${Math.floor(damage).toLocaleString()}</span></div>`;
 }

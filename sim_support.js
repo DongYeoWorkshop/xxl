@@ -5,7 +5,7 @@ import { state, constants } from './state.js';
 import { getSkillValue } from './sim_ctx.js';
 import { getSkillMultiplier } from './formatter.js';
 import { simParams } from './sim_params.js';
-import { calculateBaseStats } from './calculations.js';
+import { calculateDamage, calculateBaseStats, assembleFinalStats } from './calculations.js'; // [추가] calculateDamage 임포트
 
 /**
  * [핵심 헬퍼] 서포터의 상태(sState)에 타이머/스택 추가 및 갱신
@@ -197,7 +197,7 @@ function tryApplySupportParam(ctx, sState, param, stateKey) {
             const skillTag = param.customTag ? `[${param.customTag}] ` : "";
             const supportMsg = `${supportData.title}: ${skillTag}${param.label || skill.name}${boostText}`;
             
-            // [수정] 로그에는 보정 전 지속시간(logDur) 표시
+            // [롤백] 로그에는 보정 전 지속시간(logDur) 표시
             ctx.log(logIdx, supportMsg, displayProb, logDur, !!param.skipLog, "서포터");
         }
         return true;
@@ -498,7 +498,7 @@ export const supportLogic = {
             if (sState.skill2_stamp_timer > 0) sState.skill2_stamp_timer--;
             if (ctx.t > 1 && sState.skill7_stacks < 15) sState.skill7_stacks++;
             const woodActive = localStorage.getItem('sim_ctrl_beernox_wood_party_active') === 'true';
-            if (woodActive && ctx.t === 1) ctx.log({ name: "", icon: "images/beernox.webp" }, "비어녹스: ㄴ [패시브] 나무속성 파티원 조건 충족", null, null, false, "서포터");
+            if (woodActive && ctx.t === 1) ctx.log({ name: "", icon: "images/beernox.webp" }, "비어녹스: [패시브3] 나무속성 파티원 조건 충족", null, null, false, "서포터");
             let actionType = getSupportAction('beernox', ctx.t);
             const logIdx = { name: "", icon: "images/beernox.webp" };
             if (actionType === 'ult') {
@@ -783,6 +783,113 @@ export const supportLogic = {
             
             return bonuses;
         }
+    },
+    "bossren": {
+        getInitialState: () => ({ skill1_timer: 0, skill4_timer: 0, skill7_timer: 0, skill8_timer: 0, pending_extra_action: false, pending_buffs: false }),
+        onTurn: (ctx, sState) => {
+            ctx.supportId = 'bossren';
+            if (sState.skill1_timer > 0) sState.skill1_timer--;
+            if (sState.skill4_timer > 0) sState.skill4_timer--;
+            if (sState.skill7_timer > 0) sState.skill7_timer--;
+            if (sState.skill8_timer > 0) sState.skill8_timer--;
+
+            let actionType = getSupportAction('bossren', ctx.t);
+            const logIdx = { name: "", icon: "images/bossren.webp" };
+            const isPos3 = (ctx.charId === 'famido' && ctx.customValues.pos3_fixed);
+
+            if (actionType === 'normal') {
+                ctx.log(logIdx, "임부언: [보통공격] 사용", null, null, false, "서포터");
+                if (!isPos3) {
+                    const p = simParams.bossren;
+                    tryApplySupportParam(ctx, sState, p.skill1_buff, 'skill1_timer');
+                    tryApplySupportParam(ctx, sState, p.skill4_buff, 'skill4_timer');
+                    tryApplySupportParam(ctx, sState, p.skill7_buff, 'skill7_timer');
+                    tryApplySupportParam(ctx, sState, p.skill8_buff, 'skill8_timer');
+                }
+            } else if (actionType === 'ult') {
+                ctx.log(logIdx, "임부언: [필살기] 사용", null, null, false, "서포터");
+                // [수정] 버프 즉시 적용하지 않고 예약
+                sState.pending_buffs = true;
+
+                // 추가 행동 예약 (isPos3이면 onPostAttack에서 차단됨)
+                const bStats = state.savedStats['bossren'] || {};
+                if (bStats.stamp) {
+                    sState.pending_extra_action = true;
+                }
+            } else if (actionType === 'defend') {
+                ctx.log(logIdx, "임부언: [방어]", null, null, false, "서포터");
+            }
+        },
+        onPostAttack: (ctx, sState) => {
+            // [수정] 메인 행동 직후(추가 행동 전)에 예약된 버프 적용
+            if (sState.pending_buffs) {
+                const isPos3 = (ctx.charId === 'famido' && ctx.customValues.pos3_fixed);
+                const p = simParams.bossren;
+                if (!isPos3) {
+                    tryApplySupportParam(ctx, sState, p.skill4_buff, 'skill4_timer');
+                    tryApplySupportParam(ctx, sState, p.skill8_buff, 'skill8_timer');
+                }
+                tryApplySupportParam(ctx, sState, p.skill7_buff, 'skill7_timer');
+                sState.pending_buffs = false;
+            }
+
+            // [수정] 모든 메인 캐릭터 처리가 끝난 후 최하단에서 추가 행동 발동
+            if (sState.pending_extra_action) {
+                // 파미도 포지션 3 체크
+                const isPos3 = (ctx.charId === 'famido' && ctx.customValues.pos3_fixed);
+                const exceptionChars = ['kumoyama', 'wang']; 
+                
+                if (!isPos3 && !exceptionChars.includes(ctx.charId)) {
+                    // [핵심] 엔진에 신호만 보냄 (엔진이 extraPattern을 확인하여 처리함)
+                    const extraPatternData = ctx.extraPattern || {};
+                    const extraActionType = extraPatternData[ctx.t - 1] || 'ult';
+
+                    ctx.extraHits.push({
+                        isActionReplay: true,
+                        extraActionType: extraActionType,
+                        customTag: "추가행동"
+                    });
+                }
+                sState.pending_extra_action = false; 
+            }
+        },
+        getBonuses: (sState, targetCharData, ctx) => {
+            let bonuses = { "공증": 0, "고정공증": 0, "뎀증": 0 };
+            
+            // [수정] 메인이 파미도일 때 포지션 3 체크 여부 확인 (ctx.customValues 사용)
+            const isPos3 = (ctx.charId === 'famido' && ctx.customValues.pos3_fixed);
+
+            // 1. 상시 공증 (패시브1)
+            bonuses["공증"] += getSupportVal('bossren', 2, '공증', targetCharData);
+            
+            // 2. 뎀증 (패시브5 - 최고의 보상)
+            if (sState.skill7_timer > 0) {
+                // 현재 턴 임부언의 행동 확인
+                let actionType = getSupportAction('bossren', ctx.t);
+                const isFromUlt = (actionType === 'ult');
+                
+                // 포지션 3이 아니거나, 임부언이 필살기를 쓴 턴(전체 버프)인 경우에만 적용
+                if (!isPos3 || isFromUlt) {
+                    bonuses["뎀증"] += getSupportVal('bossren', 6, '뎀증', targetCharData);
+                }
+            }
+
+            // 3. 고정 가산 계산 (임부언의 실시간 기초공격력 기준)
+            // 포지션 3에 고정된 경우, 포지션 1 전용인 가산 버프는 모두 제외
+            if (!isPos3) {
+                const supportStats = state.savedStats['bossren'] || { lv: 1, s1: 0, s2: 0 };
+                const baseResult = calculateBaseStats(charData['bossren'].base, parseInt(supportStats.lv || 1), parseInt(supportStats.s1 || 0), parseInt(supportStats.s2 || 0), 1.05);
+                let baseAtkBoostRate = 0;
+                if (parseInt(supportStats.s1 || 0) >= 50) baseAtkBoostRate += getSupportVal('bossren', 5, '기초공증');
+                const currentBaseAtk = baseResult["공격력"] * (1 + baseAtkBoostRate / 100);
+
+                if (sState.skill1_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('bossren', 0, 0) / 100);
+                if (sState.skill4_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('bossren', 3, 0) / 100);
+                if (sState.skill8_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('bossren', 7, 0) / 100);
+            }
+
+            return bonuses;
+        }
     }
 };
 
@@ -799,6 +906,11 @@ export function processSupportEnemyHit(ctx, supportId, supportState) {
 export function processSupportAttack(ctx, supportId, supportState) {
     if (!supportId || supportId === 'none' || !supportLogic[supportId] || !supportLogic[supportId].onAttack) return;
     supportLogic[supportId].onAttack(ctx, supportState);
+}
+
+export function processSupportPostAttack(ctx, supportId, supportState) {
+    if (!supportId || supportId === 'none' || !supportLogic[supportId] || !supportLogic[supportId].onPostAttack) return;
+    supportLogic[supportId].onPostAttack(ctx, supportState);
 }
 
 export function processSupportAfterAction(ctx, supportId, supportState) {

@@ -13,6 +13,12 @@ export const backgroundConfigs = {
     "duncan": {
         mobile: { scale: 1.4, xOffset: 300 }  // 모바일: 1.5배, 오른쪽 200px 이동
     },
+    "orem": {
+        mobile:  {xOffset: 220 }
+    },
+    "tyrantino": {
+        mobile:  { scale: 1.4, xOffset: 250 }
+    },            
     "famido": {
         mobile: { xOffset: 250 }  // 모바일: 1.5배, 오른쪽 200px 이동
     },
@@ -85,6 +91,10 @@ export const backgroundConfigs = {
         mobile: { xOffset: 250 } 
     },  
     "tayangsuyi": {
+        tablet: { scale: 1.1, xOffset: 40 },         
+        mobile: { xOffset: 250 } 
+    },          
+    "bossren": {
         tablet: { scale: 1.1, xOffset: 40 },         
         mobile: { xOffset: 250 } 
     },                                            

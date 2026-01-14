@@ -16,12 +16,21 @@ export function showToast(message) {
     toast.textContent = message;
     toast.classList.add('show');
     
+    // [추가] 화면 클릭 시 즉시 닫기 로직
+    const hideToast = () => {
+        toast.classList.remove('show');
+        document.removeEventListener('click', hideToast);
+        if (toast.timeoutId) clearTimeout(toast.timeoutId);
+    };
+    // 짧은 지연 후 클릭 이벤트 등록 (토스트를 띄운 클릭에 바로 닫히지 않도록)
+    setTimeout(() => {
+        document.addEventListener('click', hideToast);
+    }, 50);
+
     // 기존 타이머가 있다면 취소하고 새로 설정 (연속 클릭 대응)
     if (toast.timeoutId) clearTimeout(toast.timeoutId);
     
-    toast.timeoutId = setTimeout(() => { 
-        toast.classList.remove('show'); 
-    }, 2500);
+    toast.timeoutId = setTimeout(hideToast, 5000);
 }
 
 export function showSimpleTooltip(target, text) {

@@ -25,6 +25,11 @@ export function updateActionEditor(charId) {
     listContainer.innerHTML = '';
     const CD = (() => { const m = data.skills[1].desc?.match(/\(쿨타임\s*:\s*(\d+)턴\)/); return m ? parseInt(m[1]) : 3; })();
     
+    // [추가] 임부언 서포터 여부 확인
+    const supportId1 = localStorage.getItem(`sim_last_support_1_${charId}`) || 'none';
+    const supportId2 = localStorage.getItem(`sim_last_support_2_${charId}`) || 'none';
+    const isBossrenIn = (supportId1 === 'bossren' || supportId2 === 'bossren');
+
     const actions = [
         { id: 'normal', label: '보통', activeStyle: 'background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7;' },
         { id: 'defend', label: '방어', activeStyle: 'background:#e3f2fd; color:#1565c0; border-color:#90caf9;' },
@@ -36,15 +41,10 @@ export function updateActionEditor(charId) {
         if (!editBtn) return;
         let hasPattern = false;
         const savedPatternJson = localStorage.getItem(`sim_pattern_${charId}`);
-        if (savedPatternJson) {
-            const savedPattern = JSON.parse(savedPatternJson);
-            const defaultPattern = Array.from({ length: turns }, (_, k) => (k > 0 && k % CD === 0) ? 'ult' : 'normal');
-            if (savedPattern.length !== defaultPattern.length) hasPattern = true;
-            else {
-                const isDifferent = savedPattern.some((val, idx) => val !== defaultPattern[idx]);
-                if (isDifferent) hasPattern = true;
-                else localStorage.removeItem(`sim_pattern_${charId}`);
-            }
+        const extraPatternJson = localStorage.getItem(`sim_pattern_extra_${charId}`);
+        if (savedPatternJson || extraPatternJson) {
+            // [수정] 커스텀 패턴이 하나라도 있으면 강조
+            hasPattern = true;
         }
         editBtn.style.background = hasPattern ? '#f9f5ff' : '#f0f0f0';
         editBtn.style.borderColor = hasPattern ? '#6f42c1' : '#ccc';
@@ -52,32 +52,75 @@ export function updateActionEditor(charId) {
         editBtn.style.fontWeight = hasPattern ? 'bold' : 'normal';
     };
 
-    for (let t = 1; t <= turns; t++) {
-        const currentAction = pattern[t-1] || (t > 1 && (t - 1) % CD === 0 ? 'ult' : 'normal');
-        const row = document.createElement('div'); row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;';
-        let html = `<span style="font-size:0.75em; font-weight:bold; min-width:30px; color:#888;">${t}턴</span><div style="display:flex; flex:1; gap:4px;">`;
+    // [헬퍼] 행 생성 함수
+    const createActionRow = (tLabel, patternKey, turnIdx, isExtra = false) => {
+        const currentPattern = JSON.parse(localStorage.getItem(patternKey)) || {};
+        // 기본값: 2턴 주기 규칙 적용 또는 추가행동은 기본 'ult'
+        let currentAction = isExtra ? (currentPattern[turnIdx] || 'ult') : (pattern[turnIdx] || (turnIdx > 0 && (turnIdx % CD === 0) ? 'ult' : 'normal'));
+        
+        const row = document.createElement('div'); 
+        row.style.cssText = `display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;`;
+        
+        let html = `<span style="font-size:0.75em; font-weight:bold; min-width:45px; color:${isExtra ? '#6f42c1' : '#888'};">${tLabel}</span><div style="display:flex; flex:1; gap:4px;">`;
+        
         actions.forEach(act => {
             const isActive = currentAction === act.id;
-            const style = isActive ? act.activeStyle : 'background:#f5f5f5; color:#bbb; border-color:#ddd;';
-            html += `<button class="sim-action-btn" data-turn="${t-1}" data-value="${act.id}" style="flex:1; font-size:0.75em; padding:6px 0; border-radius:6px; border:1px solid; font-weight:bold; cursor:pointer; transition:all 0.1s; ${style}">${act.label}</button>`;
+            // [수정] X-2턴(isExtra)일 경우 활성 버튼은 연보라 배경+보라 테두리/텍스트
+            let style = '';
+            if (isExtra) {
+                style = isActive ? 'background:#f3e5f5; color:#6f42c1; border-color:#6f42c1;' : 'background:#f9f5ff; color:#d1c4e9; border-color:#e9e0f9;';
+            } else {
+                style = isActive ? act.activeStyle : 'background:#f5f5f5; color:#bbb; border-color:#ddd;';
+            }
+            
+            let overlay = '';
+            // 임부언 아이콘 오버레이 (필살 버튼에만, 메인 턴 슬롯 한정)
+            if (!isExtra && isBossrenIn && act.id === 'ult' && ((supportId1 === 'bossren' && getSupportAction('bossren', turnIdx + 1) === 'ult') || (supportId2 === 'bossren' && getSupportAction('bossren', turnIdx + 1) === 'ult'))) {
+                overlay = `<img src="images/bossren.webp" style="position:absolute; top:-6px; right:-4px; width:18px; height:18px; border-radius:50%; border:1px solid #6f42c1; background:black; z-index:5; pointer-events:none; box-shadow: 0 2px 4px rgba(0,0,0,0.3); object-fit:cover; object-position:top;">`;
+            }
+
+            html += `<div style="position:relative; flex:1; display:flex;">
+                        <button class="sim-action-btn" data-key="${patternKey}" data-turn="${turnIdx}" data-value="${act.id}" style="width:100%; font-size:0.75em; padding:6px 0; border-radius:6px; border:1px solid; font-weight:bold; cursor:pointer; transition:all 0.1s; ${style}">${act.label}</button>
+                        ${overlay}
+                     </div>`;
         });
-        html += `</div>`; row.innerHTML = html; listContainer.appendChild(row);
+        html += `</div>`; 
+        row.innerHTML = html;
+        return row;
+    };
+
+    for (let t = 1; t <= turns; t++) {
+        listContainer.appendChild(createActionRow(`${t}턴`, `sim_pattern_${charId}`, t - 1));
+        
+        let isBossrenUltThisTurn = false;
+        if (isBossrenIn) {
+            // [수정] 임부언의 도장 활성 상태까지 체크
+            const bStats1 = (supportId1 === 'bossren') ? (state.savedStats['bossren'] || {}) : {};
+            const bStats2 = (supportId2 === 'bossren') ? (state.savedStats['bossren'] || {}) : {};
+            const isStampActive = bStats1.stamp || bStats2.stamp;
+
+            if (isStampActive) {
+                if (supportId1 === 'bossren' && getSupportAction('bossren', t) === 'ult') isBossrenUltThisTurn = true;
+                if (supportId2 === 'bossren' && getSupportAction('bossren', t) === 'ult') isBossrenUltThisTurn = true;
+            }
+        }
+        if (isBossrenUltThisTurn) {
+            listContainer.appendChild(createActionRow(`${t}-2턴`, `sim_pattern_extra_${charId}`, t - 1, true));
+        }
     }
 
     listContainer.querySelectorAll('.sim-action-btn').forEach(btn => {
         btn.onclick = (e) => {
-            const turnIdx = parseInt(btn.dataset.turn), newValue = btn.dataset.value;
-            let p = JSON.parse(localStorage.getItem(`sim_pattern_${charId}`)) || [];
-            if (p.length === 0) { for(let k=0; k<turns; k++) p[k] = (k > 0 && k % CD === 0) ? 'ult' : 'normal'; }
+            const key = btn.dataset.key;
+            const turnIdx = btn.dataset.turn;
+            const newValue = btn.dataset.value;
+            
+            let p = JSON.parse(localStorage.getItem(key)) || (key.includes('extra') ? {} : []);
             p[turnIdx] = newValue;
-            localStorage.setItem(`sim_pattern_${charId}`, JSON.stringify(p));
-            const siblingBtns = btn.parentElement.querySelectorAll('.sim-action-btn');
-            siblingBtns.forEach(sBtn => {
-                const act = actions.find(a => a.id === sBtn.dataset.value);
-                const isActive = sBtn === btn;
-                sBtn.style.cssText = `flex:1; font-size:0.75em; padding:6px 0; border-radius:6px; border:1px solid; font-weight:bold; cursor:pointer; transition:all 0.1s; ${isActive ? act.activeStyle : 'background:#f5f5f5; color:#bbb; border-color:#ddd;'}`;
-            });
-            updateEditBtnStyle();
+            localStorage.setItem(key, JSON.stringify(p));
+            
+            // UI 즉시 갱신을 위해 에디터 리렌더링
+            updateActionEditor(charId);
         };
     });
     updateEditBtnStyle();
@@ -117,10 +160,13 @@ export function getCharacterSelectorHtml(validChars, disabledIds, charData, save
 export function getSimulatorLayoutHtml(charId, data, stats, brText, hasMulti, savedTurns, savedIters, useHitProb = false) {
     return `
         <div style="margin-bottom:10px; display: flex; justify-content: flex-end; align-items: center;">
-            <button id="sim-back-to-list" style="background:#fffcf5;border:1px solid #ffa500;color:#ffa500;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">← 캐릭터 선택창</button>
+            <button id="sim-back-to-list" style="background:#f9f5ff;border:1px solid #6f42c1;color:#6f42c1;cursor:pointer;font-size:0.8em;font-weight:bold;padding:5px 12px;border-radius:4px;">← 캐릭터 선택창</button>
         </div>
         <div class="sim-main-container">
             <div class="sim-pane-settings">
+                <!-- [추가] 캐릭터별 안내 메시지 영역 -->
+                <div id="sim-notice-area" style="display:none; margin-bottom:10px; padding:10px; background:#f9f5ff; border:1px solid #e9e0f9; border-radius:8px; font-size:0.75em; color:#6f42c1; line-height:1.4; font-weight:bold;"></div>
+                
                 <div style="position: relative; display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px;background:#fff;border:1px solid #eee0d0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;">
                     <img src="images/${charId}.webp" class="sim-char-profile-img" style="width:55px;height:55px;border-radius:10px;object-fit:cover;border:2px solid #6f42c1;background:black;object-position:top;flex-shrink:0;cursor:pointer;" title="상세 정보로 이동">
                     <div style="flex-grow:1;display:flex;align-items:center;justify-content:space-between;min-width:0;">
