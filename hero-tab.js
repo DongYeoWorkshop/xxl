@@ -18,7 +18,7 @@ function getRecordsByTurn(snapshot) {
             groups[currentTurn].push(rec);
         }
     });
-    return groups;
+    return groups; groupSnapshots
 }
 
 /**
@@ -44,7 +44,7 @@ export function renderHeroTab(dom, updateStatsCallback) {
 
     const headerTab = document.createElement('div');
     headerTab.className = 'hero-tab-tag';
-    headerTab.innerHTML = `<div class="hero-tag-content">기록 중인 캐릭터 (딜량 비교)</div>`;
+    headerTab.innerHTML = `<div class="hero-tag-content">캐릭터 기록</div>`;
     graphContainer.appendChild(headerTab);
 
     const contentPadding = document.createElement('div');
@@ -124,7 +124,8 @@ export function renderHeroTab(dom, updateStatsCallback) {
                 state.heroComparisonState.slot1Id = sIds.length >= 2 ? sIds[sIds.length - 2] : (sIds.length === 1 ? sIds[0] : null);
                 state.heroComparisonState.slot2Id = sIds.length >= 2 ? sIds[sIds.length - 1] : null;
 
-                updateStatsCallback(); 
+                // [수정] 즉시 렌더링을 위해 자기 자신 재호출
+                renderHeroTab(dom, updateStatsCallback);
             };
 
             const img = document.createElement('img');
@@ -232,16 +233,7 @@ function createComparisonGraph(snapshots, container) {
         // 레코드 순회하며 턴별 합산 (턴 구분자 기준)
         snap.records.forEach(rec => {
             if (rec.isTurnSeparator) {
-                // 이전 턴 저장 (1턴부터 시작하므로 구분자가 나오면 그 이전 턴이 끝난 것)
-                // 하지만 구조상 구분자가 먼저 나오고 그 뒤에 데미지가 나옴 (1턴 구분자 -> 데미지 -> 2턴 구분자...)
-                // 따라서 구분자를 만났을 때, '이전 턴'의 데이터를 저장해야 하는데
-                // 첫 구분자(1턴)일 때는 저장할 게 없음.
-                
-                // 로직 수정: 구분자가 '새로운 턴의 시작'을 알림.
-                // 직전 턴까지의 데미지를 누적에 더하고 포인트 추가.
                 if (rec.turnNumber > 1) { 
-                     // 1턴 데이터는 2턴 구분자가 나올 때 저장됨.
-                     // 마지막 턴 데이터는 루프 끝나고 저장해야 함.
                      cumDmg += turnDmg;
                      points.push({ t: currentTurn, d: cumDmg });
                      turnDmg = 0;
@@ -252,26 +244,20 @@ function createComparisonGraph(snapshots, container) {
                 turnDmg += dmgVal * (rec.count || 1);
             }
         });
-        // 마지막 턴 처리
         cumDmg += turnDmg;
         points.push({ t: currentTurn, d: cumDmg });
 
         return { id: snap.id, charId: snap.charId, points };
     });
 
-    // 축 범위 계산
     const allPoints = graphData.flatMap(d => d.points);
     const maxTurn = Math.max(...allPoints.map(p => p.t), 1);
-    const maxDmg = Math.max(...allPoints.map(p => p.d), 100); // 최소값 보정
+    const maxDmg = Math.max(...allPoints.map(p => p.d), 100);
 
-    // [수정] 화면 너비에 따라 내부 그리기 높이 동기화
     const screenWidth = window.innerWidth;
     const height = screenWidth >= 768 ? 350 : 250;
-    
-    // 컨테이너 스타일의 높이도 명시적으로 변경
     container.style.height = `${height}px`;
     
-    // [수정] 화면 크기별 스타일 상수 정의
     const isTablet = (screenWidth >= 768 && screenWidth < 1100);
     const isMobile = (screenWidth < 768);
     
@@ -281,7 +267,6 @@ function createComparisonGraph(snapshots, container) {
     const pointRadius = isTablet ? 6 : 3;
     const legendSpacing = isTablet ? 22 : 16;
 
-    // [수정] 가로 너비 조정
     let width = container.clientWidth || 600;
     if (isTablet || isMobile) {
         width = Math.max(width, screenWidth * 1.05);
@@ -295,7 +280,6 @@ function createComparisonGraph(snapshots, container) {
     
     let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow:visible;">`;
 
-    // Y축 그리드 & 라벨
     for (let i = 0; i <= 5; i++) {
         const yVal = (maxDmg / 5) * i;
         const yPos = padding.top + chartH - (chartH * (i / 5));
@@ -305,7 +289,6 @@ function createComparisonGraph(snapshots, container) {
         svgHtml += `<text x="${padding.left - 10}" y="${yPos + 5}" text-anchor="end" font-size="${fontSizeAxis}" fill="#888">${label}</text>`;
     }
 
-    // X축 라벨
     for (let t = 1; t <= maxTurn; t++) {
         if (maxTurn > 15 && t % 2 !== 0 && t !== maxTurn) continue;
         if (maxTurn > 30 && t % 5 !== 0 && t !== maxTurn) continue;
@@ -314,7 +297,6 @@ function createComparisonGraph(snapshots, container) {
         svgHtml += `<text x="${xPos}" y="${height - 5}" text-anchor="middle" font-size="${fontSizeAxis}" fill="#888">${t}</text>`;
     }
 
-    // 데이터 라인 그리기
     graphData.forEach((g, idx) => {
         const color = colors[idx % colors.length];
         let pathD = "";
@@ -331,14 +313,11 @@ function createComparisonGraph(snapshots, container) {
 
         svgHtml += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="${lineWidth}" />`;
         
-        // 범례 (Legend) - 상단 좌측
         const legendX = padding.left + 15;
         const legendY = padding.top + (idx * legendSpacing);
         
         const mainName = charData[g.charId]?.title || g.charId;
         const snapshot = snapshots.find(s => s.id === g.id);
-        
-        // [수정] 서포터 이름들 추출 (2명 지원)
         const sIds = snapshot?.supportIds || (snapshot?.supportId && snapshot.supportId !== 'none' ? [snapshot.supportId] : []);
         const supportNames = sIds
             .map(sid => {
@@ -348,9 +327,7 @@ function createComparisonGraph(snapshots, container) {
             .filter(name => name && name !== '선택 안 함' && name !== '-');
 
         let displayName = mainName;
-        if (supportNames.length > 0) {
-            displayName += ` (${supportNames.join(', ')})`;
-        }
+        if (supportNames.length > 0) displayName += ` (${supportNames.join(', ')})`;
 
         svgHtml += `<rect x="${legendX}" y="${legendY - (isTablet ? 10 : 8)}" width="${isTablet ? 12 : 10}" height="${isTablet ? 12 : 10}" fill="${color}" rx="2" />`;
         svgHtml += `<text x="${legendX + (isTablet ? 20 : 16)}" y="${legendY + 2}" font-size="${fontSizeLegend}" fill="#333" font-weight="bold">${displayName}</text>`;
@@ -370,34 +347,26 @@ function renderUnifiedContent(container) {
     const snap1 = state.comparisonSnapshots.find(s => s.id === s1Id);
     const snap2 = state.comparisonSnapshots.find(s => s.id === s2Id);
 
-    // 데이터가 하나도 없을 때 (슬롯 숨김 및 안내 문구만 표시)
     if (!snap1 && !snap2) {
         container.style.display = 'flex';
         container.style.flexDirection = 'column';
         container.style.alignItems = 'center';
         container.style.justifyContent = 'center';
-        container.style.minHeight = '200px'; // 세로 중앙을 위한 높이 확보
+        container.style.minHeight = '200px';
 
         const msgDiv = document.createElement('div');
-        msgDiv.style.cssText = `
-            text-align: center;
-            color: #999;
-            font-weight: bold;
-            font-size: 1.1em;
-        `;
+        msgDiv.style.cssText = `text-align: center; color: #999; font-weight: bold; font-size: 1.1em;`;
         msgDiv.innerText = "비교기록을 선택해주세요.";
         container.appendChild(msgDiv);
         return;
     }
 
-    // 데이터가 있을 때는 다시 기본 레이아웃으로 (flex 해제 필요 시 처리)
     container.style.display = 'block'; 
     container.style.minHeight = '';
 
-    // 최상단 캐릭터 프로필 요약 (데이터가 있을 때만 생성)
     const headerRow = document.createElement('div');
     headerRow.className = 'unified-turn-content';
-    headerRow.style.marginBottom = '-20px'; // 간격 더 줄임
+    headerRow.style.marginBottom = '-20px';
     
     headerRow.appendChild(createProfileHeader(snap1, true));
     headerRow.appendChild(createProfileHeader(snap2, false));
@@ -432,46 +401,32 @@ function renderUnifiedContent(container) {
 
 function createProfileHeader(snapshot, isLeft) {
     const slot = document.createElement('div');
-    // 레이아웃 유지를 위해 comparison-slot 클래스는 쓰되, 배경과 글로우는 제거
     slot.className = 'comparison-slot'; 
     slot.style.background = 'transparent';
     slot.style.border = 'none';
     slot.style.boxShadow = 'none';
     slot.style.padding = '5px 10px';
-    slot.style.minHeight = '60px'; // 60px로 복구
+    slot.style.minHeight = '60px';
     slot.style.visibility = 'visible';
 
-    if (!snapshot) {
-        return slot;
-    }
+    if (!snapshot) return slot;
 
     const charTitle = charData[snapshot.charId]?.title || snapshot.charId;
     const { lv, s1, s2 } = snapshot.stats || { lv: 1, s1: 0, s2: 0 };
     let brText = (s1 >= 75) ? "5성" : (s1 >= 50) ? `4성 ${s1-50}단` : (s1 >= 30) ? `3성 ${s1-30}단` : (s1 >= 15) ? `2성 ${s1-15}단` : (s1 >= 5) ? `1성 ${s1-5}단` : `0성 ${s1}단`;
     const spec = `Lv.${lv} / ${brText} / 적합:${s2}`;
 
-    // [추가] 서포터 아이콘 HTML 생성 (2개 지원 - S1 왼쪽, S2 오른쪽)
     const sIds = snapshot.supportIds || (snapshot.supportId && snapshot.supportId !== 'none' ? [snapshot.supportId] : []);
     let supportHtml = '';
     
     if (sIds.length > 0) {
         supportHtml = `<div style="position:absolute; top:-6px; right:-4px; display:flex; gap:2px; z-index:10;">`;
-        
-        // 서포터 1 (왼쪽)
         if (sIds[0] && sIds[0] !== 'none') {
-            supportHtml += `
-            <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #6f42c1; background:black; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3);">
-                <img src="images/${sIds[0]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">
-            </div>`;
+            supportHtml += `<div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #6f42c1; background:black; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3);"><img src="images/${sIds[0]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'"></div>`;
         }
-        // 서포터 2 (오른쪽)
         if (sIds[1] && sIds[1] !== 'none') {
-            supportHtml += `
-            <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #28a745; background:black; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3);">
-                <img src="images/${sIds[1]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'">
-            </div>`;
+            supportHtml += `<div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #28a745; background:black; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3);"><img src="images/${sIds[1]}.webp" style="width:100%; height:100%; object-fit:cover; object-position:top;" onerror="this.src='icon/main.png'"></div>`;
         }
-        
         supportHtml += `</div>`;
     }
 
@@ -511,7 +466,6 @@ function createRecordColumn(records, isLeft) {
         const damageVal = (rec.damage || "0").replace(/,/g, '');
         const totalRowDmg = (parseInt(damageVal) || 0) * (rec.count || 1);
         const typeTag = rec.type ? `<span class="comp-record-type" style="color:#999; margin-right:4px;">[${rec.type}]</span>` : '';
-        // [수정] 스킬 이름을 span.comp-skill-name으로 감쌈
         row.innerHTML = `<div class="comp-record-name">${typeTag}<span class="comp-skill-name">${rec.name}</span> ${rec.count > 1 ? `<span class="comp-record-count">x${rec.count}</span>` : ''}</div><div class="comp-record-val">${totalRowDmg.toLocaleString()}</div>`;
         list.appendChild(row);
     });

@@ -130,8 +130,24 @@ export function initHandlers(domElements, logicFunctions) {
                 return;
             }
 
-            const targetBtn = document.querySelector(`.main-image[data-id="${targetId}"]`);
-            if (targetBtn) handleImageClick(targetBtn);
+            let targetBtn = document.querySelector(`.main-image[data-id="${targetId}"]`);
+            
+            // [수정] 대상 버튼이 없으면(목록에 없는 hero/simulator 등) 가짜 객체 생성하여 전달
+            if (!targetBtn) {
+                targetBtn = {
+                    dataset: { id: targetId },
+                    classList: {
+                        add: () => {},
+                        remove: () => {},
+                        contains: () => false,
+                        toggle: () => {}
+                    },
+                    scrollIntoView: () => {},
+                    style: {}
+                };
+            }
+
+            handleImageClick(targetBtn);
         };
     });
 
@@ -452,8 +468,22 @@ export function handleImageClick(img) {
                 simShortcutBtn.onclick = (e) => {
                     e.stopPropagation();
                     localStorage.setItem('sim_last_char_id', id);
-                    const simBtn = document.getElementById('nav-simulator-btn');
-                    if (simBtn) handleImageClick(simBtn);
+                    
+                    let simBtn = document.querySelector('.main-image[data-id="simulator"]');
+                    if (!simBtn) {
+                        simBtn = {
+                            dataset: { id: 'simulator' },
+                            classList: {
+                                add: () => {},
+                                remove: () => {},
+                                contains: () => false,
+                                toggle: () => {}
+                            },
+                            scrollIntoView: () => {},
+                            style: {}
+                        };
+                    }
+                    handleImageClick(simBtn);
                 };
             }
         }

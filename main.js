@@ -227,12 +227,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     
         if (landingHeroBtn) {
-    
-        landingHeroBtn.onclick = () => {
-            const heroImg = document.querySelector('.main-image[data-id="hero"]');
-            if (heroImg) handleImageClick(heroImg);
-        };
-    }
+            landingHeroBtn.onclick = () => {
+                let heroImg = document.querySelector('.main-image[data-id="hero"]');
+                if (!heroImg) {
+                    heroImg = {
+                        dataset: { id: 'hero' },
+                        classList: {
+                            add: () => {},
+                            remove: () => {},
+                            contains: () => false,
+                            toggle: () => {}
+                        },
+                        scrollIntoView: () => {},
+                        style: {}
+                    };
+                }
+                handleImageClick(heroImg);
+            };
+        }
     if (landingSimBtn) {
         landingSimBtn.onclick = () => {
             // [수정] 시뮬레이터 버튼 클릭 시 캐릭터 선택창으로 바로 이동

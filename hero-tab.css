@@ -66,6 +66,12 @@
   cursor: copy;
   background: black;
   margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.snapshot-wrapper.selected .snapshot-img {
+  border: 2px solid #6f42c1;
+  box-shadow: 0 0 10px rgba(111, 66, 193, 0.6);
 }
 
 .snapshot-del-btn {
