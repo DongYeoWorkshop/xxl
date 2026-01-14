@@ -305,11 +305,13 @@ export function hideAllSections() {
     // [추가] 캐릭터 전용 UI 요소 초기화
     const favBtn = document.querySelector('.char-fav-btn');
     const simShortcutBtn = document.querySelector('.sim-shortcut-btn');
+    const reportShortcutBtn = document.querySelector('.char-report-btn');
     const charBgImg = document.getElementById('char-bg-img');
     const charBgContainer = document.getElementById('internal-char-bg');
     
     if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
     if (simShortcutBtn) simShortcutBtn.style.setProperty('display', 'none', 'important');
+    if (reportShortcutBtn) reportShortcutBtn.style.setProperty('display', 'none', 'important');
     if (charBgImg) {
         charBgImg.style.display = 'none';
         charBgImg.src = '';
@@ -439,6 +441,7 @@ export function handleImageClick(img) {
         
         const favBtn = document.querySelector('#content-display .char-fav-btn');
         const simShortcutBtn = document.querySelector('#content-display .sim-shortcut-btn');
+        const reportShortcutBtn = document.querySelector('#content-display .char-report-btn');
 
         if (simShortcutBtn) {
             // [수정] 비활성화 목록에 있는 캐릭터는 버튼 숨김
@@ -448,12 +451,31 @@ export function handleImageClick(img) {
                 simShortcutBtn.style.display = 'flex'; // 다시 보이기
                 simShortcutBtn.onclick = (e) => {
                     e.stopPropagation();
-                    // 현재 캐릭터 ID를 시뮬레이터용 데이터로 저장하고 시뮬레이터 탭 클릭
                     localStorage.setItem('sim_last_char_id', id);
                     const simBtn = document.getElementById('nav-simulator-btn');
                     if (simBtn) handleImageClick(simBtn);
                 };
             }
+        }
+
+        if (reportShortcutBtn) {
+            reportShortcutBtn.style.display = 'flex';
+            reportShortcutBtn.onclick = (e) => {
+                e.stopPropagation();
+                const modal = document.getElementById('char-report-modal');
+                const body = document.getElementById('report-modal-body');
+                const title = document.getElementById('report-modal-title');
+                if (modal && body) {
+                    if (title) title.innerText = `📊 ${data.title} 분석 보고서`;
+                    body.innerHTML = `<div style="text-align:center;"><img src="images/report/${id}.webp" style="width:100%; max-width:100%; border-radius:4px;" onerror="this.onerror=null; this.parentElement.innerHTML='<p style=padding:40px;color:#999;>보고서 이미지가 준비되지 않았습니다.</p>';"></div>`;
+                    modal.style.display = 'flex';
+                    
+                    const topCloseBtn = document.getElementById('report-modal-top-close-btn');
+                    const closeModal = () => { modal.style.display = 'none'; body.innerHTML = ''; };
+                    if (topCloseBtn) topCloseBtn.onclick = closeModal;
+                    modal.onclick = (ev) => { if (ev.target === modal) closeModal(); };
+                }
+            };
         }
 
         if (favBtn) {

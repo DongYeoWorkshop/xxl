@@ -83,6 +83,7 @@
 
 <div id="content-display">
   <button class="sim-shortcut-btn" title="이 캐릭터로 시뮬레이터 시작" style="display: none;"><img src="icon/bolt.png" style="width: 24px;"></button>
+  <button class="char-report-btn" title="캐릭터 분석 보고서" style="display: none;"><img src="icon/debuffer.webp" style="width: 22px;"></button>
   <button class="char-fav-btn">☆</button>
   <div id="internal-char-bg">
       <img id="char-bg-img" src="" alt="" style="display: none;">
@@ -240,7 +241,7 @@
             <!-- Update & Report Row -->
             <div style="display: flex; align-items: center; gap: 15px; width: 100%; max-width: 320px;">
                 <button id="landing-report-btn" style="width: 100px; height: 70px; padding: 8px; background: rgba(255, 165, 0, 0.15); border: 1px solid #ffa500; border-radius: 10px; color: #ffa500; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; flex-shrink: 0; font-family: inherit;">
-                    <img src="icon/debuffer.webp" style="width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.8));">
+                    <img src="icon/heal.webp" style="width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.8));">
                     <span style="font-size: 0.8em; font-weight: bold;">문의하기</span>
                 </button>
                 <div style="color: #ddd; font-size: 0.8em; text-align: left; line-height: 1.4;">
@@ -380,6 +381,16 @@
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
             <button id="report-close-btn" style="padding: 8px 16px; background: #eee; border: none; border-radius: 4px; cursor: pointer;">취소</button>
             <button id="report-submit-btn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">보내기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 캐릭터 보고서 모달 -->
+<div id="char-report-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; padding: 10px; position: relative;">
+        <button id="report-modal-top-close-btn" style="position: absolute; top: 10px; right: 22px; font-size: 28px; cursor: pointer; background: none; border: none; color: white; z-index: 10; line-height: 1; text-shadow: 0 0 5px rgba(0,0,0,0.5);">&times;</button>
+        <div id="report-modal-body" style="flex: 1; overflow-y: auto; min-height: 200px; font-size: 0.9em; line-height: 1.6; color: #444; border-radius: 4px; padding-top: 0; scrollbar-width: thin;">
+            <!-- 보고서 내용이 여기에 들어갑니다 -->
         </div>
     </div>
 </div>

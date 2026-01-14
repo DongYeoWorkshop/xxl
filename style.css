@@ -62,6 +62,58 @@
   filter: grayscale(100%) !important;
 }
 
+/* 캐릭터 보고서 바로가기 버튼 */
+.char-report-btn {
+  position: absolute !important;
+  top: 100px !important; 
+  right: 15px !important; 
+  background: #28a745 !important; 
+  border: none !important;
+  border-radius: 8px !important; 
+  width: 30px;
+  height: 30px;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  z-index: 10 !important;
+  color: white !important;
+  box-shadow: none !important; 
+}
+
+/* 내부 이미지 흰색으로 변환 */
+.char-report-btn img {
+  filter: brightness(0) invert(1);
+}
+
+.char-report-btn:hover:not(:disabled) {
+  transform: scale(1.1) !important;
+}
+
+.char-report-btn:disabled {
+  opacity: 0.2 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(100%) !important;
+}
+
+/* 보고서 모달 커스텀 스크롤바 (오버레이 스타일 개선) */
+#report-modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+#report-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+#report-modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  border: 3px solid transparent; /* 투명 테두리로 핸들을 얇게 만듦 */
+  background-clip: content-box; /* 색상이 테두리 안쪽에만 칠해지게 함 */
+}
+#report-modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
 /* [추가] PC 버전 헤더 경계선 강제 제거 */
 @media screen and (min-width: 1100px) {
   .char-header-row {
