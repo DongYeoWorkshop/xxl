@@ -115,6 +115,12 @@
 .main-image:active { transform: scale(0.95); }
 /* transform 제거 (래퍼에서 통합 처리) */
 .main-image.selected { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(255, 166, 2, 0.6); }
+
+/* 데이터 수정된 캐릭터 배경색 변경 */
+.main-image.modified {
+  background-color: #56c5b1 !important;
+}
+
 /* .main-image.modified 스타일 제거됨 */
 .main-image.selected.modified { border: 2px solid var(--primary-color); } /* 주황색 박스쉐도우 제거 */
 
