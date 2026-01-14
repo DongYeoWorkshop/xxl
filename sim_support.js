@@ -821,6 +821,7 @@ export const supportLogic = {
             }
         },
         onPostAttack: (ctx, sState) => {
+            ctx.supportId = 'bossren';
             // [수정] 메인 행동 직후(추가 행동 전)에 예약된 버프 적용
             if (sState.pending_buffs) {
                 const isPos3 = (ctx.charId === 'famido' && ctx.customValues.pos3_fixed);

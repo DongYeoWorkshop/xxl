@@ -361,10 +361,7 @@ export const simCharData = {
   },
   "tamrang": {
     commonControls: [],
-    customControls: [
-        { id: "self_sleep_active", type: "toggle", label: "수면버프 자가적용", initial: false, description: "체크 시 아군이 소비하지 않은 디버프를 본인이 다음 턴에 직접 사용합니다." },
-        { id: "is_sleep_immune", type: "toggle", label: "수면 면역", initial: false, description: "적에게 수면 면역이 있어 수면 및 도장 디버프가 적용되지 않습니다." }
-    ],
+    customControls: [],
     initialState: {
         sleep_timer: 0,
         skill4_timer: [], // 패시브2
