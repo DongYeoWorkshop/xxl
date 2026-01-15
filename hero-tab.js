@@ -64,6 +64,7 @@ export function renderHeroTab(dom, updateStatsCallback) {
             state.heroComparisonState = { slot1Id: null, slot2Id: null, nextTarget: 1 };
             saveSnapshots([]);
             updateStatsCallback(); 
+            renderHeroTab(dom, updateStatsCallback);
         }
     };
     headerDiv.appendChild(clearAllBtn);
