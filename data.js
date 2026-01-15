@@ -2137,8 +2137,8 @@ export const charData = {
         decimalPlaces: 2, 
         name: "간헐적 호흡", 
         icon: "icon/passive5.webp", 
-        desc: "방어 사용 시 포지션1 위치의 아군에게 1턴 간 받는 데미지 {0}% 감소 버프 부여", 
-        calc: [{ max: 30 }] 
+        desc: "방어 사용 시 포지션1 위치의 아군에게 1턴 간 받는 데미지 {0}% 감소 버프를 부여하며, 아군 전체에겐 받는 데미지 {1}% 감소 부여", 
+        calc: [{ max: 10 },{ max: 5 }]
       },
       {
         id: "bossren_skill6",
