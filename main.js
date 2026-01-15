@@ -345,8 +345,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 초기 상태 설정 (저장된 상태 불러오기)
-    const isListHidden = localStorage.getItem('charListHidden') === 'true';
+    // 초기 상태 설정 (저장된 상태 불러오기 - 기본값은 닫힘(true))
+    const storedHidden = localStorage.getItem('charListHidden');
+    const isListHidden = (storedHidden === null) ? true : (storedHidden === 'true');
     const listContainer = document.getElementById('char-list-container');
     if (isListHidden) {
         listContainer.classList.add('hidden');
