@@ -97,6 +97,7 @@ export function renderHeroTab(dom, updateStatsCallback) {
                 }
                 saveSnapshots(state.comparisonSnapshots);
                 updateStatsCallback();
+                renderHeroTab(dom, updateStatsCallback);
             };
             wrapper.appendChild(deleteBtn);
 
