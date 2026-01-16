@@ -437,8 +437,7 @@ export function assembleFinalStats(baseStats, subStats) {
     const 최종공격력 = 기초공격력 * (1 + (subStats["공증"] || 0) / 100) + (subStats["고정공증"] || 0);
 
     // 2. HP 계산
-    // 규칙: 기초 HP 증가에는 '기초공증' 수치도 합산되어 영향을 줌
-    const 기초HP = baseStats["HP"] ? Math.floor(baseStats["HP"] * (1 + ((subStats["기초HP증가"] || 0) + (subStats["기초공증"] || 0)) / 100)) : 0;
+    const 기초HP = baseStats["HP"] ? Math.floor(baseStats["HP"] * (1 + (subStats["기초HP증가"] || 0) / 100)) : 0;
     const 최종HP = 기초HP > 0 ? Math.floor(기초HP * (1 + (subStats["HP증가"] || 0) / 100)) : 0;
 
     return {
