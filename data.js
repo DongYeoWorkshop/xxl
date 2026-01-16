@@ -445,7 +445,7 @@ export const charData = {
         id: "kumoyama_skill6",
         excludeFromBuffSearch: true,
         decimalPlaces: 2,
-        buffEffects: { "기초공증": { max: 15 } }, 
+        buffEffects: { "기초공증": { max: 15 },  "기초HP증가": { max: 15 } }, 
         buffDesc: "기초공격력/HP {0}% 증가", // 버프창 설명 추가
         name: "고강도 훈련 성과", 
         icon: "icon/passive5.webp", 
@@ -641,7 +641,7 @@ export const charData = {
         id: "kyrian_skill6",
         excludeFromBuffSearch: true,
         decimalPlaces: 2,
-        buffEffects: { "기초공증": { max: 15 } }, 
+        buffEffects: { "기초공증": { max: 15 },  "기초HP증가": { max: 15 } }, 
         buffDesc: "기초공격력/HP {0}% 증가", // 버프창 설명 추가
         name: "고강도 훈련 성과", 
         icon: "icon/passive5.webp", 
@@ -727,7 +727,7 @@ export const charData = {
         id: "meng_skill6",
         excludeFromBuffSearch: true,
         decimalPlaces: 2,
-        buffEffects: { "기초공증": { max: 15 } }, 
+        buffEffects: { "기초공증": { max: 15 },  "기초HP증가": { max: 15 } }, 
         buffDesc: "기초공격력/HP {0}% 증가", // 버프창 설명 추가
         name: "고강도 훈련 성과", 
         icon: "icon/passive5.webp", 
@@ -1018,7 +1018,7 @@ export const charData = {
         id: "leo_skill6",
         excludeFromBuffSearch: true,
         decimalPlaces: 2,
-        buffEffects: { "기초공증": { max: 15 } }, 
+        buffEffects: { "기초공증": { max: 15 },  "기초HP증가": { max: 15 } }, 
         buffDesc: "기초공격력/HP {0}% 증가",
         name: "고강도 훈련 성과", 
         icon: "icon/passive5.webp", 
