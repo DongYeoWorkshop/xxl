@@ -17,6 +17,26 @@
   clip-path: inset(0 round 8px); 
 }
 
+#char-grade-logo {
+  position: absolute;
+  top: 20px; /* 25px에서 20px로 이동 */
+  left: 15px;
+  height: 24px; /* 28px에서 24px로 추가 축소 */
+  width: auto;  /* 너비는 비율에 맞게 자동 조절 */
+  z-index: 15;
+  pointer-events: none;
+  filter: none; /* 그림자 제거 */
+}
+
+/* 모바일 로고 크기 조정 */
+@media screen and (max-width: 600px) {
+  #char-grade-logo {
+    height: 14px; /* 18px에서 14px로 추가 축소 */
+    top: 15px; /* 20px에서 15px로 이동 */
+    left: 15px; /* 10px에서 15px로 이동 */
+  }
+}
+
 /* 배경 레이어 (이미지 전용 박스) */
 #internal-char-bg {
   position: fixed;
@@ -125,7 +145,7 @@
 
 .char-fav-btn {
   position: absolute !important;
-  top: 22px !important;
+  top: 15px !important; /* 22px에서 15px로 이동 */
   right: 15px !important; 
   left: auto !important;
   background: none !important; /* 배경 제거 */

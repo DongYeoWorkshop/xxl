@@ -18,6 +18,67 @@
   }
 
   /* 헤더 모바일 최적화 (원래대로 복구) */
+  #char-list-container {
+    max-height: 210px !important; /* 열렸을 때 최대 높이 축소 */
+  }
+
+  .image-row {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+
+  .char-slot-wrapper {
+    width: 60px !important;
+    height: 150px !important;
+  }
+
+  .main-image {
+    width: 60px !important;
+    height: 150px !important;
+  }
+
+  #sort-container {
+    height: 162px !important;
+    padding: 0 3px !important;
+    gap: 2px !important; /* 간격을 3px에서 2px로 더 축소 */
+    width: 28px !important;
+  }
+
+  .sort-icon, .sort-icon-all {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 0.55em !important;
+    margin-bottom: 0 !important; /* 혹시 있을 여백 제거 */
+  }
+
+  .sort-icon-fav {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 1.1em !important;
+    margin-top: 0 !important;
+  }
+
+  /* 캐릭터 카드 하트 아이콘 축소 (모바일) */
+  .info-right-col img {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .info-right-col {
+    bottom: 4px !important;
+    right: 4px !important;
+  }
+
+  .info-left-col {
+    bottom: 3px !important;
+    left: 4px !important;
+    font-size: 0.5em !important; /* 텍스트도 살짝 축소 */
+  }
+
+  body.list-open #content-display {
+    margin-top: 215px !important; /* 축소된 헤더 높이에 맞춤 */
+  }
+
   .sticky-content {
     padding: 0 5px !important;
     gap: 2px !important;

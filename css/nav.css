@@ -108,21 +108,132 @@
   cursor: pointer;
   transition: transform 0.2s;
   object-fit: cover;
-  background-color: black;
+  background-color: #222 !important; /* 기본 배경 */
   border: 1px solid #444;
 }
 
+/* 속성별 배경색 */
+.main-image.attr-0 { background-color: #4a2511 !important; } /* 불: 따뜻한 브라운 배경 (#ed7d31 기반) */
+.main-image.attr-1 { background-color: #1a344d !important; } /* 물: 차분한 딥 블루 배경 */
+.main-image.attr-2 { background-color: #2d3d24 !important; } /* 나무: 차분한 나뭇잎색 배경 */
+.main-image.attr-3 { background-color: #4d3d00 !important; } /* 빛: 어두운 골드 배경 (#ffc000 기반) */
+.main-image.attr-4 { background-color: #1e0d2b !important; } /* 어둠: 깊은 보라 배경 (#7030a0 기반) */
+
 .main-image:active { transform: scale(0.95); }
 /* transform 제거 (래퍼에서 통합 처리) */
-.main-image.selected { border: 2px solid var(--primary-color); box-shadow: 0 0 10px rgba(255, 166, 2, 0.6); }
+.main-image.selected { border: none !important; box-shadow: 0 0 10px rgba(255, 166, 2, 0.6); }
 
-/* 데이터 수정된 캐릭터 배경색 변경 */
-.main-image.modified {
-  background-color: #56c5b1 !important;
+/* 속성별 선택 그림자 색상 */
+.main-image.selected.attr-0 { box-shadow: 0 0 12px rgba(237, 125, 49, 0.8) !important; }
+.main-image.selected.attr-1 { box-shadow: 0 0 12px rgba(91, 155, 213, 0.8) !important; }
+.main-image.selected.attr-2 { box-shadow: 0 0 12px rgba(112, 173, 71, 0.8) !important; }
+.main-image.selected.attr-3 { box-shadow: 0 0 12px rgba(255, 192, 0, 0.8) !important; }
+.main-image.selected.attr-4 { box-shadow: 0 0 12px rgba(112, 48, 160, 0.8) !important; }
+
+/* XL 등급 선택 시 보라색 테두리 적용 (수정 상태보다 우선) */
+.main-image.selected.grade-xl {
+  border: none !important;
 }
 
 /* .main-image.modified 스타일 제거됨 */
-.main-image.selected.modified { border: 2px solid var(--primary-color); } /* 주황색 박스쉐도우 제거 */
+.main-image.selected.modified { border: none !important; } /* 주황색 박스쉐도우 제거 */
+
+/* 랜딩 페이지 캐릭터 그리드 스타일 보강 */
+#landing-char-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 30px 10px !important;
+  padding: 10px !important;
+  border-radius: 8px;
+}
+
+#landing-char-grid .sim-char-pick-item {
+  border: none !important; /* 모든 테두리 제거 */
+  border-radius: 4px !important; 
+  transition: all 0.2s;
+  width: 100% !important;
+  padding: 0 !important;
+  position: relative;
+  background-color: #222;
+}
+
+/* [복구] 속성별 배경색 (랜딩 그리드용) */
+#landing-char-grid .sim-char-pick-item.attr-0 { background-color: #8a451d !important; } /* 불 */
+#landing-char-grid .sim-char-pick-item.attr-1 { background-color: #325678 !important; } /* 물 */
+#landing-char-grid .sim-char-pick-item.attr-2 { background-color: #3e6128 !important; } /* 나무 */
+#landing-char-grid .sim-char-pick-item.attr-3 { background-color: #8e6b00 !important; } /* 빛 */
+#landing-char-grid .sim-char-pick-item.attr-4 { background-color: #3a1952 !important; } /* 어둠 */
+
+/* 랜딩 페이지 하단 라인 위치 조정 */
+#landing-char-grid .sim-char-pick-item .char-bottom-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: rgba(255, 166, 2, 0.9); /* 기본 주황색 */
+  z-index: 10;
+}
+
+#landing-char-grid .sim-char-pick-item.grade-xl .char-bottom-line {
+  background-color: #a847ff !important; /* XL 등급 선명한 보라색 */
+}
+
+/* [복구] 이미지 세부 스타일: 라운딩 유지 및 크기 고정 */
+#landing-char-grid .sim-char-pick-item img:not(.landing-char-attr-icon) {
+  border-radius: 4px !important;
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+  background-color: transparent !important;
+}
+
+/* [복구] 속성 아이콘 스타일 및 튀어나옴 효과 */
+.landing-char-attr-icon {
+  position: absolute !important;
+  top: -6px !important;
+  left: -6px !important;
+  width: 24px !important;
+  height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  z-index: 99 !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  border: none !important;
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: block !important;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)) !important;
+}
+
+/* [복구] 모바일 속성 아이콘 크기 조정 */
+@media screen and (max-width: 600px) {
+  .landing-char-attr-icon {
+    width: 18px !important;
+    height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    top: -4px !important;
+    left: -4px !important;
+  }
+}
+
+/* [복구] 호버 효과: 확대 금지 및 강조 */
+#landing-char-grid .sim-char-pick-item:hover img {
+  transform: none !important;
+}
+
+#landing-char-grid .sim-char-pick-item:hover {
+  box-shadow: 0 4px 12px rgba(255, 166, 2, 0.3);
+  transform: none !important;
+}
+
+#landing-char-grid .sim-char-pick-item.grade-xl:hover {
+  border-color: #a847ff !important;
+  box-shadow: 0 4px 12px rgba(168, 71, 255, 0.4);
+}
 
 /* Character Info Overlay Wrapper */
 .char-slot-wrapper {
@@ -157,10 +268,62 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 50px; /* 그라데이션을 위해 높이를 살짝 늘림 */
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  height: 100%; /* 전체 높이로 확장하여 대각선 끊김 방지 */
+  background: linear-gradient(30deg, rgba(0, 0, 0, 0.93) 0%, rgba(0, 0, 0, 0) 30%);
   pointer-events: none;
   z-index: 5;
+}
+
+.char-top-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%; /* 전체 높이로 확장하여 대각선 끊김 방지 */
+  background: linear-gradient(210deg, rgba(255, 166, 2, 0.3) 0%, rgba(255, 166, 2, 0) 10%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* 속성별 상단 오버레이 색상 (0:불, 1:물, 2:나무, 3:빛, 4:어둠) */
+.char-top-overlay.attr-0 { background: linear-gradient(210deg, rgba(237, 125, 49, 0.6) 0%, rgba(237, 125, 49, 0) 12%); } /* 불: 따뜻한 오렌지 (#ed7d31) */
+.char-top-overlay.attr-1 { background: linear-gradient(210deg, rgba(91, 155, 213, 0.6) 0%, rgba(91, 155, 213, 0) 12%); } /* 물: 맑은 파랑 (#5b9bd5) */
+.char-top-overlay.attr-2 { background: linear-gradient(210deg, rgba(112, 173, 71, 0.6) 0%, rgba(112, 173, 71, 0) 12%); } /* 나무: 나뭇잎색 (#70ad47) */
+.char-top-overlay.attr-3 { background: linear-gradient(210deg, rgba(255, 192, 0, 0.6) 0%, rgba(255, 192, 0, 0) 12%); } /* 빛: 골드 (#ffc000) */
+.char-top-overlay.attr-4 { background: linear-gradient(210deg, rgba(112, 48, 160, 0.7) 0%, rgba(112, 48, 160, 0) 12%); } /* 어둠: 보라 (#7030a0) */
+
+/* Character Grade Tag (Bottom-Right Triangle) */
+.char-grade-tag {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-bottom: 11px solid rgba(255, 166, 2, 0.9); /* 크기 11px로 축소 */
+  border-left: 11px solid transparent;
+  z-index: 7;
+  display: block; /* 모든 캐릭터에게 표시 */
+}
+
+/* XL 등급용 태그 색상 (고채도 보라 #a847ff) */
+.char-grade-tag.grade-xl {
+  border-bottom-color: rgba(168, 71, 255, 0.9);
+}
+
+/* Character Bottom Attribute Line */
+.char-bottom-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: rgba(255, 166, 2, 0.9); /* 기본 주황색 */
+  z-index: 10;
+}
+
+/* XL 등급용 하단 라인 색상 (고채도 보라 #a847ff) */
+.char-bottom-line.grade-xl {
+  background-color: #a847ff;
 }
 
 .info-left-col {
@@ -171,15 +334,15 @@
   flex-direction: column;
   align-items: flex-start;
   color: #fff;
-  font-size: 0.75em;
+  font-size: 0.6em;
   font-weight: bold;
   line-height: 1.2;
 }
 
 .info-right-col {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
+  bottom: 5px;
+  right: 5px;
   display: flex;
   align-items: flex-end;
 }
@@ -228,7 +391,7 @@
 /* 선택(활성화) 시 스타일 통합 */
 .main-image.selected.hero-nav-img, 
 .main-image.selected.simulator-nav-img {
-  border: 2px solid #6f42c1 !important;
+  border: none !important;
   box-shadow: 0 0 10px rgba(111, 66, 193, 0.6);
   transform: scale(1.05);
 }
