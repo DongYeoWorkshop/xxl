@@ -141,7 +141,7 @@ export const charData = {
         decimalPlaces: 2,
         buffEffects: { "기초HP증가": { max: 15 } }, 
         buffDesc: "기초 HP {0}% 증가", 
-        name: "고강도 훈련 성과", 
+        name: "코어 초진화", 
         icon: "icon/passive5.webp", 
         desc: "자신의 기초 HP {0}% 증가", 
         calc: [{ max: 15 }] 
@@ -158,7 +158,7 @@ export const charData = {
       },           
       {
         id: "choiyuhee_skill9",
-        name: "견습・사신현정검[전체중독]",
+        name: "견습・사신현정검[광역중독]",
         decimalPlaces: 2,     
         icon: "images/sigilwebp/sigil_choiyuhee.webp",
         isMultiTarget: true,                 
@@ -782,7 +782,7 @@ export const charData = {
         decimalPlaces: 2,
         buffEffects: { "기초HP증가": { max: 15 } }, 
         buffDesc: "기초 HP {0}% 증가", 
-        name: "고강도 훈련 성과", 
+        name: "코어 초진화", 
         icon: "icon/passive5.webp", 
         desc: "자신의 기초 HP {0}% 증가", 
         calc: [{ max: 15 }] 
