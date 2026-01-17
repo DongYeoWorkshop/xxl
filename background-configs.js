@@ -13,6 +13,13 @@ export const backgroundConfigs = {
     "duncan": {
         mobile: { scale: 1.4, xOffset: 300 }  // 모바일: 1.5배, 오른쪽 200px 이동
     },
+    "choiyuhee": {
+        mobile:  {xOffset: 230 }
+    },
+    "dallawan": {
+        tablet:  {xOffset: 160 },
+        mobile:  {xOffset: 210 }
+    },            
     "orem": {
         mobile:  {xOffset: 220 }
     },

@@ -2,7 +2,7 @@
 import { getSkillMultiplier } from './formatter.js';
 import { getStatusInfo } from './simulator-status.js';
 import { simParams } from './sim_params.js';
-import { SKILL_IDX, UNLOCK_REQ } from './simulator-common.js';
+import { SKILL_IDX, UNLOCK_REQ, GRADE_UNLOCK_REQ } from './simulator-common.js';
 import { formatDetailedLog } from './simulator-logger.js';
 
 export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = false) {
@@ -17,8 +17,15 @@ export function getSkillValue(charData, stats, skillIdx, effectKey, isStamp = fa
     }
     const br = parseInt(stats.s1 || 0);
     
-    // [수정] 상수를 사용한 해금 조건 체크
-    if (UNLOCK_REQ[skillIdx] && br < UNLOCK_REQ[skillIdx]) return 0;
+    // [수정] 해금 조건 체크 (ctx 대신 직접 판정)
+    // 1. 등급별 특수 조건
+    const gradeReq = GRADE_UNLOCK_REQ[charData.grade];
+    if (gradeReq && gradeReq[skillIdx] !== undefined) {
+        if (br < gradeReq[skillIdx]) return 0;
+    }
+    // 2. 일반 공통 조건
+    const req = UNLOCK_REQ[skillIdx];
+    if (req !== undefined && br < req) return 0;
 
     const skillLvMap = stats.skills || {};
     const lvS = parseInt(skillLvMap[`s${targetIdx+1}`] || 1) || 1;
@@ -136,9 +143,15 @@ export function createSimulationContext(baseData) {
         getSkillIdx: (skillId) => charData.skills.findIndex(s => s.id === skillId),
 
         isUnlocked: (idx) => {
-            // [수정] 돌파 수치를 더 엄격하게 숫자로 변환하여 판정
-            const br = Number(stats.s1) || 0;
+            const br = parseInt(stats.s1 || 0);
+            
+            // [최유희/XL 전용] 패시브 2 (idx 3)는 15단계 이상이어야 해금
+            if (charData.grade === 'XL' && idx === 3) {
+                return br >= 15;
+            }
+
             const req = UNLOCK_REQ[idx];
+            // 다른 모든 캐릭터는 기존 공통 해금 기준을 따름
             if (req !== undefined && br < req) return false;
             return true;
         },

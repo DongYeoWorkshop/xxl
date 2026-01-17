@@ -85,6 +85,50 @@ export function updateCharacterListIndicators() {
             wrapper.appendChild(overlay);
         }
 
+        let topOverlay = wrapper.querySelector('.char-top-overlay');
+        if (!topOverlay) {
+            topOverlay = document.createElement('div');
+            topOverlay.className = 'char-top-overlay';
+            wrapper.appendChild(topOverlay);
+        }
+
+        let gradeTag = wrapper.querySelector('.char-grade-tag');
+        if (!gradeTag) {
+            gradeTag = document.createElement('div');
+            gradeTag.className = 'char-grade-tag';
+            wrapper.appendChild(gradeTag);
+        }
+
+        let bottomLine = wrapper.querySelector('.char-bottom-line');
+        if (!bottomLine) {
+            bottomLine = document.createElement('div');
+            bottomLine.className = 'char-bottom-line';
+            wrapper.appendChild(bottomLine);
+        }
+
+        const data = charData[id];
+
+        // 2. 속성 및 등급 클래스 적용
+        // 기존 클래스 제거
+        topOverlay.classList.remove('attr-0', 'attr-1', 'attr-2', 'attr-3', 'attr-4');
+        img.classList.remove('attr-0', 'attr-1', 'attr-2', 'attr-3', 'attr-4');
+        gradeTag.classList.remove('grade-xl');
+        bottomLine.classList.remove('grade-xl');
+        
+        if (data && data.info && data.info.속성 !== undefined) {
+            const attrClass = `attr-${data.info.속성}`;
+            topOverlay.classList.add(attrClass);
+            img.classList.add(attrClass);
+        }
+
+        if (data && data.grade === 'XL') {
+            img.classList.add('grade-xl');
+            gradeTag.classList.add('grade-xl');
+            bottomLine.classList.add('grade-xl');
+        } else {
+            img.classList.remove('grade-xl');
+        }
+
         // 3. 저장된 스탯 가져오기 및 텍스트 포맷팅
         const saved = state.savedStats[id] || {};
         const lv = saved.lv || 1;
@@ -107,8 +151,8 @@ export function updateCharacterListIndicators() {
         // 오버레이 내용 업데이트 (좌우 분리 구조)
         overlay.innerHTML = `
             <div class="info-left-col">
-                <span class="overlay-row-item">Lv.${lv}</span>
                 <span class="overlay-row-item">${brText}</span>
+                <span class="overlay-row-item">Lv.${lv}</span>
             </div>
             <div class="info-right-col">
                 ${fitHtml}
@@ -145,9 +189,17 @@ export function updateStats(level = parseInt(dom.sliderInput.value), skipBuffRen
     const data = charData[state.currentId];
     if (!data) return;
 
-    // [추가] 캐릭터 이름 및 정보 업데이트
+    if (!data.base) {
+        renderHeroTab(dom, updateStats);
+        return; 
+    }
+    clearHeroTabRemnants();
+
+    // [복구] 캐릭터 이름 및 정보 업데이트
     const displayTitle = document.getElementById('display-title');
     const infoDisplay = document.getElementById('info-display');
+    const contentDisplay = document.getElementById('content-display');
+
     if (displayTitle && data.title) {
         displayTitle.innerText = data.title;
     }
@@ -161,16 +213,30 @@ export function updateStats(level = parseInt(dom.sliderInput.value), skipBuffRen
         `;
     }
 
-    if (!data.base) {
-        renderHeroTab(dom, updateStats);
-        return; 
+    // 등급 로고 이미지 관리 (상세 탭 왼쪽 상단)
+    let gradeLogo = document.getElementById('char-grade-logo');
+    if (!gradeLogo && contentDisplay) {
+        gradeLogo = document.createElement('img');
+        gradeLogo.id = 'char-grade-logo';
+        // content-display의 가장 처음에 삽입
+        contentDisplay.insertBefore(gradeLogo, contentDisplay.firstChild);
     }
-    clearHeroTabRemnants();
+
+    if (gradeLogo) {
+        if (state.currentId && data) {
+            // XL이면 xl.webp, 아니면 xxl.webp
+            const isXL = (data.grade === 'XL');
+            gradeLogo.src = isXL ? 'icon/xl.webp' : 'icon/xxl.webp';
+            gradeLogo.style.display = 'block';
+        } else {
+            gradeLogo.style.display = 'none';
+        }
+    }
 
     const brVal = parseInt(dom.extraSlider1.value) || 0;
     const fitVal = parseInt(dom.extraSlider2.value) || 0;
     
-    const baseStats = calculateBaseStats(data.base, level, brVal, fitVal, constants.defaultGrowth);
+    const baseStats = calculateBaseStats(data.base, level, brVal, fitVal, constants.defaultGrowth, data.grade);
 
     for (let i = 1; i <= 7; i++) {
         state.currentSkillLevels[i] = parseInt(document.getElementById(`skill-slider-${state.currentId}-${i}`)?.value || 1);

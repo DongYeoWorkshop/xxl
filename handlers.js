@@ -132,6 +132,22 @@ export function initHandlers(domElements, logicFunctions) {
 
             let targetBtn = document.querySelector(`.main-image[data-id="${targetId}"]`);
             
+            // [수정] 캐릭터 탭에서 시뮬레이터로 바로 이동 시 처리
+            if (targetId === 'simulator' && state.currentId && !['hero', 'simulator'].includes(state.currentId)) {
+                // 현재 상태 저장
+                if (typeof logic.saveCurrentStats === 'function') {
+                    logic.saveCurrentStats();
+                }
+                localStorage.setItem('sim_last_char_id', state.currentId.trim());
+                
+                // [핵심] 별도의 import 없이, 이미 존재하는 메뉴 탭의 클릭 이벤트를 그대로 활용
+                const originalSimBtn = document.querySelector(`.main-image[data-id="simulator"]`);
+                if (originalSimBtn) {
+                    handleImageClick(originalSimBtn);
+                    return; 
+                }
+            }
+
             // [수정] 대상 버튼이 없으면(목록에 없는 hero/simulator 등) 가짜 객체 생성하여 전달
             if (!targetBtn) {
                 targetBtn = {
@@ -382,7 +398,7 @@ export function handleImageClick(img) {
         document.getElementById('simulator-page').style.setProperty('display', 'block', 'important');
         forceMainHeader();
         import('./hero-tab.js').then(mod => mod.clearHeroTabRemnants());
-        import('./simulator.js').then(mod => mod.initSimulator());
+        import('./simulator.js?v=20260117_FINAL').then(mod => mod.initSimulator());
     } else {
         document.body.classList.add('char-page-active'); // [추가] 일반 캐릭터 탭 전용 클래스
         contentDisplay.className = '';

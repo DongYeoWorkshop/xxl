@@ -1,7 +1,7 @@
 // simulator.js
 import { state, constants } from './state.js';
 import { charData } from './data.js';
-import { simCharData } from './sim_data.js';
+import { simCharData } from './sim_data.js?v=20260117_FINAL';
 import { runSimulationCore, collectSimulationConfig } from './simulator-engine.js';
 import { calculateBaseStats } from './calculations.js';
 import { getCharacterSelectorHtml, getSimulatorLayoutHtml, showDetailedLogModal, renderAxisLabels, renderDamageLineChart, displaySimResult, updateActionEditor } from './simulator-ui.js';
@@ -442,18 +442,34 @@ function renderSimulatorUI(charId) {
     }
 }
 
-function runSimulation(charId) {
+function runSimulation(rawCharId) {
+    const charId = rawCharId ? rawCharId.trim() : ""; // [!] ID 공백 제거
     const runBtn = document.getElementById('run-simulation-btn');
-    if (!runBtn) return;
+    if (!runBtn || !charId) return;
 
-    // [추가] 로딩 상태 표시
+    // [수정] 분석 시작 전 로컬스토리지 동기화
+    try {
+        const stored = localStorage.getItem('dyst_stats');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed[charId]) {
+                state.savedStats[charId] = parsed[charId];
+            }
+        }
+    } catch (e) {
+        console.error("스탯 동기화 실패", e);
+    }
+
+    // 로딩 상태 표시
     const originalText = runBtn.innerHTML;
     runBtn.disabled = true;
     runBtn.innerHTML = '<span class="spinner"></span> 분석 중...';
 
     // 브라우저가 스피너를 렌더링할 시간을 준 뒤 계산 시작
     setTimeout(() => {
-        const data = charData[charId], sData = simCharData[charId] || {}, stats = state.savedStats[charId] || {};
+        const data = charData[charId];
+        const sData = simCharData[charId] || {}; // 이제 공백이 제거된 ID로 정확히 찾음
+        const stats = state.savedStats[charId] || {};
         
         // [수정] 데이터 수집 로직 통합 함수 사용
         const config = collectSimulationConfig(charId, charData, simCharData);
@@ -486,28 +502,29 @@ function runSimulation(charId) {
         document.getElementById('sim-avg-dmg').innerText = result.avg; 
         document.getElementById('sim-max-dmg').innerText = result.p95; 
         
-                // [수정] 카드별 오차 퍼센트 계산 및 표시
-                const avgNum = parseFloat(result.avg.replace(/,/g, '')) || 0;
-                const p05Num = parseFloat(result.p05.replace(/,/g, '')) || 0;
-                const p95Num = parseFloat(result.p95.replace(/,/g, '')) || 0;
-                
-                const minDiffEl = document.getElementById('sim-min-diff');
-                const maxDiffEl = document.getElementById('sim-max-diff');
-                
-                        if (avgNum > 0) {
-                            const minDiff = Math.floor(p05Num - avgNum);
-                            const maxDiff = Math.floor(p95Num - avgNum);
-                            const minPercent = ((minDiff / avgNum) * 100).toFixed(1);
-                            const maxPercent = ((maxDiff / avgNum) * 100).toFixed(1);
-                            
-                            const minDiffK = (minDiff / 1000).toFixed(0);
-                            const maxDiffK = (maxDiff / 1000).toFixed(0);
-                            
-                            minDiffEl.innerText = `${Number(minDiffK).toLocaleString()}K (${minPercent}%)`;
-                            maxDiffEl.innerText = `+${Number(maxDiffK).toLocaleString()}K (+${maxPercent}%)`;
-                        } else {                    minDiffEl.innerText = `0 (0.0%)`;
-                    maxDiffEl.innerText = `+0 (+0.0%)`;
-                }            
+        // [수정] 카드별 오차 퍼센트 계산 및 표시
+        const avgNum = parseFloat(result.avg.replace(/,/g, '')) || 0;
+        const p05Num = parseFloat(result.p05.replace(/,/g, '')) || 0;
+        const p95Num = parseFloat(result.p95.replace(/,/g, '')) || 0;
+        
+        const minDiffEl = document.getElementById('sim-min-diff');
+        const maxDiffEl = document.getElementById('sim-max-diff');
+        
+        if (avgNum > 0) {
+            const minDiff = Math.floor(p05Num - avgNum);
+            const maxDiff = Math.floor(p95Num - avgNum);
+            const minPercent = ((minDiff / avgNum) * 100).toFixed(1);
+            const maxPercent = ((maxDiff / avgNum) * 100).toFixed(1);
+            
+            const minDiffK = (minDiff / 1000).toFixed(0);
+            const maxDiffK = (maxDiff / 1000).toFixed(0);
+            
+            minDiffEl.innerText = `${Number(minDiffK).toLocaleString()}K (${minPercent}%)`;
+            maxDiffEl.innerText = `+${Number(maxDiffK).toLocaleString()}K (+${maxPercent}%)`;
+        } else {
+            minDiffEl.innerText = `0 (0.0%)`;
+            maxDiffEl.innerText = `+0 (+0.0%)`;
+        }            
         minDiffEl.style.visibility = 'visible';
         maxDiffEl.style.visibility = 'visible';
         

@@ -412,10 +412,10 @@ export function calculateDamage(damageType, baseAttack, stats, coefficient, isSt
 /**
  * [추가] 레벨, 돌파, 적합도에 따른 기초 스탯 계산
  */
-export function calculateBaseStats(charBase, level, breakthrough, fitness, growthRate = 1.05) {
+export function calculateBaseStats(charBase, level, breakthrough, fitness, growthRate = 1.05, charGrade) {
     const stats = {};
     const bonus1Rate = breakthrough * 0.02; // 돌파 보너스 (2%)
-    const bonus2Rate = fitness * 0.04;      // 적합도 보너스 (4%)
+    const bonus2Rate = fitness * (charGrade === "XL" ? 0.03 : 0.04);      // 적합도 보너스 (기본 4%, XL 등급 3%)
 
     for (const key in charBase) {
         // [수정] 거듭제곱 방식을 유지하되, 60레벨 기준 17.79 배율에 근접하도록 보정

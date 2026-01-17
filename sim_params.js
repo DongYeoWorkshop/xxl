@@ -101,14 +101,6 @@ export const simParams = {
       scaleProb: true,
       startRate: 0.64
     },
-    skill4_spirit_consume: {
-      type: "action", 
-      id: "skill4_spirit_stacks", 
-      phase: "onAfterAction",
-      condition: ["isUlt", "!isStamp"], 
-      action: "all_consume",
-      label: "전의"
-    },
     skill5_buff: {
       type: "buff",
       originalId: "tayangsuyi_skill5",

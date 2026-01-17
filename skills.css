@@ -167,7 +167,7 @@
     width: 40px;
     height: 40px;
     border-radius: 5px;
-    border: 2px solid #000;
+    border: 1px solid #000;
     cursor: pointer;
     background-color: black;
     transition: all 0.2s;

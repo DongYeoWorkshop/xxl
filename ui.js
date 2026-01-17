@@ -115,6 +115,9 @@ export function renderAppliedBuffsDisplay(appliedBuffs, charData, currentId, cur
             const skill = buffCharData.skills.find(s => s.id === skillId);
             if (!skill) return;
 
+            // [수정] 범용 신호(isAppliedPassive)가 있는 경우 본인 리스트에서 제외 (타인에게는 노출)
+            if (currentId === buffCharId && skill.isAppliedPassive) return;
+
             hasBuffs = true;
             const skillIdx = buffCharData.skills.indexOf(skill);
             const isOwnerCurrent = (buffCharId === currentId);

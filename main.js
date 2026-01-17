@@ -94,12 +94,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 모든 캐릭터 ID 추출 (특수 ID 제외)
                 const validChars = Object.keys(charData).filter(id => id !== 'hero' && id !== 'simulator' && id !== 'test_dummy');
                 
-                // 정렬: 즐겨찾기 우선, 그 다음 이름순(혹은 데이터 순서)
+                // 정렬: 즐겨찾기 최상단 유지, 그 안에서는 데이터 역순
                 validChars.sort((a, b) => {
                     const aFav = state.savedStats[a]?.isFavorite ? 1 : 0;
                     const bFav = state.savedStats[b]?.isFavorite ? 1 : 0;
-                    if (aFav !== bFav) return bFav - aFav; // 즐겨찾기 내림차순
-                    return 0; // 원래 순서 유지
+                    if (aFav !== bFav) return bFav - aFav; // 즐겨찾기 내림차순 (1 우선)
+                    
+                    // 데이터상의 인덱스를 기준으로 역순 정렬 (데이터 뒤에 있는게 앞으로)
+                    const allKeys = Object.keys(charData);
+                    return allKeys.indexOf(b) - allKeys.indexOf(a);
                 });
     
                 validChars.forEach(id => {
@@ -107,6 +110,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // [수정] 이미지와 별을 감싸는 래퍼 생성
                 const wrapper = document.createElement('div');
+                wrapper.className = 'sim-char-pick-item'; // CSS 적용을 위한 클래스 추가
+                if (data.grade === 'XL') wrapper.classList.add('grade-xl');
+                if (data.info && data.info.속성 !== undefined) {
+                    wrapper.classList.add(`attr-${data.info.속성}`);
+                }
                 wrapper.style.display = 'flex';
                 wrapper.style.flexDirection = 'column';
                 wrapper.style.alignItems = 'center';
@@ -116,12 +124,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const img = document.createElement('img');
                 img.src = `images/${id}.webp`;
                 img.style.width = '100%';
-                img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 대폭 상향 */
+                img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 원복 */
                 img.style.objectFit = 'cover';
-                img.style.borderRadius = '8px';
+                
+                if (data.info && data.info.속성 !== undefined) {
+                    img.classList.add(`attr-${data.info.속성}`);
+                }
                 
                 img.style.border = '1px solid #444';
-                img.style.backgroundColor = '#30363d';
                 
                 // 클릭 이벤트는 래퍼에 연결
                 wrapper.onclick = () => {
@@ -131,16 +141,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 wrapper.appendChild(img);
 
-                // [추가] 즐겨찾기 별 표시 (이미지 왼쪽 하단 내부)
+                // [추가] 하단 색상 라인 추가 (헤더와 동일 스타일)
+                const bottomLine = document.createElement('div');
+                bottomLine.className = 'char-bottom-line';
+                if (data.grade === 'XL') bottomLine.classList.add('grade-xl');
+                wrapper.appendChild(bottomLine);
+
+                // [추가] 속성 아이콘 오버레이 추가
+                if (data.info && data.info.속성 !== undefined) {
+                    const attrIcon = document.createElement('img');
+                    const attrName = ['fire', 'water', 'wood', 'light', 'dark'][data.info.속성];
+                    attrIcon.src = `icon/${attrName}.webp`;
+                    attrIcon.className = 'landing-char-attr-icon';
+                    wrapper.appendChild(attrIcon);
+                }
+
+                // [추가] 즐겨찾기 별 표시 (이미지 오른쪽 하단 내부)
                 if (state.savedStats[id]?.isFavorite) {
                     const star = document.createElement('div');
                     star.textContent = '★';
                     star.style.position = 'absolute';
                     star.style.bottom = '4px';
-                    star.style.left = '6px';
+                    star.style.right = '6px'; // left에서 right로 변경
                     star.style.color = '#ffcb05';
                     star.style.fontSize = '16px';
-                    star.style.textShadow = '0 0 3px rgba(0,0,0,0.9)'; // 이미지 위에서 잘 보이도록 그림자 강화
+                    // 그림자 범위를 살짝 더 넓혀서 가독성 보강
+                    star.style.textShadow = '0 0 6px #000, 0 0 10px rgba(0,0,0,0.8)';
                     wrapper.appendChild(star);
                 }
 
@@ -161,8 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (isModified) {
-                    img.style.border = `1px solid #ffa500`;
-                    img.style.backgroundColor = '#56c5b1';
+                    // 수정된 상태의 테두리 설정 제거
                 }
 
                 // [추가] 마우스 오버 시 중앙 오버레이 툴팁 표시
@@ -268,8 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             forceMainHeader();
             
-            // 시뮬레이터 초기화 (목록 화면 렌더링)
-            import(`./simulator.js?v=${Date.now()}`).then(mod => mod.initSimulator());
+            // 시뮬레이터 초기화 (버전 번호 통일)
+            import('./simulator.js?v=20260117_FINAL').then(mod => mod.initSimulator());
         };
     }
 

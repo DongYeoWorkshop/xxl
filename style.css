@@ -21,7 +21,7 @@
 /* 시뮬레이터 바로가기 버튼 */
 .sim-shortcut-btn {
   position: absolute !important;
-  top: 100px !important; 
+  top: 90px !important; /* 85px에서 90px로 이동 */
   right: 15px !important; /* left에서 right로 변경 */
   background: transparent !important;
   border: none !important;
@@ -65,7 +65,7 @@
 /* 캐릭터 보고서 바로가기 버튼 */
 .char-report-btn {
   position: absolute !important;
-  top: 60px !important; 
+  top: 50px !important; /* 60px에서 50px로 이동 */
   right: 15px !important; 
   background: #28a745 !important; 
   border: none !important;

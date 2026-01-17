@@ -3,7 +3,7 @@ import { getSkillMultiplier } from './formatter.js';
 import { simParams } from './sim_params.js';
 
 export const simCharData = {
-    "shinrirang": {
+  "shinrirang": {
       commonControls: ["normal_hit_prob"],
       initialState: {
           skill7_stacks: 0,
@@ -69,6 +69,23 @@ export const simCharData = {
         return { extraHits: [] };
     },
     onAttack: (ctx) => {
+        const s = ctx.simState;
+        
+        // [패시브2] 전의 소모 로직
+        if (ctx.isUlt) {
+            // 도장이 없을 때만 전의 소모
+            if (!ctx.stats.stamp) {
+                if (s.skill4_spirit_stacks > 0) {
+                    ctx.log({ name: "전의 소모", icon: "icon/passive2.webp" }, `[전의] ${s.skill4_spirit_stacks}중첩 소모`);
+                    s.skill4_spirit_stacks = 0;
+                }
+            } else {
+                // 도장이 있을 때 (9중첩 보너스 안내 로그 정도는 추가 가능)
+                if (s.skill4_spirit_stacks >= 9) {
+                    ctx.log({ name: "절대 왕자 파워밤", icon: "images/sigilwebp/sigil_tayangsuyi.webp", customTag: "도장" }, "[전의] 9중첩 효과 적용");
+                }
+            }
+        }
         return { extraHits: [] };
     },
     onEnemyHit: (ctx) => {
@@ -953,5 +970,188 @@ export const simCharData = {
 
         return bonuses;
     }
-  }
+  },
+      "choiyuhee": {
+        commonControls: ["normal_hit_prob"],
+        stateDisplay: {
+            "poison_timer": "[중독]",
+            "poison_aoe_timer": "[광역중독]"
+        },
+        initialState: {
+            poison_timer: [], 
+            poison_aoe_timer: [] 
+        },
+        onAttack: (ctx) => {
+            const s = ctx.simState;
+            
+        // 1. 필살기 시 중독 부여 및 공격력 스냅샷 (중첩 방식)
+        if (ctx.isUlt) {
+            // 단일 중독 인스턴스 추가 (필살기 출처 명시)
+            ctx.addTimer("poison_timer", 3, { atk: ctx.getAtk(false), from: "ult" });
+            ctx.log({ name: "견습・사신현정검", icon: "icon/attack(strong).webp", customTag: "필살기" }, "[중독] 부여 (3턴)");
+                
+                if (ctx.stats.stamp) {
+                    ctx.addTimer("poison_aoe_timer", 3, { atk: ctx.getAtk(true) });
+                    ctx.log({ name: "견습・사신현정검", icon: "icon/attack(strong).webp", customTag: "도장" }, "[광역 중독] 부여 (3턴)");
+                }
+            }
+            
+            // 2. 평타 시 추가타 (패시브2: skill4)
+            if (!ctx.isUlt && !ctx.isDefend) {
+                const hasP = (s.poison_timer && s.poison_timer.length > 0);
+                const hasAP = (s.poison_aoe_timer && s.poison_aoe_timer.length > 0);
+                
+                if (hasP || hasAP) {
+                    const br = parseInt(ctx.stats.s1 || 0);
+                    if (br >= 15) {
+                        const damageVal = ctx.getVal(3, "추가공격", !!ctx.stats.stamp);
+                        if (damageVal > 0) {
+                            return { 
+                                extraHits: [{
+                                    name: "공포의 바람 속격", val: damageVal, isMulti: true, customTag: "패시브2", icon: "icon/passive2.webp"
+                                }]
+                            };
+                        }
+                    }
+                }
+            }
+            return { extraHits: [] };
+        },
+        onTurn: (ctx) => { return { extraHits: [] }; },
+        onCalculateDamage: (ctx) => { return { extraHits: [] }; },
+                onEnemyHit: (ctx) => {
+                    // [패시브3] 독설 반격 (방어 중 피격 시 50% 확률로 중독 부여)
+                    if (ctx.isDefend && ctx.isHit && Math.random() < 0.5) {
+                        // 패시브3 출처 명시
+                        ctx.addTimer("poison_timer", 3, { atk: ctx.getAtk(false), from: "p3" });
+                        ctx.log({ name: "독설 반격", icon: "icon/passive5.webp", customTag: "패시브3" }, "[중독] 부여 (3턴)");
+                    }
+                    return { extraHits: [] };
+                },        onAfterAction: (ctx) => {              // [!] 추가 행동(Replay) 중에는 독 데미지 생성을 건너뜀 (중복 방지)
+              if (ctx.currentReplayTag) return { extraHits: [] };
+      
+              const hits = [];
+              const s = ctx.simState;
+              const isS = !!ctx.stats.stamp;
+              
+                      // 턴 종료 시 각 중독 인스턴스별로 데미지 발생
+                      if (Array.isArray(s.poison_timer)) {
+                          s.poison_timer.forEach((p, i) => {
+                              const instanceAtk = p.atk || 0;
+                              if (instanceAtk > 0) {
+                                  const isP3 = (p.from === "p3");
+                                  hits.push({ 
+                                      name: isP3 ? "독설 반격 [중독]" : `견습・사신현정검 [중독 #${i+1}]`, 
+                                      val: ctx.getVal(1, 1, isS), 
+                                      baseAtk: instanceAtk, 
+                                      type: "도트공격", 
+                                      icon: isP3 ? "icon/passive5.webp" : "icon/attack(strong).webp", 
+                                      customTag: isP3 ? "패시브3" : "필살기" 
+                                  });
+                              }
+                          });
+                      }      
+              if (Array.isArray(s.poison_aoe_timer)) {
+                  const s9Idx = ctx.getSkillIdx("choiyuhee_skill9");
+                  if (s9Idx !== -1) {
+                      s.poison_aoe_timer.forEach((p, i) => {
+                          const instanceAtk = p.atk || 0;
+                          if (instanceAtk > 0) {
+                              hits.push({ 
+                                  name: `견습・사신현정검 [광역 중독 #${i+1}]`, 
+                                  val: ctx.getVal(s9Idx, 0, isS), 
+                                  baseAtk: instanceAtk, 
+                                  isMulti: true, 
+                                  type: "도트공격", 
+                                  icon: "images/sigilwebp/sigil_choiyuhee.webp", 
+                                  customTag: "도장" 
+                              });
+                          }
+                      });
+                  }
+              }
+              return { extraHits: hits };
+          },      getLiveBonuses: (ctx) => {
+          return {}; // 엔진 자동 합산에 맡김
+      }
+    },
+    "dallawan": {
+        stateDisplay: {
+            "skill2_timer": "[목장주 명령]",
+            "skill2_stamp_timer": "[도장:효과활성]",
+            "skill2_stamp_dmg_timer": "[도장:데미지증가]"
+        },
+        customControls: [
+            { id: "recovery_rate", type: "input", label: "직접회복(%)", initial: 0, description: "매 턴 직접회복이 발생할 확률입니다." },
+            { id: "ult_turn_full_heal", type: "toggle", label: "필살턴 전체힐 사용", initial: false, description: "필살기 사용 턴에 아군 전체힐이 발생한다고 가정합니다." }
+        ],
+        initialState: {
+            skill2_timer: 0,
+            skill2_stamp_timer: 0,
+            skill2_stamp_dmg_timer: 0
+        },
+        onAttack: (ctx) => {
+            const s = ctx.simState;
+            const currentBaseAtk = ctx.getAtk(true); 
+            
+            // 1. 필살기 사용 시 (가산 버프 부여 및 도장 대기 상태 활성화)
+            if (ctx.isUlt) {
+                s.skill2_timer = 1;
+                const addVal = Math.floor(currentBaseAtk * (ctx.getVal(1, 0) / 100));
+                ctx.log({ name: "목장주 명령", icon: "icon/attack(strong).webp", customTag: "필살기" }, `버프 부여 (+${addVal.toLocaleString()} 가산)`, null, 1);
+
+                // [도장] 필살 발동 후 2턴 내 회복 시 뎀증 부여 효과 활성화
+                if (ctx.stats.stamp) {
+                    s.skill2_stamp_timer = 2;
+                    ctx.log({ name: "목장주 명령", icon: "images/sigilwebp/sigil_dallawan.webp", customTag: "도장" }, "목장주 명령 부여 (2턴)");
+                }
+            }
+
+            // [추가] 필살턴 전체힐 사용 체크박스 처리
+            let didRecoveryOccur = false;
+            if (ctx.isUlt && ctx.customValues.ult_turn_full_heal) {
+                didRecoveryOccur = true; // 필살턴에 전체힐 발생 (강제)
+            } else {
+                const recProb = (ctx.customValues.recovery_rate || 0) / 100;
+                if (recProb > 0 && Math.random() < recProb) {
+                    didRecoveryOccur = true; // 일반 턴에 회복 발생 (확률)
+                }
+            }
+            
+            // 2. 도장 효과: 회복 발생 시에만 체크
+            if (ctx.stats.stamp && didRecoveryOccur) {
+                // [도장 스킬2] 대기 상태가 켜져 있을 때만 확률 체크
+                if (s.skill2_stamp_timer > 0) {
+                    if (Math.random() < 0.5) {
+                        s.skill2_stamp_dmg_timer = 1;
+                        ctx.log({ name: "목장주 명령", icon: "images/sigilwebp/sigil_dallawan.webp", customTag: "도장" }, "목장주 명령 발동 (1턴)");
+                    }
+                }
+            }
+            
+            return { extraHits: [] };
+        },
+        onTurn: (ctx) => {
+            const s = ctx.simState;
+            // 타이머 수동 감소 (효과 활성 기간 관리)
+            if (s.skill2_stamp_timer > 0) s.skill2_stamp_timer--;
+            return { extraHits: [] };
+        },
+        onCalculateDamage: (ctx) => { return { extraHits: [] }; },
+        onEnemyHit: (ctx) => { return { extraHits: [] }; },
+        onAfterAction: (ctx) => { return { extraHits: [] }; },
+        getLiveBonuses: (ctx) => {
+            const bonuses = { "고정공증": 0, "뎀증": 0 };
+            const s = ctx.simState;
+            
+            if (s.skill2_timer > 0) bonuses["고정공증"] += ctx.baseStats["공격력"] * (ctx.getVal(1, 0) / 100);
+
+            // 도장 효과 (실제 뎀증 버프가 있을 때만 적용)
+            if (s.skill2_stamp_dmg_timer > 0) {
+                bonuses["뎀증"] += 20; 
+            }
+            
+            return bonuses;
+        }
+    }
 };

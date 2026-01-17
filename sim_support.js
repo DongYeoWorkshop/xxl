@@ -504,9 +504,13 @@ export const supportLogic = {
             if (actionType === 'ult') {
                 ctx.log(logIdx, "비어녹스: [필살기] 사용", null, null, false, "서포터");
                 tryApplySupportParam(ctx, sState, p.skill2_buff, 'skill2_timer');
-                tryApplySupportParam(ctx, sState, p.skill2_stamp_buff, 'skill2_stamp_timer');
-            } else if (actionType === 'defend') ctx.log(logIdx, "비어녹스: [방어]", null, null, false, "서포터");
-            else {
+                
+                // [수정] 로그 라벨 간소화
+                const pStamp = { ...p.skill2_stamp_buff, label: "버프 부여" };
+                tryApplySupportParam(ctx, sState, pStamp, 'skill2_stamp_timer');
+            } else if (actionType === 'defend') {
+                ctx.log(logIdx, "비어녹스: [방어]", null, null, false, "서포터");
+            } else {
                 ctx.log(logIdx, "비어녹스: [보통공격] 사용", null, null, false, "서포터");
                 tryApplySupportParam(ctx, sState, p.skill1_buff, 'skill1_timer');
             }
@@ -817,8 +821,7 @@ export const supportLogic = {
                     tryApplySupportParam(ctx, sState, p.skill8_buff, 'skill8_timer');
                 }
             } else if (actionType === 'ult') {
-                ctx.log(logIdx, "임부언: [필살기] 사용", null, null, false, "서포터");
-                // [수정] 버프 즉시 적용하지 않고 예약
+                // [수정] 로그 출력을 onPostAttack으로 이동하여 가독성 개선
                 sState.pending_buffs = true;
 
                 // 추가 행동 예약 (isPos3이면 onPostAttack에서 차단됨)
@@ -834,6 +837,9 @@ export const supportLogic = {
             ctx.supportId = 'bossren';
             // [수정] 메인 행동 직후(추가 행동 전)에 예약된 버프 적용
             if (sState.pending_buffs) {
+                const logIdx = { name: "", icon: "images/bossren.webp" };
+                ctx.log(logIdx, "임부언: [필살기] 사용", null, null, false, "서포터");
+
                 const isPos3 = (ctx.charId === 'famido' && ctx.customValues.pos3_fixed);
                 const p = simParams.bossren;
                 if (!isPos3) {
@@ -897,6 +903,100 @@ export const supportLogic = {
                 if (sState.skill1_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('bossren', 0, 0) / 100);
                 if (sState.skill4_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('bossren', 3, 0) / 100);
                 if (sState.skill8_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('bossren', 7, 0) / 100);
+            }
+
+            return bonuses;
+        }
+    },
+    "dallawan": {
+        getInitialState: () => ({ skill2_timer: 0, skill4_timer: 0, skill5_timer: 0, skill2_stamp_timer: 0, skill2_stamp_dmg_timer: 0 }),
+        onTurn: (ctx, sState) => {
+            ctx.supportId = 'dallawan';
+            if (sState.skill2_timer > 0) sState.skill2_timer--;
+            if (sState.skill4_timer > 0) sState.skill4_timer--;
+            if (sState.skill5_timer > 0) sState.skill5_timer--;
+            if (sState.skill2_stamp_timer > 0) sState.skill2_stamp_timer--;
+            if (sState.skill2_stamp_dmg_timer > 0) sState.skill2_stamp_dmg_timer--;
+
+            let actionType = getSupportAction('dallawan', ctx.t);
+            const logIdx = { name: "", icon: "images/dallawan.webp" };
+            const dallawanStats = state.savedStats['dallawan'] || {};
+            
+            // 1. 필살기 사용
+            if (actionType === 'ult') {
+                ctx.log(logIdx, "다라완: [필살기] 사용", null, null, false, "서포터");
+                sState.skill2_timer = 1;
+                
+                const supportStats = state.savedStats['dallawan'] || { lv: 1, s1: 0, s2: 0 };
+                const baseResult = calculateBaseStats(charData['dallawan'].base, parseInt(supportStats.lv || 1), parseInt(supportStats.s1 || 0), parseInt(supportStats.s2 || 0), 1.05);
+                let baseAtkBoost = 0;
+                if (parseInt(supportStats.s1 || 0) >= 50) baseAtkBoost += getSupportVal('dallawan', 5, '기초공증');
+                const currentBaseAtk = baseResult["공격력"] * (1 + baseAtkBoost / 100);
+                const addVal = Math.floor(currentBaseAtk * (getSupportVal('dallawan', 1, '고정공증') / 100));
+
+                ctx.log(logIdx, `다라완: [필살기] 버프 부여 (+${addVal.toLocaleString()} 가산)`, null, 1, false, "서포터");
+
+                if (dallawanStats.stamp) {
+                    sState.skill2_stamp_timer = 2;
+                    ctx.log(logIdx, `다라완: [도장] 목장주 명령 부여`, null, 2, false, "서포터");
+                }
+            } 
+            // 2. 보통공격 사용
+            else if (actionType === 'normal') {
+                ctx.log(logIdx, "다라완: [보통공격] 사용", null, null, false, "서포터");
+                if (Math.random() < 0.5) {
+                    sState.skill4_timer = 2;
+                    const supportStats = state.savedStats['dallawan'] || { lv: 1, s1: 0, s2: 0 };
+                    const baseResult = calculateBaseStats(charData['dallawan'].base, parseInt(supportStats.lv || 1), parseInt(supportStats.s1 || 0), parseInt(supportStats.s2 || 0), 1.05);
+                    let baseAtkBoost = 0;
+                    if (parseInt(supportStats.s1 || 0) >= 50) baseAtkBoost += getSupportVal('dallawan', 5, '기초공증');
+                    const currentBaseAtk = baseResult["공격력"] * (1 + baseAtkBoost / 100);
+                    const addVal = Math.floor(currentBaseAtk * (getSupportVal('dallawan', 3, '고정공증') / 100));
+
+                    ctx.log(logIdx, `다라완: [패시브2] 버프 부여 (+${addVal.toLocaleString()} 가산)`, 50, 2, false, "서포터");
+                }
+            }
+
+            // 3. 회복 발생 시 처리 (도장 및 패시브3)
+            const baseRecProb = (parseInt(localStorage.getItem('sim_ctrl_dallawan_recovery_rate') || 0)) / 100;
+            const isUltFullHeal = localStorage.getItem('sim_ctrl_dallawan_ult_turn_full_heal') === 'true';
+            let currentRecOccurred = (actionType === 'ult' && isUltFullHeal) || (baseRecProb > 0 && Math.random() < baseRecProb);
+
+            if (currentRecOccurred) {
+                if (dallawanStats.stamp && sState.skill2_stamp_timer > 0) {
+                    if (Math.random() < 0.5) {
+                        sState.skill2_stamp_dmg_timer = 1;
+                        ctx.log(logIdx, `다라완: [도장] 버프 부여`, 50, 1, false, "서포터");
+                    }
+                }
+                if (Math.random() < 0.33) {
+                    sState.skill5_timer = 1;
+                    const supportStats = state.savedStats['dallawan'] || { lv: 1, s1: 0, s2: 0 };
+                    const baseResult = calculateBaseStats(charData['dallawan'].base, parseInt(supportStats.lv || 1), parseInt(supportStats.s1 || 0), parseInt(supportStats.s2 || 0), 1.05);
+                    let baseAtkBoost = 0;
+                    if (parseInt(supportStats.s1 || 0) >= 50) baseAtkBoost += getSupportVal('dallawan', 5, '기초공증');
+                    const currentBaseAtk = baseResult["공격력"] * (1 + baseAtkBoost / 100);
+                    const addVal = Math.floor(currentBaseAtk * (getSupportVal('dallawan', 4, '고정공증') / 100));
+                    ctx.log(logIdx, `다라완: [패시브3] 버프 부여 (+${addVal.toLocaleString()} 가산)`, 33, 1, false, "서포터");
+                }
+            }
+        },
+        getBonuses: (sState, targetCharData, ctx) => {
+            let bonuses = { "공증": 0, "고정공증": 0, "뎀증": 0 };
+            bonuses["공증"] += getSupportVal('dallawan', 2, '공증', targetCharData);
+            const supportStats = state.savedStats['dallawan'] || { lv: 1, s1: 0, s2: 0 };
+            const baseResult = calculateBaseStats(charData['dallawan'].base, parseInt(supportStats.lv || 1), parseInt(supportStats.s1 || 0), parseInt(supportStats.s2 || 0), 1.05);
+            let baseAtkBoost = 0;
+            if (parseInt(supportStats.s1 || 0) >= 50) baseAtkBoost += getSupportVal('dallawan', 5, '기초공증');
+            const currentBaseAtk = baseResult["공격력"] * (1 + baseAtkBoost / 100);
+            const sBr = parseInt(supportStats.s1 || 0);
+            if (sState.skill2_timer > 0) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('dallawan', 1, '고정공증') / 100);
+            if (sState.skill4_timer > 0 && sBr >= 15) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('dallawan', 3, '고정공증') / 100);
+            if (sState.skill5_timer > 0 && sBr >= 30) bonuses["고정공증"] += currentBaseAtk * (getSupportVal('dallawan', 4, '고정공증') / 100);
+            // 3. 도장 뎀증 보너스 (스킬9 수치 동적 획득)
+            if (sState.skill2_stamp_dmg_timer > 0) {
+                // 스킬 9(인덱스 8)의 뎀증 효과 수치를 가져옴 (도장 활성 상태이므로 isStamp=true)
+                bonuses["뎀증"] += getSupportVal('dallawan', 8, '뎀증', targetCharData, true);
             }
 
             return bonuses;

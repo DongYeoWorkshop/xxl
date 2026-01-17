@@ -113,7 +113,8 @@ export function formatBuffState(charId, state, charDataObj, sData, stats) {
             else displayDur = key.includes('stack') ? `${val}중첩` : `${val}턴`;
         } else if (customName) {
             name = customName;
-            displayDur = typeof val === 'number' ? (key.includes('stack') ? `${val}중첩` : `${val}턴`) : "ON";
+            if (Array.isArray(val)) displayDur = `${Math.max(...val.map(v => v.dur || v))}턴 / ${val.length}중첩`;
+            else displayDur = typeof val === 'number' ? (key.includes('stack') ? `${val}중첩` : `${val}턴`) : "ON";
         } else continue;
 
         entries.push({ name, duration: displayDur, icon });
@@ -129,7 +130,7 @@ export function runSimulationCore(context) {
         supportIds = supportId ? [supportId] : [];
     }
 
-    const br = parseInt(stats.s1 || 0), baseStats = calculateBaseStats(charData.base, parseInt(stats.lv || 1), br, parseInt(stats.s2 || 0), defaultGrowthRate);
+    const br = parseInt(stats.s1 || 0), baseStats = calculateBaseStats(charData.base, parseInt(stats.lv || 1), br, parseInt(stats.s2 || 0), defaultGrowthRate, charData.grade);
     const iterationResults = [];
     const flow = sData.flow || ['onTurn', 'onCalculateDamage', 'onAttack', 'onEnemyHit', 'onAfterAction'];
 
@@ -158,6 +159,9 @@ export function runSimulationCore(context) {
             const isAllyUltTurn = sData.isAllyUltTurn ? sData.isAllyUltTurn(t) : (t > 1 && (t - 1) % 3 === 0);
             const dynCtx = createSimulationContext({ t, turns, charId, charData, stats, baseStats, simState, isUlt, targetCount, isDefend, isAllyUltTurn, customValues, logs, debugLogs: turnDebugLogs, extraPattern: context.extraPattern });
             
+            // [추가] 캐릭터 로직에서 현재 최종 공격력을 스냅샷할 수 있도록 헬퍼 연결
+            dynCtx.getAtk = (isMulti = true) => getLatestSubStats(isMulti).atk;
+
             // [추가] 이번 턴의 총 데미지를 컨텍스트에서 관리
             dynCtx.currentTDmg = 0;
 
@@ -292,7 +296,10 @@ export function runSimulationCore(context) {
                 const latest = getLatestSubStats(isM);
                 const coef = event.val !== undefined ? event.val : (event.max || event.fixed || event.coef || 0);
                 const dmgType = event.type || "추가공격";
-                const dUnit = calculateDamage(dmgType, latest.atk, latest.subStats, coef, false, charData.info.속성, enemyAttrIdx);
+                
+                // [수정] 스냅샷된 공격력이 있다면 그것을 사용, 없으면 현재 공격력 사용
+                const targetAtk = event.baseAtk !== undefined ? event.baseAtk : latest.atk;
+                const dUnit = calculateDamage(dmgType, targetAtk, latest.subStats, coef, false, charData.info.속성, enemyAttrIdx);
                 const finalD = isM ? dUnit * targetCount : dUnit;
                 
                 if (finalD > 0) {
@@ -344,12 +351,22 @@ export function runSimulationCore(context) {
                 let specKey = "", specLabel = "";
                 if (dmgType === "보통공격") { specKey = "평타뎀증"; specLabel = "N-Dmg"; }
                 else if (dmgType === "필살공격") { specKey = "필살기뎀증"; specLabel = "U-Dmg"; }
-                else { specKey = "트리거뎀증"; specLabel = "T-Dmg"; }
-                let dmgStr = Object.entries(baseTags).map(([key, label]) => sS[key] !== 0 ? ` / ${label}:${parseFloat(sS[key].toFixed(1))}%` : "").join("");
-                if (specKey && sS[specKey] !== 0) dmgStr += ` / ${specLabel}:${parseFloat(sS[specKey].toFixed(1))}%`;
+                else if (dmgType === "추가공격") { specKey = "트리거뎀증"; specLabel = "T-Dmg"; }
+                
+                // [수정] 도트공격/기초공격은 뎀증 문자열을 비워둠
+                let dmgStr = "";
+                if (dmgType !== "도트공격" && dmgType !== "기초공격") {
+                    dmgStr = Object.entries(baseTags).map(([key, label]) => sS[key] !== 0 ? ` / ${label}:${parseFloat(sS[key].toFixed(1))}%` : "").join("");
+                    if (specKey && sS[specKey] !== 0) dmgStr += ` / ${specLabel}:${parseFloat(sS[specKey].toFixed(1))}%`;
+                }
+
                 const iconPath = event.icon || s?.icon || 'icon/main.png';
                 const debugChanceText = event.chance ? ` (${event.chance}%)` : '';
-                dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${iconPath}|[${dmgType === '보통공격' ? '보통공격' : (event.customTag || "추가타")}] ${event.name || s?.name || "추가타"}: +${Math.floor(finalD).toLocaleString()}${debugChanceText}`, statMsg: `Coef:${parseFloat((isM ? coef * targetCount : coef).toFixed(1))}% / Atk:${latest.atk.toLocaleString()}${dmgStr}` });
+                
+                // [수정] 로그에도 스냅샷된 공격력이 있다면 그것을 표시
+                const logAtk = event.baseAtk !== undefined ? event.baseAtk : latest.atk;
+                
+                dynCtx.debugLogs.push({ type: 'action', msg: `ICON:${iconPath}|[${dmgType === '보통공격' ? '보통공격' : (event.customTag || "추가타")}] ${event.name || s?.name || "추가타"}: +${Math.floor(finalD).toLocaleString()}${debugChanceText}`, statMsg: `Coef:${parseFloat((isM ? coef * targetCount : coef).toFixed(1))}% / Atk:${logAtk.toLocaleString()}${dmgStr}` });
             };
 
             const processExtra = (e) => {

@@ -481,4 +481,7 @@ export function clearHeroTabRemnants() {
         const el = document.getElementById(id);
         if (el) el.remove();
     });
+
+    const gradeLogo = document.getElementById('char-grade-logo');
+    if (gradeLogo) gradeLogo.style.display = 'none';
 }

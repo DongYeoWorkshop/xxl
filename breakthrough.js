@@ -20,6 +20,12 @@ export function getDisabledSkillIds(breakthroughValue, charId) {
     if (!data || !data.skills) return [];
     
     const disabledIds = [];
+    
+    // [추가] XL 등급 전용: 패시브 2 (idx 3) 잠금 체크
+    if (data.grade === 'XL') {
+        if (data.skills[3] && breakthroughValue < BREAKTHROUGH_THRESHOLDS.p2_level) disabledIds.push(data.skills[3].id);
+    }
+
     // 패시브 3, 4, 5 (인덱스 4, 5, 6)만 체크하여 잠금 처리
     if (data.skills[4] && breakthroughValue < BREAKTHROUGH_THRESHOLDS.p3_active) disabledIds.push(data.skills[4].id);
     if (data.skills[5] && breakthroughValue < BREAKTHROUGH_THRESHOLDS.p4_active) disabledIds.push(data.skills[5].id);
@@ -77,11 +83,15 @@ export function updateSkillStatesByBreakthrough(breakthroughValue, skillContaine
         }
     };
 
+    const data = charData[currentId];
+    const isXL = (data && data.grade === 'XL');
+
     // Passive 1 (idx 2): 5단계 해금, 레벨 제한만 있음
     updatePassive(2, BREAKTHROUGH_THRESHOLDS.p1_level, false);
     
-    // Passive 2 (idx 3): 15단계 해금, 레벨 제한만 있음
-    updatePassive(3, BREAKTHROUGH_THRESHOLDS.p2_level, false);
+    // Passive 2 (idx 3): 15단계 해금
+    // [수정] XL 등급이면 카드 잠금(true), 아니면 레벨 제한만(false)
+    updatePassive(3, BREAKTHROUGH_THRESHOLDS.p2_level, isXL);
     
     // Passive 3 (idx 4): 30단계 해금, 카드 잠금 포함
     updatePassive(4, BREAKTHROUGH_THRESHOLDS.p3_active, true);

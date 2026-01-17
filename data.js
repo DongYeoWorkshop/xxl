@@ -2,7 +2,6 @@
 export const charData = {
   "tayangsuyi": {
     title: "다양수이",
-    desc: "다양수이에 대한 설명입니다.",
     base: { "공격력": 504, "HP": 2475 },
     info: { "속성": 0, "포지션": "전사" },
     customControls: [
@@ -58,14 +57,135 @@ export const charData = {
       }    
     ]
   },
+  "choiyuhee": {
+    title: "최유희",
+    grade: "XL",
+    base: { "공격력": 498, "HP": 2261 },
+    info: { "속성": 2, "포지션": "방해" },
+    defaultBuffSkills: ["choiyuhee_skill3", "choiyuhee_skill6","choiyuhee_skill7"], 
+    skills: [
+      { 
+        id: "choiyuhee_skill1",
+        excludeFromBuffSearch: true, 
+        isMultiTarget: true, 
+        decimalPlaces: 2, 
+        name: "견습・사인파사참", 
+        icon: "icon/attack.webp", 
+        desc: "적 전체에게 공격력 {0}%의 데미지를 줌", 
+        calc: [{ max: 50 }], 
+        damageDeal: [{ type: "보통공격", val: { max: 50 } }] 
+      },
+      {
+        id: "choiyuhee_skill2",
+        excludeFromBuffSearch: true,
+        hasStampEffect: true,
+        decimalPlaces: 2,
+        name: "견습・사신현정검", 
+        icon: "icon/attack(strong).webp", 
+        desc: "(쿨타임 : 3턴) \n 대상에게 공격력 {0}%의 데미지를 준 후 공격력 {1}%의 고정데미지를 가진 [중독]을 3턴 간 부여", 
+        stampDesc: "(쿨타임 : 3턴) \n 대상에게 공격력 {0}%의 데미지를 준 후 대상에게 공격력 {1}%의 고정데미지를 가진 [중독]을 3턴 간 부여하고 적 전체에게 다시 그 절반의 데미지를 가진 독을 3턴 간 부여",
+        calc: [{ max: 100 },{ max: 50 }],         
+        damageDeal: [
+            { type: "필살공격", val: { max: 100 } }
+        ]
+      },
+      {
+        id: "choiyuhee_skill3",
+        excludeFromBuffSearch: false,
+        decimalPlaces: 2,
+        buffEffects: { "공증": { max: 9.6, attributeMax: 14.4, targetAttribute: 2 } }, // 나무속성(2) 18%
+        buffDesc: "공격력 {0}% 증가", 
+        name: "나무속성 공격 강화Ⅲ", 
+        icon: "icon/passive2.webp", 
+        desc: "아군 전체의 공격력을 {0}% 증가시키며, 영향을 받은 아군이 나무속성일 경우 추가로 {1}% 증가", 
+        calc: [{ max: 9.6 }, { max: 4.8 }] 
+      },
+      {
+        id: "choiyuhee_skill4",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        isMultiTarget: true,         
+        name: "공포의 바람 속격",
+        icon: "icon/passive2.webp",
+        desc: "최유현이 보통공격 사용 시 대상이 [중독]효과를 보유하고 있을 경우 보통공격의 대상 전체에게 공격력 {0}%의 데미지를 줌",
+        calc: [{ max: 125 }],
+        damageDeal: [
+            { type: "추가공격", val: { max: 125 } }
+        ]            
+      },
+      { id: "choiyuhee_skill5", 
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2, 
+        name: "독설 반격", 
+        icon: "icon/passive5.webp", 
+        desc: "방어 중 보통공격 피격 시 50% 확률로 공격한 적에게 공격력 {0}%의 데미지를 가진 [중독]을 3턴 간 부여", 
+        calc: [{ max: 100 }],
+        damageDeal: [
+            { type: "도트공격", val: { max: 100 } }
+        ]        
+      },
+      {
+        id: "choiyuhee_skill6",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초공증": { max: 15 }}, 
+        buffDesc: "기초공격력 {0}% 증가", 
+        name: "주먹이 단단해진다", 
+        icon: "icon/passive5.webp", 
+        desc: "자신의 기초 공격력 {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "choiyuhee_skill7",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초HP증가": { max: 15 } }, 
+        buffDesc: "기초 HP {0}% 증가", 
+        name: "고강도 훈련 성과", 
+        icon: "icon/passive5.webp", 
+        desc: "자신의 기초 HP {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "choiyuhee_skill8",
+        name: "견습・사신현정검[중독]",
+        decimalPlaces: 2,     
+        excludeFromBuffSearch: true,
+        icon: "icon/attack(strong).webp",         
+        syncLevelWith: "choiyuhee_skill2",
+        calc: [{ max: 25}],   
+        damageDeal: [{ type: "도트공격", val: { max: 50 } }]                
+      },           
+      {
+        id: "choiyuhee_skill9",
+        name: "견습・사신현정검[전체중독]",
+        decimalPlaces: 2,     
+        icon: "images/sigilwebp/sigil_choiyuhee.webp",
+        isMultiTarget: true,                 
+        excludeFromBuffSearch: true,
+        isUltExtra: true,
+        syncLevelWith: "choiyuhee_skill2",
+        calc: [{ max: 25}],   
+        damageDeal: [{ type: "도트공격", val: { max: 25 } }]                
+      },      
+    ]
+  },
   "choiyuhyun": {
     title: "최유현",
     base: { "공격력": 520, "HP": 2403 },
- 
     info: { "속성": 2, "포지션": "전사" },
     defaultBuffSkills: ["choiyuhyun_skill8","choiyuhyun_skill3","choiyuhyun_skill4", "choiyuhyun_skill6"],
     skills: [
-      { id: "choiyuhyun_skill1", excludeFromBuffSearch: true, isMultiTarget: true, decimalPlaces: 0, buffEffects: { "공증": 0 }, name: "사인파사참", icon: "icon/attack.webp", desc: "적 전체에게 공격력 {0}%의 데미지를 줌", calc: [{ max: 50 }], damageDeal: [{ type: "보통공격", val: { max: 50 } }] },
+      { id: "choiyuhyun_skill1", 
+        excludeFromBuffSearch: true, 
+        isMultiTarget: true, 
+        decimalPlaces: 2, 
+        name: "사인파사참", 
+        icon: "icon/attack.webp", 
+        desc: "적 전체에게 공격력 {0}%의 데미지를 줌", 
+        calc: [{ max: 50 }], 
+        damageDeal: [{ type: "보통공격", val: { max: 50 } }] 
+      },
       { id: "choiyuhyun_skill2", 
         excludeFromBuffSearch: true, 
         isMultiTarget: true, 
@@ -468,7 +588,6 @@ export const charData = {
   "beernox": {
     title: "비어녹스",
     base: { "공격력": 470, "HP": 2652 },
- 
     info: { "속성": 2, "포지션": "보조" },
     defaultBuffSkills: ["beernox_skill1","beernox_skill2", "beernox_skill3", "beernox_skill4", "beernox_skill6","beernox_skill7","beernox_stamp_passive"], 
     skills: [
@@ -576,6 +695,127 @@ export const charData = {
       }
     ]
   },
+  "dallawan": {
+    title: "다라완",
+    base: { "공격력": 442, "HP": 2544 },
+    grade: "XL", 
+    info: { "속성": 0, "포지션": "보조" },
+    defaultBuffSkills: ["dallawan_skill2", "dallawan_skill3", "dallawan_skill6","dallawan_skill7","dallawan_skill8","dallawan_skill9"], 
+    skills: [
+       { 
+        id: "dallawan_skill1",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        name: "최상급 일품", 
+        icon: "icon/attack.webp", 
+        desc: "대상에게 공격력 {0}%의 데미지를 줌", 
+        calc: [{ max: 100 }],
+        damageDeal: [{ type: "보통공격", val: { max: 100 } }]
+      },
+      {
+        id: "dallawan_skill2",
+        excludeFromBuffSearch: false,
+        hasStampEffect: true,
+        decimalPlaces: 2,
+        name: "목장주 명령", 
+        hasToggle: true,
+        toggleType: "isAppliedStamped",        
+        icon: "icon/attack(strong).webp", 
+        ratioEffects: { "고정공증": { from: "기초공격력", max: 30 } },
+        buffDesc: "다라완의 기초공격력의 {0}%만큼 공격력 가산",
+        desc: "(쿨타임 : 3턴) \n 아군 전체에게 1턴 간 다라완의 기초공격력의 {0}%만큼 공격력 가산시킨 후 받는 치료 {1}% 증가", 
+        stampDesc: "(쿨타임 : 3턴) \n 아군 전체에게 1턴 간 다라완의 기초공격력의 {0}%만큼 공격력 가산시킨 후 받는 치료 {1}% 증가, 필살 발동 후 2턴 내에 아군이 직접회복 시 50% 확률로 해당 아군에게 데미지 {2}% 증가 부여", 
+        calc: [{ max: 60},{ max: 112.5},{max:0,stampMax: 20}],
+      }, 
+      {
+        id: "dallawan_skill3",
+        excludeFromBuffSearch: false,
+        decimalPlaces: 2,
+        buffEffects: { "공증": { max: 12 } },
+        buffDesc: "공격력 {0}% 증가", 
+        name: "전체 공격 강화Ⅲ", 
+        icon: "icon/passive2.webp", 
+        desc: "아군 전체의 공격력 {0}% 증가", 
+        calc: [{ max: 12 }] 
+      },
+      {
+        id: "dallawan_skill4",
+        excludeFromBuffSearch: false,
+        isAppliedPassive: true, // [추가] 본인 버프 리스트 제외 신호
+        decimalPlaces: 2,
+        buffDesc: "다라완이 보통공격 시 50% 확률로 기초공격력의 {0}%만큼 공격력 가산", // 버프창 설명 추가
+        ratioEffects: { "고정공증": { from: "기초공격력", max: 48 } },
+        hasToggle: true,
+        toggleType: "isAppliedStamped",            
+        name: "타로의 자부심",
+        icon: "icon/passive2.webp",
+        desc: "보통공격 시 50% 확률로 2턴 간 자신을 제외한 아군 전체에게 다라완의 기초공격력의 {0}%만큼 공격력 가산",
+        calc: [{ max: 48}]
+      },
+      { id: "dallawan_skill5", 
+        excludeFromBuffSearch: false, 
+        isAppliedPassive: true, // [추가] 본인 버프 리스트 제외 신호
+        decimalPlaces: 2, 
+        buffDesc: "다라완이 직접회복 시 33% 확률로 기초공격력의 {0}%만큼 공격력 가산", // 버프창 설명 추가
+        ratioEffects: { "고정공증": { from: "기초공격력", max: 60 } },
+        hasToggle: true,
+        toggleType: "isAppliedStamped",            
+        name: "맹우의 정력",
+        icon: "icon/passive5.webp",
+        desc: "직접회복 시 33% 확률로 1턴 간 자신을 제외한 아군 전체에게 다라완의 기초공격력의 {0}%만큼 공격력 가산",
+        calc: [{ max: 60}]
+      },
+      {
+        id: "dallawan_skill6",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초공증": { max: 15 }}, 
+        buffDesc: "기초공격력 {0}% 증가", 
+        name: "주먹이 단단해진다", 
+        icon: "icon/passive5.webp", 
+        desc: "자신의 기초 공격력 {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "dallawan_skill7",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초HP증가": { max: 15 } }, 
+        buffDesc: "기초 HP {0}% 증가", 
+        name: "고강도 훈련 성과", 
+        icon: "icon/passive5.webp", 
+        desc: "자신의 기초 HP {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "dallawan_skill8",
+        name: "목장주 명령[회복증가]",
+        decimalPlaces: 2,
+        buffEffects: { "회복증가": { max: 112.5 } }, 
+        hasToggle: true,
+        toggleType: "isAppliedStamped",          
+        buffDesc: "받는 회복량 {0}% 증가",              
+        icon: "icon/attack(strong).webp", 
+        excludeFromBuffSearch: false,
+        syncLevelWith: "dallawan_skill2",
+        calc: [{ max: 112.5 }]         
+      },
+       {
+        id: "dallawan_skill9",
+        name: "목장주 명령",
+        decimalPlaces: 2, 
+        stampBuffEffects: { "뎀증": { max: 20 } },           
+        hasToggle: true,
+        toggleType: "isAppliedStamped",             
+        buffDesc: "직접회복 시 50% 확률로 데미지 {0}% 증가",       
+        icon: "images/sigilwebp/sigil_dallawan.webp",
+        excludeFromBuffSearch: false,
+        isUltExtra: true,
+        syncLevelWith: "dallawan_skill2",
+        calc: [{ max: 20 }]        
+      },     
+    ]
+  },  
     "kyrian": {
     title: "기리안",
     desc: "기리안에 대한 설명입니다.",
@@ -1415,7 +1655,7 @@ export const charData = {
       },
       {
         id: "tamrang_skill8",
-        name: "선향욕기 ",
+        name: "선향욕기",
         decimalPlaces: 2,
         stampBuffEffects: { "뎀증디버프": { fixed: 75 } }, 
         hasToggle: true,
@@ -1808,7 +2048,7 @@ export const charData = {
       },
       {
         id: "duncan_skill8",
-        name: "지팡이보다 먹힌다구! ",
+        name: "지팡이보다 먹힌다구!",
         decimalPlaces: 2, 
         stampBuffEffects: { "뎀증": { max: 150, startRate:0.64 } },           
         hasToggle: true,
@@ -1928,7 +2168,7 @@ export const charData = {
       },
       {
         id: "famido_skill8",
-        name: "절대 에이스의 포효 ", 
+        name: "절대 에이스의 포효", 
         excludeFromBuffSearch: false, 
         decimalPlaces: 2, 
         ignoreBreakthrough: true,
@@ -2178,10 +2418,9 @@ export const charData = {
         icon: "icon/passive2.webp",
         calc: [{ max: 36}]
       }   
-    ]
-  },  
-  "test_dummy": {
-    title: "커스텀 버프 (테스트용)",
+        ]
+      },    
+      "test_dummy": {    title: "커스텀 버프 (테스트용)",
     desc: "직접 수치를 입력하여 테스트할 수 있는 캐릭터입니다.",
     base: { "공격력": 100, "HP": 100 },
     growth: { "공격력": 1.0, "HP": 1.0 },

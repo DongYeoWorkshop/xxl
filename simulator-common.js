@@ -101,6 +101,13 @@ export const UNLOCK_REQ = {
     [SKILL_IDX.PASSIVE_5]: 75
 };
 
+// [추가] 등급별 특수 해금 조건
+export const GRADE_UNLOCK_REQ = {
+    'XL': {
+        [SKILL_IDX.PASSIVE_2]: 15
+    }
+};
+
 /**
  * 캐릭터의 기본 행동(쿨타임 기반)을 반환합니다.
  * @param {string} charId 캐릭터 ID
