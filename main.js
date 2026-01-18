@@ -136,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const img = document.createElement('img');
                 img.src = `images/${id}.webp`;
                 img.loading = 'lazy'; // [추가] 지연 로딩 적용
+                img.draggable = false; // [추가] 드래그 방지
                 img.style.width = '100%';
                 img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 원복 */
                 img.style.objectFit = 'cover';
@@ -157,18 +158,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // [추가] NEW 뱃지 표시
                 if (isNew) {
                     const newBadge = document.createElement('div');
+                    newBadge.className = 'landing-new-badge';
                     newBadge.textContent = 'NEW';
-                    newBadge.style.position = 'absolute';
-                    newBadge.style.bottom = '7px';
-                    newBadge.style.left = '4px';
-                    newBadge.style.backgroundColor = '#ff4d4f';
-                    newBadge.style.color = '#fff';
-                    newBadge.style.fontSize = '10px';
-                    newBadge.style.fontWeight = 'bold';
-                    newBadge.style.padding = '2px 5px';
-                    newBadge.style.borderRadius = '4px';
-                    newBadge.style.zIndex = '5';
-                    newBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
                     wrapper.appendChild(newBadge);
                 }
 
@@ -480,4 +471,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 변경 사항 표시 업데이트
     updateCharacterListIndicators();
+
+    // [추가] 전역 우클릭 및 모바일 롱탭 메뉴 방지
+    document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.closest('.sim-char-pick-item')) {
+            e.preventDefault();
+        }
+    }, false);
 });
