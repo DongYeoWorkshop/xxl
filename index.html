@@ -27,6 +27,16 @@
   <link rel="stylesheet" href="skills.css?v=1.0.0">
   <link rel="stylesheet" href="components.css?v=1.0.0">
   <link rel="stylesheet" href="responsive.css?v=1.0.0">
+  <!-- JS Module Preload: 병렬 다운로드 가속 -->
+  <link rel="modulepreload" href="main.js">
+  <link rel="modulepreload" href="ui.js">
+  <link rel="modulepreload" href="logic.js">
+  <link rel="modulepreload" href="data.js">
+  <link rel="modulepreload" href="state.js">
+  <link rel="modulepreload" href="handlers.js">
+  <link rel="modulepreload" href="formatter.js">
+  <link rel="modulepreload" href="buffs.js">
+  <link rel="modulepreload" href="breakthrough.js">
 </head>
 
 <body>
@@ -47,31 +57,31 @@
       <div class="sort-icon-fav" title="즐겨찾기 보기">★</div>
     </div>
     <div class="image-row">
-      <img src="images/tayangsuyi.webp" class="main-image" style="background-color: #30363d;" data-id="tayangsuyi">
-      <img src="images/choiyuhee.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhee">
-      <img src="images/choiyuhyun.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhyun">
-      <img src="images/kumoyama.webp" class="main-image" style="background-color: #30363d;" data-id="kumoyama">
-      <img src="images/khafka.webp" class="main-image" style="background-color: #30363d;" data-id="khafka">
-      <img src="images/beernox.webp" class="main-image" style="background-color: #30363d;" data-id="beernox">
-      <img src="images/dallawan.webp" class="main-image" style="background-color: #30363d;" data-id="dallawan">      
-      <img src="images/kyrian.webp" class="main-image" style="background-color: #30363d;" data-id="kyrian">
-      <img src="images/meng.webp" class="main-image" style="background-color: #30363d;" data-id="meng">
-      <img src="images/baade.webp" class="main-image" style="background-color: #30363d;" data-id="baade">
-      <img src="images/locke.webp" class="main-image" style="background-color: #30363d;" data-id="locke">
-      <img src="images/orem.webp" class="main-image" style="background-color: #30363d;" data-id="orem">
-      <img src="images/leo.webp" class="main-image" style="background-color: #30363d;" data-id="leo">
-      <img src="images/tyrantino.webp" class="main-image" style="background-color: #30363d;" data-id="tyrantino">
-      <img src="images/wang.webp" class="main-image" style="background-color: #30363d;" data-id="wang">
-      <img src="images/anuberus.webp" class="main-image" style="background-color: #30363d;" data-id="anuberus">
-      <img src="images/shinrirang.webp" class="main-image" style="background-color: #30363d;" data-id="shinrirang">
-      <img src="images/tamrang.webp" class="main-image" style="background-color: #30363d;" data-id="tamrang">
-      <img src="images/goldenryder.webp" class="main-image" style="background-color: #30363d;" data-id="goldenryder">
-      <img src="images/jetblack.webp" class="main-image" style="background-color: #30363d;" data-id="jetblack">
-      <img src="images/rutenix.webp" class="main-image" style="background-color: #30363d;" data-id="rutenix">
-      <img src="images/duncan.webp" class="main-image" style="background-color: #30363d;" data-id="duncan">
-      <img src="images/famido.webp" class="main-image" style="background-color: #30363d;" data-id="famido">
-      <img src="images/rikano.webp" class="main-image" style="background-color: #30363d;" data-id="rikano">
-      <img src="images/bossren.webp" class="main-image" style="background-color: #30363d;" data-id="bossren">
+      <img src="images/tayangsuyi.webp" class="main-image" style="background-color: #30363d;" data-id="tayangsuyi" loading="lazy">
+      <img src="images/choiyuhee.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhee" loading="lazy">
+      <img src="images/choiyuhyun.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhyun" loading="lazy">
+      <img src="images/kumoyama.webp" class="main-image" style="background-color: #30363d;" data-id="kumoyama" loading="lazy">
+      <img src="images/khafka.webp" class="main-image" style="background-color: #30363d;" data-id="khafka" loading="lazy">
+      <img src="images/beernox.webp" class="main-image" style="background-color: #30363d;" data-id="beernox" loading="lazy">
+      <img src="images/dallawan.webp" class="main-image" style="background-color: #30363d;" data-id="dallawan" loading="lazy">      
+      <img src="images/kyrian.webp" class="main-image" style="background-color: #30363d;" data-id="kyrian" loading="lazy">
+      <img src="images/meng.webp" class="main-image" style="background-color: #30363d;" data-id="meng" loading="lazy">
+      <img src="images/baade.webp" class="main-image" style="background-color: #30363d;" data-id="baade" loading="lazy">
+      <img src="images/locke.webp" class="main-image" style="background-color: #30363d;" data-id="locke" loading="lazy">
+      <img src="images/orem.webp" class="main-image" style="background-color: #30363d;" data-id="orem" loading="lazy">
+      <img src="images/leo.webp" class="main-image" style="background-color: #30363d;" data-id="leo" loading="lazy">
+      <img src="images/tyrantino.webp" class="main-image" style="background-color: #30363d;" data-id="tyrantino" loading="lazy">
+      <img src="images/wang.webp" class="main-image" style="background-color: #30363d;" data-id="wang" loading="lazy">
+      <img src="images/anuberus.webp" class="main-image" style="background-color: #30363d;" data-id="anuberus" loading="lazy">
+      <img src="images/shinrirang.webp" class="main-image" style="background-color: #30363d;" data-id="shinrirang" loading="lazy">
+      <img src="images/tamrang.webp" class="main-image" style="background-color: #30363d;" data-id="tamrang" loading="lazy">
+      <img src="images/goldenryder.webp" class="main-image" style="background-color: #30363d;" data-id="goldenryder" loading="lazy">
+      <img src="images/jetblack.webp" class="main-image" style="background-color: #30363d;" data-id="jetblack" loading="lazy">
+      <img src="images/rutenix.webp" class="main-image" style="background-color: #30363d;" data-id="rutenix" loading="lazy">
+      <img src="images/duncan.webp" class="main-image" style="background-color: #30363d;" data-id="duncan" loading="lazy">
+      <img src="images/famido.webp" class="main-image" style="background-color: #30363d;" data-id="famido" loading="lazy">
+      <img src="images/rikano.webp" class="main-image" style="background-color: #30363d;" data-id="rikano" loading="lazy">
+      <img src="images/bossren.webp" class="main-image" style="background-color: #30363d;" data-id="bossren" loading="lazy">
     </div>
   </div>
 
