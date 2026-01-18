@@ -104,10 +104,9 @@ export const charData = {
         id: "choiyuhee_skill4",
         excludeFromBuffSearch: true,
         decimalPlaces: 2,
-        isMultiTarget: true,         
         name: "공포의 바람 속격",
         icon: "icon/passive2.webp",
-        desc: "최유현이 보통공격 사용 시 대상이 [중독]효과를 보유하고 있을 경우 보통공격의 대상 전체에게 공격력 {0}%의 데미지를 줌",
+        desc: "보통공격 사용 시 대상이 [중독]효과를 보유하고 있을 경우 대상에게 공격력 {0}%의 추가데미지를 줌",
         calc: [{ max: 125 }],
         damageDeal: [
             { type: "추가공격", val: { max: 125 } }
@@ -153,7 +152,7 @@ export const charData = {
         excludeFromBuffSearch: true,
         icon: "icon/attack(strong).webp",         
         syncLevelWith: "choiyuhee_skill2",
-        calc: [{ max: 25}],   
+        calc: [{ max: 50}],   
         damageDeal: [{ type: "도트공격", val: { max: 50 } }]                
       },           
       {

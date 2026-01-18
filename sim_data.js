@@ -1008,7 +1008,7 @@ export const simCharData = {
                         if (damageVal > 0) {
                             return { 
                                 extraHits: [{
-                                    name: "공포의 바람 속격", val: damageVal, isMulti: true, customTag: "패시브2", icon: "icon/passive2.webp"
+                                    name: "공포의 바람 속격", val: damageVal, isMulti: false, customTag: "패시브2", icon: "icon/passive2.webp"
                                 }]
                             };
                         }
@@ -1033,6 +1033,7 @@ export const simCharData = {
               const hits = [];
               const s = ctx.simState;
               const isS = !!ctx.stats.stamp;
+              const s8Idx = ctx.getSkillIdx("choiyuhee_skill8");
               
                       // 턴 종료 시 각 중독 인스턴스별로 데미지 발생
                       if (Array.isArray(s.poison_timer)) {
@@ -1042,7 +1043,7 @@ export const simCharData = {
                                   const isP3 = (p.from === "p3");
                                   hits.push({ 
                                       name: isP3 ? "독설 반격 [중독]" : `견습・사신현정검 [중독 #${i+1}]`, 
-                                      val: ctx.getVal(1, 1, isS), 
+                                      val: isP3 ? ctx.getVal(4, 0, isS) : ctx.getVal(s8Idx, 0, isS), 
                                       baseAtk: instanceAtk, 
                                       type: "도트공격", 
                                       icon: isP3 ? "icon/passive5.webp" : "icon/attack(strong).webp", 
