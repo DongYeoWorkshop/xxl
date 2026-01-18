@@ -30,9 +30,15 @@
 
 img {
   -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
   user-drag: none;
   user-select: none;
+  -webkit-touch-callout: none; /* [추가] 모바일 롱탭 메뉴 방지 */
 }
+
+/* Base layout & typography */
 
 html, body {
   max-width: 100%;

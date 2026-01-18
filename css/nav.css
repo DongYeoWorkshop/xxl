@@ -220,6 +220,32 @@
   }
 }
 
+/* [추가] NEW 뱃지 스타일 (모바일 대응 포함) */
+.landing-new-badge {
+  position: absolute;
+  bottom: 7px;
+  left: 4px;
+  background-color: #ff4d4f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 4px;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+
+@media screen and (max-width: 600px) {
+  .landing-new-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+    bottom: 7px;
+    left: 3px;
+    border-radius: 3px;
+  }
+}
+
 /* [복구] 호버 효과: 확대 금지 및 강조 */
 #landing-char-grid .sim-char-pick-item:hover img {
   transform: none !important;
