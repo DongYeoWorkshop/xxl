@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const img = document.createElement('img');
                 img.src = `images/${id}.webp`;
+                img.loading = 'lazy'; // [추가] 지연 로딩 적용
                 img.style.width = '100%';
                 img.style.aspectRatio = '1 / 2.2'; /* 세로 비율 원복 */
                 img.style.objectFit = 'cover';
