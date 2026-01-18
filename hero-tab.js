@@ -18,7 +18,7 @@ function getRecordsByTurn(snapshot) {
             groups[currentTurn].push(rec);
         }
     });
-    return groups; groupSnapshots
+    return groups;
 }
 
 /**
@@ -33,14 +33,15 @@ export function renderHeroTab(dom, updateStatsCallback) {
 
     const contentDisplay = document.getElementById('content-display');
     
-    // 이전 Hero 탭 잔상 제거
-    clearHeroTabRemnants();
-
-    // 1. 상단 그래프 영역 (하얀 박스 컨테이너)
-    const graphContainer = document.createElement('div');
-    graphContainer.id = 'hero-graph-container';
-    graphContainer.className = 'hero-graph-container';
-    if (contentDisplay) contentDisplay.prepend(graphContainer);
+    // 1. 상단 그래프 영역 (이미 있으면 재사용, 없으면 생성)
+    let graphContainer = document.getElementById('hero-graph-container');
+    if (!graphContainer) {
+        graphContainer = document.createElement('div');
+        graphContainer.id = 'hero-graph-container';
+        graphContainer.className = 'hero-graph-container';
+        if (contentDisplay) contentDisplay.prepend(graphContainer);
+    }
+    graphContainer.innerHTML = ''; // 내부만 초기화
 
     const headerTab = document.createElement('div');
     headerTab.className = 'hero-tab-tag';
@@ -61,7 +62,7 @@ export function renderHeroTab(dom, updateStatsCallback) {
     clearAllBtn.onclick = () => {
         if (confirm('모든 비교 기록을 삭제하시겠습니까?')) {
             state.comparisonSnapshots = [];
-            state.heroComparisonState = { slot1Id: null, slot2Id: null, nextTarget: 1 };
+            state.heroComparisonState = { slot1Id: null, slot2Id: null, nextTarget: 1, selectedIds: [] };
             saveSnapshots([]);
             updateStatsCallback(); 
             renderHeroTab(dom, updateStatsCallback);
@@ -74,7 +75,16 @@ export function renderHeroTab(dom, updateStatsCallback) {
         const maxTotal = Math.max(...snapshots.map(s => s.totalDamage));
         const imgGrid = document.createElement('div');
         imgGrid.className = 'graph-img-grid';
-        import('./handlers.js').then(mod => mod.setupDragScroll(imgGrid));
+        
+        // [개선] 스크롤 복원을 import 전에 즉시 시도 (깜빡임 감소)
+        const savedScroll = localStorage.getItem('hero_grid_scroll');
+        if (savedScroll) {
+            imgGrid.scrollLeft = parseInt(savedScroll);
+            // 레이아웃 렌더링 후 다시 한 번 보정
+            requestAnimationFrame(() => { imgGrid.scrollLeft = parseInt(savedScroll); });
+        }
+        
+        import('./handlers.js').then(mod => mod.setupDragScroll(imgGrid, 'hero_grid_scroll'));
 
         snapshots.forEach(snapshot => {
             const totalDmg = snapshot.totalDamage;
@@ -91,14 +101,20 @@ export function renderHeroTab(dom, updateStatsCallback) {
             deleteBtn.className = 'snapshot-del-btn';
             deleteBtn.onclick = (e) => {
                 e.stopPropagation();
-                state.comparisonSnapshots = state.comparisonSnapshots.filter(s => s.id !== snapshot.id);
-                // 선택 목록에서도 제거
-                if (state.heroComparisonState?.selectedIds) {
-                    state.heroComparisonState.selectedIds = state.heroComparisonState.selectedIds.filter(id => id !== snapshot.id);
-                }
-                saveSnapshots(state.comparisonSnapshots);
-                updateStatsCallback();
-                renderHeroTab(dom, updateStatsCallback);
+                
+                // 애니메이션 시작
+                wrapper.classList.add('deleting');
+                
+                // 약간의 지연 후 실제 삭제 및 재렌더링
+                setTimeout(() => {
+                    state.comparisonSnapshots = state.comparisonSnapshots.filter(s => s.id !== snapshot.id);
+                    if (state.heroComparisonState?.selectedIds) {
+                        state.heroComparisonState.selectedIds = state.heroComparisonState.selectedIds.filter(id => id !== snapshot.id);
+                    }
+                    saveSnapshots(state.comparisonSnapshots);
+                    updateStatsCallback();
+                    renderHeroTab(dom, updateStatsCallback);
+                }, 120); 
             };
             wrapper.appendChild(deleteBtn);
 
@@ -183,23 +199,31 @@ export function renderHeroTab(dom, updateStatsCallback) {
     }
     graphContainer.appendChild(contentPadding);
 
-    // 2. 그래프 영역 (별도의 흰색 박스)
-    const graphWrapper = document.createElement('div');
-    graphWrapper.id = 'hero-graph-wrapper';
-    graphWrapper.className = 'hero-main-wrapper';
+    // 2. 그래프 영역 (별도의 흰색 박스) - 재사용 로직
+    let graphWrapper = document.getElementById('hero-graph-wrapper');
+    if (!graphWrapper) {
+        graphWrapper = document.createElement('div');
+        graphWrapper.id = 'hero-graph-wrapper';
+        graphWrapper.className = 'hero-main-wrapper';
+        if (contentDisplay) contentDisplay.appendChild(graphWrapper);
+    }
+    graphWrapper.innerHTML = ''; // 내부 초기화
     graphWrapper.style.display = 'none'; // 초기에는 숨김
-    if (contentDisplay) contentDisplay.appendChild(graphWrapper);
 
     const graphDiv = document.createElement('div');
     graphDiv.id = 'hero-comparison-graph';
     graphDiv.style.cssText = 'width: 100%; height: 250px; padding: 10px 0;';
     graphWrapper.appendChild(graphDiv);
 
-    // 3. 하단 딜표 래퍼 (표가 나오는 흰 칸)
-    const tablesWrapper = document.createElement('div');
-    tablesWrapper.id = 'hero-tables-wrapper';
-    tablesWrapper.className = 'hero-main-wrapper';
-    if (contentDisplay) contentDisplay.appendChild(tablesWrapper);
+    // 3. 하단 딜표 래퍼 (표가 나오는 흰 칸) - 재사용 로직
+    let tablesWrapper = document.getElementById('hero-tables-wrapper');
+    if (!tablesWrapper) {
+        tablesWrapper = document.createElement('div');
+        tablesWrapper.id = 'hero-tables-wrapper';
+        tablesWrapper.className = 'hero-main-wrapper';
+        if (contentDisplay) contentDisplay.appendChild(tablesWrapper);
+    }
+    tablesWrapper.innerHTML = ''; // 내부 초기화
 
     const tableContainer = document.createElement('div');
     tableContainer.id = 'hero-comparison-tables';

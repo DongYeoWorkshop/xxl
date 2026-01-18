@@ -173,7 +173,7 @@ function renderSimulatorUI(charId) {
         const s1 = localStorage.getItem(supportKey1);
         const s2 = localStorage.getItem(supportKey2);
         if (charId === 'bossren' || s1 === 'bossren' || s2 === 'bossren') {
-            noticeArea.innerHTML = "💡 임부언 필살기의 쿨타임 감소 효과는 직접 행동 수정으로 조정해야합니다.";
+            noticeArea.innerHTML = "💡 임부언 쿨타임 감소 효과는 직접 행동수정으로 조정해야합니다.";
             noticeArea.style.display = 'block';
         } else {
             noticeArea.style.display = 'none';
