@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>캐릭터 상세 - 동여성 공방</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icon/main32x32.png">
+  <link rel="stylesheet" href="style.css?v=2.2.2">
+  <link rel="stylesheet" href="hero-tab.css?v=1.0.0">
+  <link rel="stylesheet" href="skills.css?v=1.0.0">
+  <link rel="stylesheet" href="components.css?v=1.0.0">
+  <link rel="stylesheet" href="responsive.css?v=1.0.0">
+</head>
+<body class="sub-page-active char-page-active">
+
+<!-- 상단 고정 헤더 + 캐릭터 목록 통합 래퍼 -->
+<div id="sticky-wrapper">
+  <div id="char-list-container" class="hidden">
+    <div id="sort-container">
+      <div class="sort-icon-all" title="전체 보기">ALL</div>
+      <img src="icon/fire.webp" class="sort-icon" data-attr="0" title="불 속성 정렬">
+      <img src="icon/water.webp" class="sort-icon" data-attr="1" title="물 속성 정렬">
+      <img src="icon/wood.webp" class="sort-icon" data-attr="2" title="나무 속성 정렬">
+      <img src="icon/light.webp" class="sort-icon" data-attr="3" title="빛 속성 정렬">
+      <img src="icon/dark.webp" class="sort-icon" data-attr="4" title="어둠 속성 정렬">
+      <div class="sort-icon-fav" title="즐겨찾기 보기">★</div>
+    </div>
+    <div class="image-row">
+      <img src="images/tayangsuyi.webp" class="main-image" style="background-color: #30363d;" data-id="tayangsuyi">
+      <img src="images/choiyuhee.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhee">
+      <img src="images/choiyuhyun.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhyun">
+      <img src="images/kumoyama.webp" class="main-image" style="background-color: #30363d;" data-id="kumoyama">
+      <img src="images/khafka.webp" class="main-image" style="background-color: #30363d;" data-id="khafka">
+      <img src="images/beernox.webp" class="main-image" style="background-color: #30363d;" data-id="beernox">
+      <img src="images/dallawan.webp" class="main-image" style="background-color: #30363d;" data-id="dallawan">      
+      <img src="images/kyrian.webp" class="main-image" style="background-color: #30363d;" data-id="kyrian">
+      <img src="images/meng.webp" class="main-image" style="background-color: #30363d;" data-id="meng">
+      <img src="images/baade.webp" class="main-image" style="background-color: #30363d;" data-id="baade">
+      <img src="images/locke.webp" class="main-image" style="background-color: #30363d;" data-id="locke">
+      <img src="images/orem.webp" class="main-image" style="background-color: #30363d;" data-id="orem">
+      <img src="images/leo.webp" class="main-image" style="background-color: #30363d;" data-id="leo">
+      <img src="images/tyrantino.webp" class="main-image" style="background-color: #30363d;" data-id="tyrantino">
+      <img src="images/wang.webp" class="main-image" style="background-color: #30363d;" data-id="wang">
+      <img src="images/anuberus.webp" class="main-image" style="background-color: #30363d;" data-id="anuberus">
+      <img src="images/shinrirang.webp" class="main-image" style="background-color: #30363d;" data-id="shinrirang">
+      <img src="images/tamrang.webp" class="main-image" style="background-color: #30363d;" data-id="tamrang">
+      <img src="images/goldenryder.webp" class="main-image" style="background-color: #30363d;" data-id="goldenryder">
+      <img src="images/jetblack.webp" class="main-image" style="background-color: #30363d;" data-id="jetblack">
+      <img src="images/rutenix.webp" class="main-image" style="background-color: #30363d;" data-id="rutenix">
+      <img src="images/duncan.webp" class="main-image" style="background-color: #30363d;" data-id="duncan">
+      <img src="images/famido.webp" class="main-image" style="background-color: #30363d;" data-id="famido">
+      <img src="images/rikano.webp" class="main-image" style="background-color: #30363d;" data-id="rikano">
+      <img src="images/bossren.webp" class="main-image" style="background-color: #30363d;" data-id="bossren">
+    </div>
+  </div>
+
+  <div id="sticky-header" class="sticky-header">
+    <div class="sticky-content" style="padding-left: 5px;">
+      <a href="index.html"><img src="icon/main.png" class="header-main-icon-btn" title="동여성 공방"></a>
+      <span id="sticky-header-title">동여성 공방</span>
+      <span id="sticky-attr"></span>
+      <span id="sticky-name"></span>
+      <span id="sticky-lv"></span>
+      <span id="sticky-br"></span>
+      <span id="sticky-fit"></span>
+      <button id="char-list-toggle-btn" class="header-btn">≡</button>
+    </div>
+  </div>
+</div>
+
+<div id="content-display">
+  <button class="char-report-btn" title="캐릭터 분석 보고서" style="display: none;"><img src="icon/debuffer.webp" style="width: 22px;"></button>
+  <button class="sim-shortcut-btn" title="이 캐릭터로 시뮬레이터 시작" style="display: none;"><img src="icon/bolt.png" style="width: 24px;"></button>
+  <button class="char-fav-btn">☆</button>
+  <div id="internal-char-bg">
+      <img id="char-bg-img" src="" alt="" style="display: none;">
+  </div>
+  
+  <div class="char-header-row" style="margin-top: 10px !important;">
+    <h2 id="display-title"></h2>
+    <div id="info-display" style="display: none; margin-top: 5px; margin-bottom: 15px; font-size: 0.95em; color: #666; justify-content: center; align-items: center; gap: 20px;"></div>
+  </div>
+
+  <div class="side-content-column">
+    <div id="calc-and-stats-row" style="display: none; gap: 15px; margin-top: 15px; align-items: center;">
+      
+      <!-- 왼쪽: 슬라이더 영역 -->
+      <div id="calc-area" style="flex: 1; display: none; padding-top: 0; border-top: none;">
+        
+        <!-- 레벨 슬라이더 -->
+        <div class="slider-group">
+          <label class="slider-label">Lv. <span id="level-val">1</span></label>
+          <div class="slider-box">
+            <input type="range" id="level-slider" min="1" max="60" value="1" list="level-ticks">
+          </div>
+          <datalist id="level-ticks">
+            <option value="1"></option>
+            <option value="5"></option>
+            <option value="10"></option>
+            <option value="15"></option>
+            <option value="20"></option>
+            <option value="25"></option>
+            <option value="30"></option>
+            <option value="35"></option>
+            <option value="40"></option>
+            <option value="45"></option>
+            <option value="50"></option>
+            <option value="55"></option>
+            <option value="60"></option>
+          </datalist>
+        </div>
+
+        <!-- 추가 슬라이더들 (이제 세로로 쌓임) -->
+        <div id="bonus-sliders" style="display: none; flex-direction: column;">
+          
+          <!-- 돌파 슬라이더 -->
+          <div class="slider-group">
+            <label class="slider-label" style="display: flex; align-items: center; justify-content: flex-start; gap: 5px;">
+                돌파 <span id="extra1-val">0</span>
+                <div style="display: flex; flex-direction: column; gap: 0; margin-top: 2px;">
+                    <button id="br-up-btn" style="padding: 0; line-height: 1; background: none; border: none; cursor: pointer; font-size: 0.7em; color: #007bff;">▲</button>
+                    <button id="br-down-btn" style="padding: 0; line-height: 1; background: none; border: none; cursor: pointer; font-size: 0.7em; color: #007bff;">▼</button>
+                </div>
+            </label>
+            <div class="slider-box">
+              <input type="range" id="extra1-slider" min="0" max="75" value="0" list="breakthrough-ticks" style="width: 100%;">
+            </div>
+            <datalist id="breakthrough-ticks">
+              <option value="0"></option>
+              <option value="5"></option>
+              <option value="15"></option>
+              <option value="30"></option>
+              <option value="50"></option>
+              <option value="75"></option>
+            </datalist>
+          </div>
+
+          <!-- 적합도 슬라이더 -->
+          <div class="slider-group">
+            <label class="slider-label">적합도 <span id="extra2-val">0</span></label>
+            <div class="slider-box">
+              <input type="range" id="extra2-slider" min="0" max="5" value="0" list="fitness-ticks" style="width: 100%;">
+            </div>
+            <datalist id="fitness-ticks">
+              <option value="0"></option>
+              <option value="1"></option>
+              <option value="2"></option>
+              <option value="3"></option>
+              <option value="4"></option>
+              <option value="5"></option>
+            </datalist>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 메인 스탯 영역 -->
+      <div id="stats-wrapper" style="flex: 1; display: flex; flex-direction: column;">
+        <ul id="display-stats" class="stat-list" style="margin: 0;"></ul>
+      </div>
+
+    </div> <!-- end row -->
+
+    <div id="sub-stats-wrapper"></div>
+  </div>
+
+  <div class="main-content-column">
+    <div id="new-section-area"></div>
+    <div id="buff-application-area">
+      <div style="display: flex; align-items: flex-end; margin-top: -46px; margin-bottom: 15px;">
+          <div style="background: #30363d; color: #ffa500; font-size: 0.75em; font-weight: bold; padding: 6px 16px; border-radius: 8px 8px 0 0;">적용 버프</div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <button id="reset-buffs-btn" style="padding: 2px 8px; font-size: 0.7em;">초기화</button>
+          <input type="text" id="buff-char-search" placeholder="캐릭터 이름을 입력" style="width: 50%;">
+      </div>
+      <div id="buff-search-results" style="display: none;"></div>
+      <div id="currently-applied-buffs">
+        <div id="applied-buffs-list"></div>
+      </div>
+      <div id="buff-skill-selection-area" style="display: none;"></div>
+    </div>
+    <div id="skill-container" class="skill-grid"></div>
+  </div>
+</div>
+
+<!-- 캐릭터 보고서 모달 -->
+<div id="char-report-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <button id="report-modal-top-close-btn">&times;</button>
+        <div id="report-modal-body"></div>
+    </div>
+</div>
+
+<script type="module" src="main.js"></script>
+
+</body>
+</html>

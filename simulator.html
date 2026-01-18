@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>전투 시뮬레이터 - 동여성 공방</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icon/main32x32.png">
+  <link rel="stylesheet" href="style.css?v=2.2.2">
+  <link rel="stylesheet" href="hero-tab.css?v=1.0.0">
+  <link rel="stylesheet" href="simulator.css?v=1.0.0">
+  <link rel="stylesheet" href="components.css?v=1.0.0">
+  <link rel="stylesheet" href="responsive.css?v=1.0.0">
+</head>
+<body class="sub-page-active hero-mode-active">
+
+<!-- 상단 고정 헤더 + 캐릭터 목록 통합 래퍼 -->
+<div id="sticky-wrapper">
+  <div id="char-list-container" class="hidden">
+    <div id="sort-container">
+      <div class="sort-icon-all" title="전체 보기">ALL</div>
+      <img src="icon/fire.webp" class="sort-icon" data-attr="0" title="불 속성 정렬">
+      <img src="icon/water.webp" class="sort-icon" data-attr="1" title="물 속성 정렬">
+      <img src="icon/wood.webp" class="sort-icon" data-attr="2" title="나무 속성 정렬">
+      <img src="icon/light.webp" class="sort-icon" data-attr="3" title="빛 속성 정렬">
+      <img src="icon/dark.webp" class="sort-icon" data-attr="4" title="어둠 속성 정렬">
+      <div class="sort-icon-fav" title="즐겨찾기 보기">★</div>
+    </div>
+    <div class="image-row">
+      <img src="images/tayangsuyi.webp" class="main-image" style="background-color: #30363d;" data-id="tayangsuyi">
+      <img src="images/choiyuhee.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhee">
+      <img src="images/choiyuhyun.webp" class="main-image" style="background-color: #30363d;" data-id="choiyuhyun">
+      <img src="images/kumoyama.webp" class="main-image" style="background-color: #30363d;" data-id="kumoyama">
+      <img src="images/khafka.webp" class="main-image" style="background-color: #30363d;" data-id="khafka">
+      <img src="images/beernox.webp" class="main-image" style="background-color: #30363d;" data-id="beernox">
+      <img src="images/dallawan.webp" class="main-image" style="background-color: #30363d;" data-id="dallawan">      
+      <img src="images/kyrian.webp" class="main-image" style="background-color: #30363d;" data-id="kyrian">
+      <img src="images/meng.webp" class="main-image" style="background-color: #30363d;" data-id="meng">
+      <img src="images/baade.webp" class="main-image" style="background-color: #30363d;" data-id="baade">
+      <img src="images/locke.webp" class="main-image" style="background-color: #30363d;" data-id="locke">
+      <img src="images/orem.webp" class="main-image" style="background-color: #30363d;" data-id="orem">
+      <img src="images/leo.webp" class="main-image" style="background-color: #30363d;" data-id="leo">
+      <img src="images/tyrantino.webp" class="main-image" style="background-color: #30363d;" data-id="tyrantino">
+      <img src="images/wang.webp" class="main-image" style="background-color: #30363d;" data-id="wang">
+      <img src="images/anuberus.webp" class="main-image" style="background-color: #30363d;" data-id="anuberus">
+      <img src="images/shinrirang.webp" class="main-image" style="background-color: #30363d;" data-id="shinrirang">
+      <img src="images/tamrang.webp" class="main-image" style="background-color: #30363d;" data-id="tamrang">
+      <img src="images/goldenryder.webp" class="main-image" style="background-color: #30363d;" data-id="goldenryder">
+      <img src="images/jetblack.webp" class="main-image" style="background-color: #30363d;" data-id="jetblack">
+      <img src="images/rutenix.webp" class="main-image" style="background-color: #30363d;" data-id="rutenix">
+      <img src="images/duncan.webp" class="main-image" style="background-color: #30363d;" data-id="duncan">
+      <img src="images/famido.webp" class="main-image" style="background-color: #30363d;" data-id="famido">
+      <img src="images/rikano.webp" class="main-image" style="background-color: #30363d;" data-id="rikano">
+      <img src="images/bossren.webp" class="main-image" style="background-color: #30363d;" data-id="bossren">
+    </div>
+  </div>
+
+  <div id="sticky-header" class="sticky-header">
+    <div class="sticky-content" style="padding-left: 5px;">
+      <a href="index.html"><img src="icon/main.png" class="header-main-icon-btn" title="동여성 공방"></a>
+      <span id="sticky-header-title">동여성 공방</span>
+      <div id="header-shortcuts" class="header-shortcuts-area">
+        <a href="index.html"><img src="icon/main-m.png" class="header-shortcut-icon" title="캐릭터 목록" style="width: 24px; height: 24px; margin-right: 2px;"></a>
+        <a href="hero.html"><img src="icon/compe-m.png" class="header-shortcut-icon" title="딜량 비교 (Hero)"></a>
+        <a href="simulator.html"><img src="icon/simul-m.png" class="header-shortcut-icon" title="전투 시뮬레이터"></a>
+      </div>
+      <button id="char-list-toggle-btn" class="header-btn">≡</button>
+    </div>
+  </div>
+</div>
+
+<div id="content-display" class="hero-mode">
+  <div class="main-content-column" style="display: block !important;">
+    <div id="simulator-page" style="display: block !important; text-align: left; margin-top: 0; width: 100%;">
+        <div class="hero-tab-tag">
+            <div class="hero-tag-content">캐릭터 시뮬레이터</div>
+        </div>
+        <div class="hero-graph-container" style="background: #fffbf5; border: 1px solid #eee0d0; border-radius: 8px; padding: 20px; color: #333; box-shadow: 0 4px 15px rgba(111, 66, 193, 0.1); margin-top: 0;">
+            <div id="simulator-content"></div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+    import { initSimulator } from './simulator.js?v=20260117_FINAL';
+    import { state } from './state.js';
+    import { updateStats } from './logic.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        state.currentId = 'simulator';
+        initSimulator();
+    });
+</script>
+
+</body>
+</html>

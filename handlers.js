@@ -250,6 +250,14 @@ function setupHeaderListeners() {
     const headerTitle = document.getElementById('sticky-header-title');
     if (headerTitle) {
         headerTitle.onclick = () => {
+            const isLanding = document.body.classList.contains('landing-page-active');
+            if (isLanding) return; // 이미 랜딩 페이지면 무시
+
+            // 히스토리 상태 추가 (랜딩 페이지는 id null)
+            if (history.state?.id !== null) {
+                history.pushState({ id: null }, "", window.location.pathname);
+            }
+
             state.currentId = null;
             localStorage.removeItem('lastSelectedCharId');
             window.scrollTo(0, 0);
@@ -361,9 +369,14 @@ export function hideAllSections() {
     }
 }
 
-export function handleImageClick(img) {
+export function handleImageClick(img, pushHistory = true) {
     const id = img.dataset.id;
     if (!id) return;
+
+    // 히스토리 관리
+    if (pushHistory && state.currentId !== id) {
+        history.pushState({ id: id }, "", window.location.pathname);
+    }
     
     // [수정] 스크롤 위치 복원 로직
     const savedScroll = localStorage.getItem(`scroll_pos_${id}`);

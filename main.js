@@ -84,6 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
         if (landingRandomCharBtn && landingMenuGroup && landingCharListArea) {
             landingRandomCharBtn.onclick = () => {
+                // 히스토리 추가
+                history.pushState({ id: 'char-list' }, "", window.location.pathname);
+
                 // 1. 메뉴 숨기고 리스트 영역 보이기
                 landingMenuGroup.style.display = 'none';
                 landingCharListArea.style.display = 'block';
@@ -246,8 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
         if (landingCharBackBtn) {
             landingCharBackBtn.onclick = () => {
-                landingCharListArea.style.display = 'none';
-                landingMenuGroup.style.display = 'flex'; // flex로 복구
+                history.back();
             };
         }
     
@@ -275,26 +277,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // [수정] 시뮬레이터 버튼 클릭 시 캐릭터 선택창으로 바로 이동
             localStorage.removeItem('sim_last_char_id'); // 이전 선택 기록 제거하여 목록부터 시작
             
-            // 기존 handleImageClick('simulator')와 유사한 화면 전환 로직 수행
-            const contentDisplay = document.getElementById('content-display');
-            if (contentDisplay) {
-                contentDisplay.className = 'hero-mode';
-                contentDisplay.setAttribute('data-char-id', 'simulator');
+            let simImg = document.querySelector('.main-image[data-id="simulator"]');
+            if (!simImg) {
+                simImg = {
+                    dataset: { id: 'simulator' },
+                    classList: {
+                        add: () => {},
+                        remove: () => {},
+                        contains: () => false,
+                        toggle: () => {}
+                    },
+                    scrollIntoView: () => {},
+                    style: {}
+                };
             }
-            
-            document.body.classList.remove('landing-page-active', 'char-page-active', 'sub-page-active');
-            document.body.classList.add('hero-mode-active');
-            
-            hideAllSections();
-            const mainCol = document.querySelector('.main-content-column');
-            if (mainCol) mainCol.style.setProperty('display', 'block', 'important');
-            const simPage = document.getElementById('simulator-page');
-            if (simPage) simPage.style.setProperty('display', 'block', 'important');
-            
-            forceMainHeader();
-            
-            // 시뮬레이터 초기화 (버전 번호 통일)
-            import('./simulator.js?v=20260117_FINAL').then(mod => mod.initSimulator());
+            handleImageClick(simImg);
         };
     }
 
@@ -387,13 +384,71 @@ document.addEventListener('DOMContentLoaded', function() {
     if (lastCharId) {
         const initialImage = document.querySelector(`.main-image[data-id="${lastCharId}"]`);
         if (initialImage) {
-            handleImageClick(initialImage);
+            handleImageClick(initialImage, false); // 초기 로딩은 히스토리 추가 안함
+            history.replaceState({ id: lastCharId }, "", window.location.pathname);
         } else {
             updateStats();
+            history.replaceState({ id: null }, "", window.location.pathname);
         }
     } else {
         updateStats();
+        history.replaceState({ id: null }, "", window.location.pathname);
     }
+
+    // [추가] 브라우저 뒤로가기/앞으로가기 대응
+    window.addEventListener('popstate', (event) => {
+        const stateId = event.state ? event.state.id : null;
+        
+        if (stateId === 'char-list') {
+            // 캐릭터 목록 영역 보이기
+            const landingMenuGroup = document.getElementById('landing-menu-group');
+            const landingCharListArea = document.getElementById('landing-char-list-area');
+            if (landingMenuGroup) landingMenuGroup.style.display = 'none';
+            if (landingCharListArea) landingCharListArea.style.display = 'block';
+            
+            // 랜딩 페이지가 활성화되어 있는지 확인
+            if (!document.body.classList.contains('landing-page-active')) {
+                const headerTitle = document.getElementById('sticky-header-title');
+                if (headerTitle) headerTitle.click();
+                // 위 click() 이후에 다시 char-list를 보여줘야 함 (click()이 초기화하므로)
+                setTimeout(() => {
+                    if (landingMenuGroup) landingMenuGroup.style.display = 'none';
+                    if (landingCharListArea) landingCharListArea.style.display = 'block';
+                }, 50);
+            }
+        } else if (stateId) {
+            let targetImg = document.querySelector(`.main-image[data-id="${stateId}"]`);
+            if (!targetImg) {
+                // hero나 simulator처럼 이미지가 없을 수 있는 경우 가짜 객체 생성
+                targetImg = {
+                    dataset: { id: stateId },
+                    classList: {
+                        add: () => {},
+                        remove: () => {},
+                        contains: () => false,
+                        toggle: () => {}
+                    },
+                    scrollIntoView: () => {},
+                    style: {}
+                };
+            }
+            handleImageClick(targetImg, false); // 뒤로가기 시에는 다시 push하지 않음
+        } else {
+            // 랜딩 페이지 메인(메뉴)으로 이동
+            const headerTitle = document.getElementById('sticky-header-title');
+            if (headerTitle) {
+                if (!document.body.classList.contains('landing-page-active')) {
+                    headerTitle.click();
+                } else {
+                    // 이미 랜딩 페이지라면 리스트 숨기고 메뉴 보이기 (캐릭터 목록에서 뒤로가기 한 경우)
+                    const landingMenuGroup = document.getElementById('landing-menu-group');
+                    const landingCharListArea = document.getElementById('landing-char-list-area');
+                    if (landingMenuGroup) landingMenuGroup.style.display = 'flex';
+                    if (landingCharListArea) landingCharListArea.style.display = 'none';
+                }
+            }
+        }
+    });
 
     // 변경 사항 표시 업데이트
     updateCharacterListIndicators();
