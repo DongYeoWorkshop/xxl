@@ -97,8 +97,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 모든 캐릭터 ID 추출 (특수 ID 제외)
                 const validChars = Object.keys(charData).filter(id => id !== 'hero' && id !== 'simulator' && id !== 'test_dummy');
                 
-                // 정렬: 즐겨찾기 최상단 유지, 그 안에서는 데이터 역순
+                // 정렬: NEW 최상단 > 즐겨찾기 > 데이터 역순
                 validChars.sort((a, b) => {
+                    const aImg = document.querySelector(`.main-image[data-id="${a}"]`);
+                    const bImg = document.querySelector(`.main-image[data-id="${b}"]`);
+                    const aNew = aImg?.dataset.new === 'true' ? 1 : 0;
+                    const bNew = bImg?.dataset.new === 'true' ? 1 : 0;
+                    
+                    if (aNew !== bNew) return bNew - aNew; // NEW 내림차순 (1 우선)
+
                     const aFav = state.savedStats[a]?.isFavorite ? 1 : 0;
                     const bFav = state.savedStats[b]?.isFavorite ? 1 : 0;
                     if (aFav !== bFav) return bFav - aFav; // 즐겨찾기 내림차순 (1 우선)
@@ -110,6 +117,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
                 validChars.forEach(id => {
                 const data = charData[id];
+                const charImgEl = document.querySelector(`.main-image[data-id="${id}"]`);
+                const isNew = charImgEl?.dataset.new === 'true';
 
                 // [수정] 이미지와 별을 감싸는 래퍼 생성
                 const wrapper = document.createElement('div');
@@ -144,6 +153,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 wrapper.appendChild(img);
+
+                // [추가] NEW 뱃지 표시
+                if (isNew) {
+                    const newBadge = document.createElement('div');
+                    newBadge.textContent = 'NEW';
+                    newBadge.style.position = 'absolute';
+                    newBadge.style.bottom = '7px';
+                    newBadge.style.left = '4px';
+                    newBadge.style.backgroundColor = '#ff4d4f';
+                    newBadge.style.color = '#fff';
+                    newBadge.style.fontSize = '10px';
+                    newBadge.style.fontWeight = 'bold';
+                    newBadge.style.padding = '2px 5px';
+                    newBadge.style.borderRadius = '4px';
+                    newBadge.style.zIndex = '5';
+                    newBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+                    wrapper.appendChild(newBadge);
+                }
 
                 // [추가] 하단 색상 라인 추가 (헤더와 동일 스타일)
                 const bottomLine = document.createElement('div');
