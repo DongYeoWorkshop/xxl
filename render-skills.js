@@ -36,7 +36,11 @@ export function renderSkills(charId, charData, savedStats, currentSkillLevels, c
         // 도장 활성화 상태면 클래스 추가 및 이미지 설정
         if (idx === 1 && isUltStamped) {
             skillDiv.classList.add('stamped-ult-card');
-            skillDiv.style.backgroundImage = `url('images/sigil/sigil_${charId}.png')`;
+            // 위치와 크기를 기존 CSS 설정에 맞게 복구 (right 5px bottom 5px, 35%)
+            skillDiv.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('images/sigilwebp/sigil_${charId}.webp')`;
+            skillDiv.style.backgroundPosition = "right 5px bottom 5px";
+            skillDiv.style.backgroundSize = "35%";
+            skillDiv.style.backgroundRepeat = "no-repeat";
         }
 
         skillDiv.innerHTML = `

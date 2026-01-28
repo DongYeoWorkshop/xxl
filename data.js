@@ -2522,6 +2522,97 @@ export const charData = {
       }   
         ]
       },    
+    "izuminosuke": {
+    title: "이즈미노스케",
+    base: { "공격력": 561, "HP": 2225 },
+    info: { "속성": 1, "포지션": "힐러" },
+    defaultBuffSkills: ["izuminosuke_skill3","izuminosuke_skill4","izuminosuke_skill6","izuminosuke_skill7"],
+    skills: [
+       { 
+        id: "izuminosuke_skill1",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        name: "비밀 쿠마 온천", 
+        icon: "icon/attack.webp", 
+        desc: "HP비율이 가장 적은 아군을 공격력의 {0}%만큼 회복", 
+        calc: [{ max: 150 }],
+        healDeal: [{ type: "보통회복", val: { max: 150 } }]
+      },
+            { id: "izuminosuke_skill2", 
+              excludeFromBuffSearch: true, 
+              hasStampEffect: true, 
+              decimalPlaces: 2, 
+              name: "황극경천천", 
+              icon: "icon/attack(strong).webp", 
+              desc: "(쿨타임 : 3턴) \n 아군 전체를 대상으로 공격력의 {0}%만큼 회복시키며 또한 3턴 지속의 공격력 {1}%의 지속회복 부여", 
+              stampDesc: "(쿨타임 : 3턴) \n 아군 전체를 대상으로 공격력의 {0}%만큼 회복시킴 그리고 3턴 지속의 공격력 {1}%의 지속회복을 부여하며, 2턴 간 아군이 [마비]와 [수면]이 될 획률이 50% 감소시킴, 또한 2턴 간 이즈미노스케가 방어 사용 시 HP비율이 가장 적은 아군을 공격력의 {2}%만큼 회복", 
+              calc: [{ max: 60, stampMax: 75}, { max: 30},{ max: 90, stampMax: 150}], 
+              healDeal: [
+                  { type: "필살회복", val: { max: 60, stampMax:75 } },
+                  { type: "지속회복", val: { max: 30 } },
+                  { type: "추가회복", val: { max: 90, stampMax: 150 } }
+              ]
+            },
+      {
+        id: "izuminosuke_skill3",
+        excludeFromBuffSearch: false,
+        decimalPlaces: 2,
+        buffEffects: { "HP증가": { max: 15 } },
+        buffDesc: "HP {0}% 증가", 
+        name: "전체 생명 강화Ⅳ", 
+        icon: "icon/passive2.webp", 
+        desc: "아군 전체의 최대HP {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      {
+        id: "izuminosuke_skill4",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "회복증가": { max: 30 } }, 
+        buffDesc: "[근육 활동] 받는 회복량 {0}% 증가",  
+        hasToggle: true,
+        toggleType: "isAppliedStamped",           
+        name: "곰발 스트레칭",
+        icon: "icon/passive2.webp",
+        desc: "방어 사용 시 아군 전체에게 [근육 활동]을 1스택 부여(4턴 지속 / 최대 3중첩)하며, [근육 활동]은 2중첩 이상일 경우 보유자의 받는 치유효과가 {0}% 증가함",
+        calc: [{ max: 30 }]   
+      },
+      {
+        id: "izuminosuke_skill5",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        name: "곰발 회춘술",
+        icon: "icon/passive5.webp",
+        desc: "자신을 제외한 아군 전체가 각자 가진 [근육 활동]의 중첩 수만큼 본인 최대 HP의 {0}%만큼 HP 회복",
+        calc: [{ max: 6 }],
+        healDeal: [{ type: "HP추가회복", val: { max: 6 } }]      
+      },
+      { 
+        id: "izuminosuke_skill6",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "기초공증": { max: 15 },  "기초HP증가": { max: 15 } }, 
+        buffDesc: "기초공격력/HP {0}% 증가",
+        name: "고강도 훈련 성과", 
+        icon: "icon/passive5.webp", 
+        desc: "자신의 기초 공격력, 기초 HP {0}% 증가", 
+        calc: [{ max: 15 }] 
+      },
+      { 
+        id: "izuminosuke_skill7",
+        excludeFromBuffSearch: true,
+        decimalPlaces: 2,
+        buffEffects: { "공증": { max: 48 } },
+        buffDesc: "공격력 {0}% 증가",        
+        hasToggle: true,
+        toggleType: "isAppliedStamped",           
+        name: "강신 쿠마 온천", 
+        icon: "icon/passive5.webp", 
+        desc: "방어시 50% 확률로 3턴 간 공격력 {0}% 증가",
+        calc: [{ max: 48 }]
+      }
+    ]
+  },      
       "test_dummy": {    title: "커스텀 버프 (테스트용)",
     desc: "직접 수치를 입력하여 테스트할 수 있는 캐릭터입니다.",
     base: { "공격력": 100, "HP": 100 },

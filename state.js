@@ -19,7 +19,7 @@ export const state = {
 
 export const constants = {
     defaultGrowth: 1.05, // [추가] 모든 캐릭터 공통 성장률
-    disabledSimChars: ['kyrian', 'meng', 'leo'], // [수정] beernox 제거
+    disabledSimChars: ['kyrian', 'meng', 'leo', 'izuminosuke'],
     attributeList: ["불", "물", "나무", "빛", "어둠"],
     attributeImageMap: {
         "불": "icon/fire.webp",

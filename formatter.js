@@ -62,7 +62,9 @@ export function getDynamicDesc(skill, level, isStamped, descriptionToFormat = nu
     }
 
     calculatedValues.forEach((val, idx) => {
-        desc = desc.replace(`{${idx}}`, val.toLocaleString());
+        // 수치 부분만 지정된 색상(#f2a11f)으로 강조
+        const styledVal = `<span style="color: #f2a11f; font-weight: bold;">${val.toLocaleString()}</span>`;
+        desc = desc.replace(`{${idx}}`, styledVal);
     });
 
     return desc;

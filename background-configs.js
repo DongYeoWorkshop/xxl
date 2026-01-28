@@ -11,8 +11,11 @@ export const backgroundConfigs = {
 
     // 던컨 찰스 개인 설정
     "duncan": {
-        mobile: { scale: 1.4, xOffset: 300 }  // 모바일: 1.5배, 오른쪽 200px 이동
+        mobile: { scale: 1.4, xOffset: 300 } 
     },
+    "izuminosuke": {
+        mobile: { scale: 1.3, xOffset: 300 }
+    },    
     "choiyuhee": {
         mobile:  {xOffset: 230 }
     },

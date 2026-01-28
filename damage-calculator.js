@@ -208,9 +208,26 @@ export function getFormattedDamage(skill, lv, isUltStamped, isForCard = false, a
                 case "지속회복":
                     val = 최종공격력 * (coeff / 100) * (1 + sub_회복증가) * (1 + sub_지속회복증가);
                     break;
+                case "HP보통회복":
+                    val = 최종HP * (coeff / 100) * (1 + sub_회복증가) * (1 + sub_평타뎀증);
+                    break;
+                case "HP필살회복":
+                    val = 최종HP * (coeff / 100) * (1 + sub_회복증가) * (1 + sub_필살기뎀증);
+                    break;
+                case "HP추가회복":
+                    val = 최종HP * (coeff / 100) * (1 + sub_회복증가) * (1 + sub_트리거뎀증);
+                    break;
+                case "HP지속회복":
+                    val = 최종HP * (coeff / 100) * (1 + sub_회복증가) * (1 + sub_지속회복증가);
+                    break;
+                case "HP회복":
+                    val = 최종HP * (coeff / 100) * (1 + sub_회복증가);
+                    break;
                 case "회복": 
                 default:
-                    val = 최종공격력 * (coeff / 100) * (1 + sub_회복증가);
+                    val = (entry.type && entry.type.startsWith("HP")) 
+                          ? 최종HP * (coeff / 100) * (1 + sub_회복증가)
+                          : 최종공격력 * (coeff / 100) * (1 + sub_회복증가);
                     break;
             }
             const finalVal = Math.floor(val);
@@ -218,7 +235,13 @@ export function getFormattedDamage(skill, lv, isUltStamped, isForCard = false, a
                 if (isForCard) {
                     if (result.text) result.text += ' / ';
                     let typeLabel = entry.type || "회복";
-                    const typeName = typeLabel.replace("회복", "");
+                    let typeName = typeLabel.replace("회복", "");
+                    
+                    // HP로 시작하는 경우 HP/로 변경
+                    if (typeName.startsWith("HP")) {
+                        typeName = typeName.replace("HP", "HP/");
+                    }
+                    
                     result.text += typeName ? `회복(${typeName}): ${finalVal.toLocaleString()}` : `회복: ${finalVal.toLocaleString()}`;
                 }
             }
