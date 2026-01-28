@@ -1,0 +1,551 @@
+/* css/responsive.css (완벽 복구 및 선택적 축소) */
+
+/* 모바일 전용 (600px 이하) */
+@media screen and (max-width: 600px) {
+  #content-display { 
+    margin-top: 45px !important; 
+    width: 100% !important; /* 98% -> 100% 확장 */
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
+    float: none !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding-top: 20px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* 헤더 모바일 최적화 (원래대로 복구) */
+  #char-list-container {
+    max-height: 210px !important; /* 열렸을 때 최대 높이 축소 */
+  }
+
+  .image-row {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+
+  .char-slot-wrapper {
+    width: 60px !important;
+    height: 150px !important;
+  }
+
+  .main-image {
+    width: 60px !important;
+    height: 150px !important;
+  }
+
+  #sort-container {
+    height: 162px !important;
+    padding: 0 3px !important;
+    gap: 2px !important; /* 간격을 3px에서 2px로 더 축소 */
+    width: 28px !important;
+  }
+
+  .sort-icon, .sort-icon-all {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 0.55em !important;
+    margin-bottom: 0 !important; /* 혹시 있을 여백 제거 */
+  }
+
+  .sort-icon-fav {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 1.1em !important;
+    margin-top: 0 !important;
+  }
+
+  /* 캐릭터 카드 하트 아이콘 축소 (모바일) */
+  .info-right-col img {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .info-right-col {
+    bottom: 4px !important;
+    right: 4px !important;
+  }
+
+  .info-left-col {
+    bottom: 3px !important;
+    left: 4px !important;
+    font-size: 0.5em !important; /* 텍스트도 살짝 축소 */
+  }
+
+  body.list-open #content-display {
+    margin-top: 215px !important; /* 축소된 헤더 높이에 맞춤 */
+  }
+
+  .sticky-content {
+    padding: 0 5px !important;
+    gap: 2px !important;
+  }
+
+  #sticky-header-title {
+    font-size: 1.1em !important;
+    margin-right: 5px !important;
+  }
+
+  #sticky-name {
+    width: auto !important;
+    max-width: 85px !important;
+    margin-left: 5px !important;
+    margin-right: 8px !important;
+    font-size: 0.9em !important;
+  }
+
+  #sticky-attr {
+    width: 24px !important;
+    margin-left: 2px !important;
+    margin-right: 5px !important;
+  }
+
+  #sticky-lv, #sticky-br, #sticky-fit {
+    font-size: 0.75em !important;
+    width: auto !important;
+    padding: 0 2px !important;
+    margin-right: 6px !important;
+  }
+
+  #sticky-fit {
+    margin-right: 15px !important;
+  }
+
+  .header-btn {
+    padding: 0 5px !important;
+    font-size: 1.3em !important;
+  }
+
+  /* 캐릭터 정보가 있을 때 여백 조정 */
+  #sticky-lv:not([style*="display: none"]) ~ .header-btn {
+    margin-left: 5px !important;
+  }
+
+  /* [요청사항] 너무 작아진 글씨 크기 적정 수준으로 상향 */
+  .slider-label {
+    font-size: 0.8em !important;
+    margin-bottom: 2px !important;
+  }
+  .slider-label span {
+    font-size: 1.15em !important;
+  }
+
+  /* 스탯 목록 글씨 적정 수준 상향 */
+  .stat-list {
+    font-size: 0.85em !important;
+    margin: 5px 0 !important;
+  }
+  .stat-list li {
+    padding: 6px 0 !important; /* 위아래 간격을 넓힘 */
+    min-height: 26px !important;
+  }
+  .stat-label { font-size: 0.95em !important; }
+  .stat-val { font-size: 1.15em !important; }
+
+  /* 시뮬레이터 레이아웃 간격 축소 (모바일 전용) */
+  .sim-main-container {
+    gap: 15px !important; /* 10px -> 15px로 확대 */
+  }
+
+  .sim-pane-settings {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .sim-pane-display {
+    margin-top: 0 !important; /* 마이너스 마진 제거 */
+    gap: 10px !important;
+  }
+
+  /* 결과창 내부 박스들 (모바일 전용) */
+  #simulation-result-area > div {
+    margin-bottom: 8px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* 캐릭터 카드 및 기타 요소 (모바일) */
+  .hero-graph-container {
+    padding: 12px 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* 시뮬레이터 그래프 높이 축소 및 하단 여백 확대 */
+  #sim-graph-area {
+    height: 150px !important;
+    margin-bottom: 50px !important; /* 다시 50px로 복구 */
+    --sim-grid-height: 150px;
+  }
+
+  /* 나머지 모바일 최적화 유지 */
+  .skill-grid { 
+    grid-template-columns: 1fr !important; 
+    width: 100% !important;
+  }
+  .buff-name-label, .sim-turns-label {
+    display: none !important;
+  }
+
+  /* 시뮬레이터 수치 폰트 크기 조정 */
+  .sim-iters-val-text {
+    font-size: 0.85em !important;
+  }
+
+  /* 모바일 턴 수 슬라이더 + 버튼 가로 배치 */
+  .sim-edit-btn {
+    position: static !important;
+    padding: 6px 8px !important;
+    font-size: 0.7em !important;
+  }
+  .sim-slider-button-row {
+    gap: 8px !important;
+    margin-bottom: 15px !important;
+  }
+
+  /* 서포터 영역 모바일 축소 */
+  #sim-selected-support-name {
+    font-size: 0.8em !important;
+  }
+  .sim-pane-settings label {
+    font-size: 0.75em !important;
+  }
+
+  /* 시뮬레이터 커스텀 컨트롤 모바일 축소 */
+  #sim-custom-list > div {
+    min-width: 70px !important;
+    padding: 6px 3px !important;
+  }
+  #sim-custom-list span {
+    font-size: 0.55em !important;
+  }
+  #sim-custom-list input, #sim-custom-list button {
+    font-size: 0.75em !important;
+  }
+
+  /* 상세 로그 모달 글자 크기 축소 */
+  .sim-detailed-log-content * {
+    font-size: 0.9em !important;
+  }
+  .sim-detailed-log-content .sim-detail-stat-info {
+    display: none !important;
+  }
+  .sim-detailed-log-content .sim-modal-footer-hint {
+    font-size: 0.7em !important;
+    padding: 8px !important;
+  }
+  .sim-modal-close-btn {
+    font-size: 32px !important;
+    padding: 0 5px !important;
+  }
+  .sim-modal-header {
+    padding: 8px 12px !important;
+  }
+
+  #sim-log {
+          font-size: 0.72em !important;    padding: 8px 5px !important; /* 패딩 최소화 */
+    width: 100% !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important; /* 가로 내용이 길 경우 스크롤 허용 */
+    white-space: nowrap !important; /* 로그 한 줄 유지를 위해 줄바꿈 방지 */
+  }
+
+  /* 부가 스탯 목록 2열 유지 및 내부 가로 배치 */
+  #sub-stats-list {
+    grid-template-columns: repeat(2, 1fr) !important; /* 다시 2열로 */
+    gap: 5px !important;
+    padding: 5px !important;
+  }
+  #sub-stats-list li {
+    flex-direction: row !important; /* 내부만 가로 배치 */
+    justify-content: space-between !important;
+    padding: 4px 8px !important;
+    min-height: 28px !important;
+    background: rgba(48, 54, 61, 0.5) !important;
+  }
+  #sub-stats-list li .stat-label {
+    font-size: 0.75em !important;
+    color: #ccc !important;
+    white-space: nowrap; /* 글자 잘림 방지 */
+  }
+  #sub-stats-list li span:last-child {
+    font-size: 0.85em !important;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  #report-open-btn {
+    display: none !important;
+  }
+
+  /* [요청사항] 뉴 섹션 에리어 폰트 크기 및 여백 축소 */
+  #new-section-area {
+    margin-top: 35px !important; /* 간격 확대 (15px -> 35px) */
+    padding: 10px 12px !important;
+    font-size: 0.82em !important;
+    line-height: 1.4 !important;
+  }
+  #new-section-area h2, #new-section-area h3 {
+    font-size: 1.1em !important;
+    margin-bottom: 8px !important;
+  }
+  #new-section-area p, #new-section-area li {
+    margin-bottom: 6px !important;
+  }
+  /* 속성 아이콘 크기 축소 */
+  .attr-control-img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .attr-control-current-img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  /* 글로우 효과 축소 */
+  .attr-control-glow {
+    width: 14px !important;
+    height: 14px !important;
+    box-shadow: 0 0 6px currentColor !important;
+    filter: blur(2px) !important;
+  }
+  .attr-control-current-glow {
+    width: 24px !important;
+    height: 24px !important;
+    box-shadow: 0 0 12px currentColor !important;
+    filter: blur(4px) !important;
+  }
+  .attr-control-others {
+    gap: 2px !important;
+    margin-bottom: 0px !important;
+  }
+  .attribute-container {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: -5px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0 !important;
+  }
+  
+  .attr-control-item {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .attr-control-current-wrapper {
+    margin-top: -8px !important; /* 위로 총 8px 당김 */
+    padding-top: 0 !important;
+  }
+  /* 버프 검색창 글자 크기 축소 */
+  #buff-char-search {
+    font-size: 0.8em !important;
+    padding: 4px 10px !important;
+  }
+  #buff-char-search::placeholder {
+    font-size: 0.9em !important;
+  }
+  /* 스킬 카드 설명 글자 크기 축소 */
+  .embedded-skill-desc {
+    font-size: 0.72em !important;
+    line-height: 1.5 !important;
+  }
+  .skill-damage-text {
+    font-size: 0.75em !important;
+  }
+  /* 스킬 카드 아이콘 크기 축소 */
+  .skill-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .skill-header {
+    grid-template-columns: 38px 1fr auto !important; /* 아이콘 크기에 맞춰 컬럼 너비 조정 */
+    gap: 8px !important;
+  }
+  .skill-embedded-description {
+    padding: 6px 5px 0 5px !important; /* 하단 여백 0 */
+  }
+  /* 스킬 카드 내부 슬라이더 너비 축소 */
+  .skill-slider-container input {
+    width: 45% !important;
+  }
+
+  /* [추가] Hero 탭 비교표 모바일 2열 강제화 */
+  .unified-turn-content {
+    display: flex !important;
+    flex-direction: row !important; /* 가로 배치 강제 */
+    gap: 5px !important;
+    width: 100% !important;
+  }
+  .comparison-slot {
+    min-width: 0 !important; /* 최소 너비 해제 */
+    flex: 1 1 0 !important; /* 반씩 나눠 가짐 */
+    padding: 6px 4px !important; /* 패딩 축소 */
+  }
+  .comp-char-img {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .comp-text-wrapper {
+    max-width: none !important; /* 너비 제한 해제 */
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .comp-name {
+    font-size: 0.75em !important;
+    line-height: 1.2 !important;
+  }
+  .comp-spec {
+    display: block !important;
+    font-size: 0.55em !important;
+    color: #888 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important; /* 한 줄 유지 */
+  }
+  .comp-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+  .comp-total-dmg {
+    font-size: 0.85em !important;
+    margin-top: 4px !important;
+    text-align: center !important; /* 가운데 정렬로 변경 */
+    width: 100% !important;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 4px;
+  }
+  .comp-record-name {
+    display: flex !important;
+    font-size: 0.65em !important; /* 작은 폰트 복구 */
+    gap: 2px;
+    align-items: center;
+  }
+  .comp-skill-name {
+    display: none !important;
+  }
+  .comp-record-type {
+    margin-right: 2px !important;
+    white-space: nowrap;
+  }
+  .comp-record-val {
+    font-size: 0.75em !important; /* 작은 폰트 복구 */
+    text-align: right !important;
+    flex-shrink: 0;
+  }
+  .comp-record-row {
+    padding: 2px 0 !important;
+    justify-content: space-between !important;
+  }
+}
+
+/* 태블릿 및 PC (601px 이상) */
+@media screen and (min-width: 601px) {
+  #content-display {
+    margin-top: 270px;
+  }
+  /* 그래프 기본 높이 (태블릿) */
+  #sim-graph-area {
+    height: 220px !important;
+    --sim-grid-height: 220px;
+  }
+  #hero-comparison-graph {
+    height: 250px !important;
+  }
+
+  /* 시뮬레이터 간격 복구 (모바일 스타일 차단 및 태블릿 최적화) */
+  .sim-main-container {
+    gap: 15px !important; /* 태블릿은 15px로 적정 수준 유지 */
+  }
+  .sim-pane-display {
+    gap: 20px !important; /* 결과 박스들 사이는 여전히 넉넉하게 */
+    margin-top: 0 !important;
+  }
+  .sim-pane-settings {
+    margin-bottom: 0 !important; /* 태블릿에서도 버튼 아래 간격 축소 */
+  }
+  #simulation-result-area > div {
+    margin-bottom: 20px !important;
+  }
+
+  /* PC 전용 (1100px 이상) 에서 추가 간격 보정 */
+  @media screen and (min-width: 1100px) {
+    .sim-main-container {
+      gap: 30px !important; /* PC는 가로 배치이므로 원래대로 넓게 */
+    }
+    /* 그래프 확대 (PC 전용) */
+    #sim-graph-area {
+      height: 320px !important;
+      --sim-grid-height: 320px;
+    }
+    #hero-comparison-graph {
+      height: 350px !important;
+    }
+  }
+
+  /* 부가 스탯 내부 줄바꿈 제거 */
+  #sub-stats-list li {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    padding: 6px 15px !important;
+  }
+  #sub-stats-list li .stat-label {
+    font-size: 0.85em !important;
+  }
+  #sub-stats-list li span:last-child {
+    font-size: 1.0em !important;
+  }
+}
+
+/* PC 전용 (1100px 이상) */
+@media screen and (min-width: 1100px) {
+  body:not(.landing-page-active) #content-display {
+    max-width: 1200px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 420px !important;
+    gap: 0 30px !important;
+    align-items: start !important;
+  }
+  body.landing-page-active #content-display {
+    display: block !important;
+    max-width: 650px !important;
+    margin-top: 60px !important;
+  }
+  .char-header-row {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .main-content-column {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .side-content-column {
+    grid-column: 2;
+    grid-row: 2;
+    position: sticky;
+    top: 60px; /* 스크롤 시 스탯창 고정 효과 */
+  }
+
+  /* PC에서는 부가 스탯 다시 세로 배치 (줄바꿈) 및 상단 간격 확대 */
+  #sub-stats-list {
+    margin-top: 30px !important; /* 위쪽 스탯과의 간격 확대 */
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  #sub-stats-list li {
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 8px 4px !important;
+    min-height: 60px !important;
+  }
+  #sub-stats-list li .stat-label {
+    font-size: 0.85em !important;
+    margin-bottom: 4px !important;
+  }
+  #sub-stats-list li span:last-child {
+    font-size: 1.2em !important;
+  }
+}

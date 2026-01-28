@@ -1,0 +1,122 @@
+/* 
+   Main Stylesheet Hub
+   This file imports modular CSS components in the correct order to maintain layout stability.
+*/
+
+@import "css/base.css";
+@import "css/header.css";
+@import "css/nav.css";
+@import "css/content.css";
+@import "css/stats.css";
+@import "css/skills.css";
+@import "css/hero-tab.css";
+@import "css/simulator.css";
+@import "css/responsive.css";
+
+/* 
+   Custom Overrides
+   Any quick fixes or character-specific temporary styles can be added here.
+*/
+
+/* 시뮬레이터 바로가기 버튼 */
+.sim-shortcut-btn {
+  position: absolute !important;
+  top: 90px !important; /* 85px에서 90px로 이동 */
+  right: 15px !important; /* left에서 right로 변경 */
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 5px !important; /* 별 버튼과 패딩 맞춤 */
+  font-size: 1.5em !important; /* 번개 크기를 키움 */
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  z-index: 10 !important;
+  line-height: 1 !important;
+  color: #c3a6ff !important; 
+  /* 이미지 번짐 방지를 위해 필터 제거 */
+  filter: none !important;
+  /* 원형에서 둥근 사각형으로 변경 */
+  box-shadow: none !important; 
+  background: #6f42c1 !important; 
+  border-radius: 8px !important; /* 10px 정도로 둥근 모서리 */
+  width: 30px;
+  height: 30px;
+  transform: rotate(0deg) !important; 
+}
+
+/* 내부 번개 이미지 흰색으로 변환 */
+.sim-shortcut-btn img {
+  filter: brightness(0) invert(1);
+}
+
+.sim-shortcut-btn:hover:not(:disabled) {
+  transform: rotate(0deg) scale(1.1) !important; /* 마우스오버 시 1.1배 확대 */
+}
+
+.sim-shortcut-btn:disabled {
+  opacity: 0.2 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(100%) !important;
+}
+
+/* 캐릭터 보고서 바로가기 버튼 */
+.char-report-btn {
+  position: absolute !important;
+  top: 50px !important; /* 60px에서 50px로 이동 */
+  right: 15px !important; 
+  background: #28a745 !important; 
+  border: none !important;
+  border-radius: 8px !important; 
+  width: 30px;
+  height: 30px;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  z-index: 10 !important;
+  color: white !important;
+  box-shadow: none !important; 
+}
+
+/* 내부 이미지 흰색으로 변환 */
+.char-report-btn img {
+  filter: brightness(0) invert(1);
+}
+
+.char-report-btn:hover:not(:disabled) {
+  transform: scale(1.1) !important;
+}
+
+.char-report-btn:disabled {
+  opacity: 0.2 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(100%) !important;
+}
+
+/* 보고서 모달 커스텀 스크롤바 (오버레이 스타일 개선) */
+#report-modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+#report-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+#report-modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  border: 3px solid transparent; /* 투명 테두리로 핸들을 얇게 만듦 */
+  background-clip: content-box; /* 색상이 테두리 안쪽에만 칠해지게 함 */
+}
+#report-modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* [추가] PC 버전 헤더 경계선 강제 제거 */
+@media screen and (min-width: 1100px) {
+  .char-header-row {
+    border-bottom: none !important;
+  }
+}

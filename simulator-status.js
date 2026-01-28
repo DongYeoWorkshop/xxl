@@ -1,0 +1,140 @@
+// simulator-status.js
+
+/**
+ * 시뮬레이터에서 사용하는 주요 상태이상/특수 상태 정의
+ */
+export const statusRegistry = {
+    // 1. 각흔 (바드 전용)
+    "scar": {
+        name: "[각흔]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+    
+    // 2. 수면 (탐랑 전용)
+    "sleep_status_timer": {
+        name: "[수면]",
+        icon: "icon/compe.png",
+        type: "cc"
+    },
+
+    // 3. 전의 (다양수이 전용)
+    "skill4_spirit": {
+        name: "[전의]",
+        icon: "icon/compe.png",
+        type: "stack",
+        unit: "중첩"
+    },
+
+    // 4. 조롱 (탱커 공용)
+    "taunt": {
+        name: "[조롱]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+
+    // 5. 호혈표지 (카라트 전용)
+    "blood_mark_timer": {
+        name: "[호혈표지]",
+        icon: "icon/compe.png",
+        type: "stack",
+        unit: "중첩"
+    },
+
+    // 6. 배리어 (오렘/탱커 전용)
+    "shield_timer": {
+        name: "[배리어]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+
+    // 7. 용의 분노 (타란디오 전용)
+    "fury_stacks": {
+        name: "[용의 분노]",
+        icon: "icon/compe.png",
+        type: "stack",
+        unit: "중첩"
+    },
+
+    // 8. 용족의 위압 (타란디오 적 디버프)
+    "fear_timer": {
+        name: "[용족의 위압]",
+        icon: "icon/compe.png",
+        type: "stack",
+        unit: "중첩" 
+    },
+
+    // 9. 데미지 감소 (타란디오 적 디버프)
+    "dmg_reduce_timer": {
+        name: "[데미지 감소]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+
+    // 10. 받는 데미지 증가 (디버프 공용)
+    "vuln_timer": {
+        name: "[받는 데미지 증가]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+
+    // 11. 열화질보 (골든라이더 전용)
+    "blazing_stride_timer": {
+        name: "[열화질보]",
+        icon: "icon/compe.png",
+        type: "stack",
+        unit: "중첩"
+    },
+
+    // 12. 흑구/백구 (아누비로스 전용)
+    "skill4_black_timer": {
+        name: "[흑구]",
+        icon: "icon/compe.png",
+        type: "status"
+    },
+    "skill4_white_timer": {
+        name: "[백구]",
+        icon: "icon/compe.png",
+        type: "status"
+    }
+};
+
+/**
+ * 상태 키와 확률을 받아 표준화된 피격 메시지를 생성합니다.
+ */
+export function formatStatusMessage(key, prob) {
+    const info = getStatusInfo(key);
+    const label = info ? info.name : (typeof key === 'string' ? key : "특수 상태");
+    return `${label} 피격 발생 (${prob}%)`;
+}
+
+/**
+ * 상태 키와 행동(부여, 소모 등)을 받아 표준화된 메시지를 생성합니다.
+ */
+export function formatStatusAction(key, action) {
+    const info = getStatusInfo(key);
+    const label = info ? info.name : (typeof key === 'string' ? key : "특수 상태");
+    const actions = {
+        "apply": "부여",
+        "consume": "소모",
+        "all_consume": "모두 소모",
+        "activate": "발동",
+        "gain": "획득"
+    };
+    return `${label} ${actions[action] || action}`;
+}
+
+/**
+ * 상태 키를 받아 등록된 정보를 반환하는 헬퍼
+ */
+export function getStatusInfo(key) {
+    // 정확한 매칭 확인
+    if (statusRegistry[key]) return statusRegistry[key];
+    
+    // 키 포함 여부 확인 (예: skill4_spirit_stack 등 변형 대응)
+    for (const [regKey, info] of Object.entries(statusRegistry)) {
+        if (key.includes(regKey)) return info;
+    }
+    
+    return null;
+}

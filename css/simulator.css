@@ -1,0 +1,121 @@
+/* =========================================
+   Simulator Layout
+   ========================================= */
+.sim-main-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media screen and (min-width: 1100px) {
+  .sim-main-container {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    align-items: start;
+    gap: 30px;
+  }
+  .sim-pane-settings {
+    grid-column: 2; grid-row: 1; position: sticky; top: 70px;
+  }
+  .sim-pane-display {
+    grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 20px;
+  }
+}
+
+/* Simulator Character Grid (Small Circular Icons) */
+.sim-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+  gap: 12px;
+  justify-items: center;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+.sim-char-pick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.sim-char-pick-item img {
+  width: 55px !important;
+  height: 55px !important;
+  border-radius: 50% !important;
+  object-fit: cover;
+  object-position: top;
+  border: 2px solid #ddd;
+  background: #000;
+  transition: all 0.2s;
+}
+
+.sim-char-pick-item:hover img {
+  border-color: #6f42c1;
+  transform: scale(1.1);
+}
+
+.sim-char-name {
+  font-size: 0.75em;
+  margin-top: 6px;
+  color: #666;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+  }
+  
+  /* 그래프 막대 및 SVG 자라나는 애니메이션 복구 */
+  .bar-grow-item, .svg-bar-grow {
+    transform-origin: bottom;
+    animation: barGrow 0.6s ease-out forwards;
+  }
+  
+  @keyframes barGrow {
+    from { transform: scaleY(0); opacity: 0; }
+    to { transform: scaleY(1); opacity: 1; }
+  }
+
+  /* 로딩 스피너 */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* 분석 로그 턴 구분선 */
+  .sim-log-turn-header {
+    color: #888; /* 다시 회색으로 복구 */
+    text-align: center;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin: 12px 0 6px;
+    letter-spacing: 1px;
+    padding-bottom: 4px;
+  }
+  
+  .sim-log-line {
+    margin-bottom: 2px;
+  }
+
+  /* 턴 수 버튼 PC 기본 위치 */
+  .sim-edit-btn {
+    position: absolute;
+    top: -13px;
+    right: 0;
+  }
+  

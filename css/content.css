@@ -1,0 +1,181 @@
+/* =========================================
+   메인 컨텐츠 영역
+   ========================================= */
+#content-display {
+  transition: margin-top 0.3s ease;
+  padding: 20px 15px 15px; 
+  background-color: transparent; 
+  border-radius: 8px;
+  max-width: 650px;
+  margin-left: auto;
+  margin-right: auto;
+  color: var(--text-main);
+  position: relative;
+  overflow: visible; 
+  display: flow-root;
+  /* 박스 영역 밖으로 나가는 배경을 잘라주는 핵심 설정 */
+  clip-path: inset(0 round 8px); 
+}
+
+#char-grade-logo {
+  position: absolute;
+  top: 20px; /* 25px에서 20px로 이동 */
+  left: 15px;
+  height: 24px; /* 28px에서 24px로 추가 축소 */
+  width: auto;  /* 너비는 비율에 맞게 자동 조절 */
+  z-index: 15;
+  pointer-events: none;
+  filter: none; /* 그림자 제거 */
+}
+
+/* 모바일 로고 크기 조정 */
+@media screen and (max-width: 600px) {
+  #char-grade-logo {
+    height: 14px; /* 18px에서 14px로 추가 축소 */
+    top: 15px; /* 20px에서 15px로 이동 */
+    left: 15px; /* 10px에서 15px로 이동 */
+  }
+}
+
+/* 배경 레이어 (이미지 전용 박스) */
+#internal-char-bg {
+  position: fixed;
+  top: 0; left: 0; 
+  width: 100%; height: 100%;
+  z-index: -1;
+  overflow: hidden; 
+  pointer-events: none;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 이미지 가림막 (연한 검은색) */
+#internal-char-bg::after {
+  content: "";
+  position: fixed; /* absolute에서 fixed로 변경하여 뷰포트에 고정 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* 전역 배경과 마찬가지로 CSS 변수를 통해 고정된 높이 사용, 없으면 넉넉하게 120vh */
+  height: var(--fixed-bg-height, 120vh); 
+  background-color: rgba(38, 44, 54, 0.5);
+  z-index: 1; 
+  pointer-events: none;
+}
+
+/* [신규] 배경 이미지 태그 스타일 */
+#char-bg-img {
+  position: fixed; /* 뷰포트 기준 고정 (핵심) */
+  bottom: 0;       /* 바닥에 딱 붙임 */
+  right: 0;        /* 오른쪽 기준 */
+  z-index: -1;     /* 가림막보다 뒤 */
+  opacity: 0.6;
+  transition: opacity 0.3s, transform 0.3s;
+  
+  /* JS에서 제어할 속성들 초기값 */
+  width: auto;
+  height: 550px; /* 모바일 기본값 */
+  transform: translateX(0); /* x축 이동을 transform으로 제어 */
+}
+
+/* 등장 애니메이션 (transform 충돌 방지를 위해 이동 효과 제거) */
+@keyframes bgFadeIn {
+  from { opacity: 0; filter: blur(5px); }
+  to { opacity: 0.6; filter: blur(0); }
+}
+
+#internal-char-bg.animate #char-bg-img {
+  animation: bgFadeIn 0.5s ease-out forwards;
+}
+
+/* 기존 가상 요소 방식 제거 (주석 처리 또는 삭제) */
+/* #internal-char-bg::before { ... } */
+
+/* 미디어 쿼리는 JS에서 제어하므로 CSS에서는 최소한의 레이아웃만 유지 */
+
+/* 태블릿 배경 설정 (601px 이상) */
+@media screen and (min-width: 601px) {
+  #internal-char-bg::before {
+    background-size: var(--bg-size-tab, auto 750px);
+    background-position: var(--bg-x-tab, right 100%) !important;
+  }
+}
+
+/* PC 배경 설정 (1100px 이상) */
+@media screen and (min-width: 1100px) {
+  #internal-char-bg::before {
+    background-size: var(--bg-size-pc, auto 900px);
+    background-position: var(--bg-x-pc, right 200px 100%) !important;
+  }
+}
+
+/* 랜딩 페이지 및 특수 모드 설정 */
+#content-display.landing-mode {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  margin-top: 90px !important; /* 헤더 아래로 확실하게 밀어냄 */
+}
+
+/* [추가] 모바일 랜딩 페이지 여백 제거 */
+@media screen and (max-width: 600px) {
+  #content-display.landing-mode {
+    margin-top: 50px !important;
+  }
+}
+
+#content-display.hero-mode {
+  padding-top: 50px !important;
+}
+
+#content-display.landing-mode,
+#content-display.hero-mode {
+  padding-bottom: 60px;
+}
+
+#display-title {
+  font-size: 1.5em;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.char-fav-btn {
+  position: absolute !important;
+  top: 15px !important; /* 22px에서 15px로 이동 */
+  right: 15px !important; 
+  left: auto !important;
+  background: none !important; /* 배경 제거 */
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  width: 30px;
+  height: 30px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2em !important;
+  color: #888; /* 비활성 상태 색상 */
+  text-shadow: none !important;
+  z-index: 10 !important;
+  line-height: 1 !important;
+  transition: all 0.2s !important;
+}
+
+.char-fav-btn.active { 
+  color: #ffcb05 !important; 
+  background: none !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 5px rgba(255, 203, 5, 0.8)) !important; /* 노란색 글로우 부활 */
+}
+
+.landing-title {
+  font-family: 'Chungdo', sans-serif;
+  font-size: 1.8em;
+  font-weight: normal;
+  color: #ffa500;
+}
