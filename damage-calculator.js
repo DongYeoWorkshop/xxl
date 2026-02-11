@@ -368,7 +368,8 @@ export function getFormattedDamage(skill, lv, isUltStamped, isForCard = false, a
 
             if (extraDmg > 0) {
                 const label = isBaseAtkType ? "고정데미지" : "추가데미지";
-                result.text += `  ${label}: ${Math.floor(extraDmg).toLocaleString()}`;
+                if (result.text) result.text += ` / ${label}: ${Math.floor(extraDmg).toLocaleString()}`;
+                else result.text = `${label}: ${Math.floor(extraDmg).toLocaleString()}`;
             }
         }
     }

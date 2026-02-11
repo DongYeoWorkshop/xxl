@@ -52,6 +52,7 @@ export const constants = {
         { id: 'famido', name: '파미도' },
         { id: 'rikano', name: '리카노' },
         { id: 'bossren', name: '임부언' },
-        { id: 'dallawan', name: '다라완' }
+        { id: 'dallawan', name: '다라완' },
+        { id: 'suichong', name: '세숭' }
     ]
 };

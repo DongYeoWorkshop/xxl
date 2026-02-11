@@ -1069,6 +1069,86 @@ export const supportLogic = {
 
             return bonuses;
         }
+    },
+    "suichong": {
+        getInitialState: () => ({ seoin_stacks: 0, chumal_timer: 0, skill8_timer: [] }),
+        onTurn: (ctx, sState) => {
+            const suichongStats = state.savedStats['suichong'] || {};
+            const logIdx = { name: "", icon: "images/suichong.webp" };
+            ctx.supportId = 'suichong';
+
+            // 1. [서인] 스택 획득 (2턴부터)
+            if (ctx.t > 1 && sState.seoin_stacks < 4) {
+                sState.seoin_stacks++;
+                ctx.log(logIdx, `세숭: [패시브2] [서인] 스택 획득 (${sState.seoin_stacks}/4)`, null, null, false, "서포터");
+            }
+
+            // 2. 타이머 관리
+            if (sState.chumal_timer > 0) sState.chumal_timer--;
+            if (sState.skill8_timer.length > 0) {
+                sState.skill8_timer = sState.skill8_timer.map(t => t - 1).filter(t => t > 0);
+            }
+
+            // 3. 행동 결정
+            let actionType = getSupportAction('suichong', ctx.t);
+            const currentStacks = sState.seoin_stacks; 
+
+            if (actionType === 'ult') {
+                ctx.log(logIdx, "세숭: [필살기] 사용", null, null, false, "서포터");
+                sState.chumal_timer = 2;
+                ctx.log(logIdx, "세숭: 아군 전체 [추말] 부여", null, 2, false, "서포터");
+                
+                // [서인] 스택 소모
+                if (currentStacks > 0) {
+                    ctx.log(logIdx, `세숭: [서인] ${currentStacks}스택 소모`, null, null, false, "서포터");
+                    sState.seoin_stacks = 0;
+                }
+            } else if (actionType === 'defend') {
+                ctx.log(logIdx, "세숭: [방어]", null, null, false, "서포터");
+            } else {
+                ctx.log(logIdx, "세숭: [보통공격] 사용", null, null, false, "서포터");
+            }
+
+            // 4. [도장] 서인 비례 아군 공증 (행동 시 확률 발동)
+            if (suichongStats.stamp && currentStacks >= 1) {
+                const triggerCount = (currentStacks >= 2) ? 2 : 1;
+                const bonusVal = getSupportVal('suichong', 7, '공증', ctx.charData); 
+                for (let i = 0; i < triggerCount; i++) {
+                    if (Math.random() < 0.5) {
+                        sState.skill8_timer.push(2);
+                        ctx.log(logIdx, `세숭: [도장] 공격력 ${bonusVal}% 증가 부여 (2턴)`, 50, 2, false, "서포터");
+                    }
+                }
+            }
+        },
+        onAttack: (ctx, sState) => {
+            // [추말] 추가 데미지 발생 (메인 캐릭터 공격 시)
+            if (sState.chumal_timer > 0) {
+                const coefIdx = ctx.isUlt ? 1 : 0; // 평타 25%, 필살 50%
+                const chumalCoef = getSupportVal('suichong', 6, coefIdx, ctx.charData);
+                
+                if (chumalCoef > 0) {
+                    if (!ctx.extraHits) ctx.extraHits = [];
+                    ctx.extraHits.push({ 
+                        name: `세숭: 세월의 흐름 (추말)`, 
+                        skillId: "suichong_skill7", 
+                        val: chumalCoef, 
+                        type: "추가공격", 
+                        customTag: "서포터", 
+                        icon: "images/suichong.webp" 
+                    });
+                }
+            }
+        },
+        getBonuses: (sState, targetCharData, ctx) => {
+            let bonuses = { "공증": 0 };
+            // 도장 공증 버프 합산
+            if (sState.skill8_timer.length > 0) {
+                const bonusVal = getSupportVal('suichong', 7, '공증', targetCharData);
+                bonuses["공증"] += sState.skill8_timer.length * bonusVal;
+            }
+            return bonuses;
+        }
     }
 };
 

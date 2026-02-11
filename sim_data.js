@@ -1183,7 +1183,210 @@ export const simCharData = {
                 bonuses["뎀증"] += ctx.getVal(8, '뎀증'); 
             }
             
-            return bonuses;
+                    return bonuses;
+                }
+              },
+              "yuzhan": {
+                stateDisplay: {
+                    "gunpowder_stacks": "[화약]"
+                },
+                commonControls: ["ally_warrior_debuffer_count"],
+                initialState: {
+                    gunpowder_stacks: 0,
+                    skill5_timer: 0
+                },
+                onTurn: (ctx) => {
+                    // [도장 패시브] 아군 전사/방해 캐릭터의 보통공격 시 50% 확률로 화약 스택 획득
+                    if (!ctx.isAllyUltTurn && ctx.stats.stamp) {
+                        const allyCount = ctx.customValues.ally_warrior_debuffer_count || 0;
+                        for (let i = 0; i < allyCount; i++) {
+                            if (Math.random() < 0.5) {
+                                ctx.gainStack({ id: "gunpowder_stacks", originalId: "yuzhan_skill8", maxStacks: 3, label: "[화약] 1스택 획득", customTag: "도장" });
+                            }
+                        }
+                    }
+                },
+                onAttack: (ctx) => {
+                    const s = ctx.simState;
+                    const extraHits = [];
+            
+                    if (ctx.isDefend) return { extraHits }; // 방어 시에는 아무것도 하지 않음
+
+                    if (!ctx.isUlt) {
+                        // [평타] 현재 스택 수에 비례한 추가 데미지 (부여 전 스택 기준)
+                        const currentStacks = s.gunpowder_stacks || 0;
+                        if (currentStacks > 0) {
+                            extraHits.push({
+                                name: "불꽃과 농포 여화",
+                                skillId: "yuzhan_skill4",
+                                val: currentStacks * ctx.getVal(3, '추가공격'),
+                                type: "추가공격",
+                                customTag: "패시브2",
+                                icon: "icon/passive2.webp"
+                            });
+                        }
+
+                        // [평타] 데미지 발생 후 화약 1스택 부여
+                        ctx.gainStack({ id: "gunpowder_stacks", originalId: "yuzhan_skill4", maxStacks: 3, label: "[화약] 1스택 부여", customTag: "패시브2" });
+                    } else {
+                        // [필살기] 도장 활성화 시 스택 비례 추가 데미지 (스택당 30%)
+                        if (ctx.stats.stamp) {
+                            const currentStacks = s.gunpowder_stacks || 0;
+                            if (currentStacks > 0) {
+                                extraHits.push({
+                                    name: "폭죽 대난사",
+                                    skillId: "yuzhan_skill8",
+                                    val: currentStacks * 30, // 스택당 30%
+                                    isMulti: true,
+                                    type: "추가공격",
+                                    customTag: "도장",
+                                    icon: "images/sigilwebp/sigil_yuzhan.webp"
+                                });
+                            }
+                        }
+                        // [필살기] 스택 모두 소모
+                        if (s.gunpowder_stacks > 0) {
+                            ctx.log(ctx.getSkillIdx("yuzhan_skill2"), `${s.gunpowder_stacks}스택 소모`, null, null, false, "화약 소모");
+                            s.gunpowder_stacks = 0;
+                        }
+                    }
+                    return { extraHits };
+                },
+                getLiveBonuses: (ctx) => {
+                    const bonuses = { "뎀증": 0, "트리거뎀증": 0 };
+                    
+                    // [패시브3] 방어 시 트리거뎀증
+                    if (ctx.simState.skill5_timer > 0) {
+                        bonuses["트리거뎀증"] += ctx.getVal(4, '트리거뎀증');
+                    }
+            
+                    // [패시브5] 화약 3스택 시 뎀증
+                    if (ctx.simState.gunpowder_stacks >= 3) {
+                        bonuses["뎀증"] += ctx.getVal(6, '뎀증');
+                    }
+            
+                            return bonuses;
+                        }
+                      },
+  "suichong": {
+    stateDisplay: {
+        "seoin_stacks": "[서인]",
+        "chumal_timer": "[추말]"
+    },
+    initialState: {
+        seoin_stacks: 0,
+        skill5_timer: [],
+        skill1_timer: 0,
+        skill2_timer: 0,
+        chumal_timer: 0,
+        skill8_timer: 0
+    },
+    onTurn: (ctx) => {
+        // [패시브2] 매 턴 경과 시 [서인] 1스택 획득 (1턴 제외)
+        if (ctx.t > 1) {
+            ctx.gainStack({ id: "seoin_stacks", originalId: "suichong_skill4", maxStacks: 4, label: "[서인] 1스택 획득", customTag: "패시브2" });
         }
+    },
+    onAttack: (ctx) => {
+        const s = ctx.simState;
+        const extraHits = [];
+
+        if (ctx.isDefend) return { extraHits };
+
+        // 1. [추말] 효과 (본인 제외 아군 전체 적용, 본인은 다음 턴부터)
+        if (s.chumal_timer > 0 && !ctx.isUlt) {
+            const chumalCoef = ctx.getVal(6, 0); // 평타 추가타 25%
+            if (chumalCoef > 0) {
+                extraHits.push({ 
+                    name: "세월의 흐름 (추말)", 
+                    skillId: "suichong_skill7", 
+                    val: chumalCoef, 
+                    type: "추가공격", 
+                    customTag: "패시브5", 
+                    icon: "icon/passive5.webp" 
+                });
+            }
+        }
+
+        if (!ctx.isUlt) {
+            // [평타] 사악함을 제압하는 길상 (100%)
+            extraHits.push({
+                name: "사악함을 제압하는 길상",
+                skillId: "suichong_skill11",
+                val: ctx.getVal(10, '추가공격'),
+                type: "추가공격",
+                customTag: "패시브2",
+                icon: "icon/passive2.webp"
+            });
+        } else {
+            // [필살기] 사악함을 제압하는 길상 (200%)
+            extraHits.push({
+                name: "사악함을 제압하는 길상",
+                skillId: "suichong_skill10",
+                val: ctx.getVal(9, '추가공격'),
+                type: "추가공격",
+                customTag: "패시브2",
+                icon: "icon/passive2.webp"
+            });
+
+            // [필살기] 서인 스택 연쇄 발동 및 소모
+            const stacks = s.seoin_stacks || 0;
+            if (stacks >= 3) {
+                const count = (stacks === 4) ? 2 : 1;
+                for (let i = 0; i < count; i++) {
+                    extraHits.push({
+                        name: `사악함을 제압하는 길상 [서인 #${i+1}]`,
+                        skillId: "suichong_skill4",
+                        val: ctx.getVal(3, '추가공격'),
+                        type: "추가공격",
+                        customTag: "패시브2",
+                        icon: "icon/passive2.webp"
+                    });
+                }
+            }
+            
+            if (stacks > 0) {
+                ctx.log(ctx.getSkillIdx("suichong_skill2"), `${stacks}스택 소모`, null, null, false, "서인 소모");
+                s.seoin_stacks = 0;
+            }
+
+            // [필살기] 방어 스택(석숭의 비늘) 모두 제거
+            if (Array.isArray(s.skill5_timer) && s.skill5_timer.length > 0) {
+                ctx.log(ctx.getSkillIdx("suichong_skill5"), `데미지 증가 버프 초기화`, null, null, false, "석숭의 비늘 소모");
+                s.skill5_timer = [];
+            }
+
+            // [도장 패시브] 서인 스택에 따른 아군 공증 (행동 시 50% 확률)
+            if (ctx.stats.stamp && stacks >= 1) {
+                const p = simParams.suichong;
+                const triggerCount = (stacks >= 2) ? 2 : 1;
+                for (let i = 0; i < triggerCount; i++) {
+                    if (Math.random() < 0.5) {
+                        ctx.applyBuff({ ...p.skill8_buff, prob: 1.0 });
+                    }
+                }
+            }
+        }
+        return { extraHits };
+    },
+    getLiveBonuses: (ctx) => {
+        const bonuses = { "공증": 0, "뎀증": 0 };
+        const s = ctx.simState;
+
+        if (s.skill1_timer > 0) bonuses["공증"] += ctx.getVal(0, '공증');
+        if (s.skill2_timer > 0) bonuses["공증"] += ctx.getVal(1, '공증');
+
+        const s8Stacks = Array.isArray(s.skill8_timer) ? s.skill8_timer.length : (s.skill8_timer > 0 ? 1 : 0);
+        if (s8Stacks > 0) {
+            bonuses["공증"] += s8Stacks * ctx.getVal(ctx.getSkillIdx("suichong_skill8"), '공증');
+        }
+
+        const defStacks = Array.isArray(s.skill5_timer) ? s.skill5_timer.length : 0;
+        if (defStacks > 0) {
+            bonuses["뎀증"] += defStacks * ctx.getVal(4, '뎀증');
+        }
+
+        return bonuses;
     }
+  }
 };

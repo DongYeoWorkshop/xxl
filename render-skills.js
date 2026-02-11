@@ -142,7 +142,10 @@ export function renderSkills(charId, charData, savedStats, currentSkillLevels, c
                 
                 if (checked) {
                     skillDiv.classList.add('stamped-ult-card');
-                    skillDiv.style.backgroundImage = `url('images/sigil/sigil_${charId}.png')`;
+                    skillDiv.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('images/sigilwebp/sigil_${charId}.webp')`;
+                    skillDiv.style.backgroundPosition = "right 5px bottom 5px";
+                    skillDiv.style.backgroundSize = "35%";
+                    skillDiv.style.backgroundRepeat = "no-repeat";
                 } else {
                     skillDiv.classList.remove('stamped-ult-card');
                     skillDiv.style.backgroundImage = 'none';

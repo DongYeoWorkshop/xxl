@@ -9,7 +9,12 @@ export const backgroundConfigs = {
         pc:      { scale: 1.0, xOffset: -300}
     },
 
-    // 던컨 찰스 개인 설정
+    "suichong": {
+        mobile: { scale: 1.4, xOffset: 300 } 
+    },    
+    "yuzhan": {
+        mobile: { scale: 1.4, xOffset: 300 } 
+    },    
     "duncan": {
         mobile: { scale: 1.4, xOffset: 300 } 
     },
